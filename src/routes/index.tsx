@@ -459,6 +459,9 @@ function Game() {
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
     s.shadowAttackCd = 0; s.specialClones = [];
+    s.dragonBreathTime = 0; s.dragonBreathCd = 0; s.radiationWaves = [];
+    s.blackholeTime = 0; s.blackholePos = { x: W / 2, y: H / 2 }; s.slowTime = 0;
+    s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
