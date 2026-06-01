@@ -527,6 +527,9 @@ function Game() {
           s.score += Math.round(e.maxHp);
           for (let k = 0; k < e.xp; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "xp", value: 1 });
           for (let k = 0; k < e.coin; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "coin", value: 1 });
+          // Shadow Coins: ~8% drop from normal enemies, guaranteed big drop from bosses
+          const shadowDrop = e.kind === "boss" ? 25 + Math.floor(e.maxHp / 4000) : (Math.random() < 0.08 ? 1 : 0);
+          for (let k = 0; k < shadowDrop; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-10, 10), y: e.pos.y + rand(-10, 10) }, kind: "shadow", value: 1 });
         } else survivors.push(e);
       }
       s.enemies = survivors;
