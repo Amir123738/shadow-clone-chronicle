@@ -89,7 +89,7 @@ function Game() {
     waveCleared: false,
   });
 
-  const TOTAL_WAVES = 8; // last one = boss
+  const TOTAL_WAVES = 15; // last one = boss
 
   const resetGame = useCallback(() => {
     const s = stateRef.current;
@@ -123,9 +123,18 @@ function Game() {
     const pos = edgeSpawn();
     s.enemies.push({
       pos, vel: { x: 0, y: 0 },
-      hp: 1200, maxHp: 1200, r: 38, speed: 70, dmg: 25,
-      color: "#ff2e88", xp: 50, coin: 25, kind: "boss",
+      hp: 6000, maxHp: 6000, r: 48, speed: 110, dmg: 45,
+      color: "#ff2e88", xp: 120, coin: 80, kind: "boss",
     });
+    // elite guards for nightmare difficulty
+    for (let k = 0; k < 6; k++) {
+      const gp = edgeSpawn();
+      s.enemies.push({
+        pos: gp, vel: { x: 0, y: 0 },
+        hp: 140, maxHp: 140, r: 14, speed: 200,
+        dmg: 14, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+      });
+    }
     s.bossSpawned = true;
   }
 
@@ -598,9 +607,9 @@ function Game() {
               <h2 className="text-xl font-bold mb-1">Wave {uiState.wave} cleared!</h2>
               <p className="text-white/60 text-sm mb-4">Pick an upgrade</p>
               <div className="grid md:grid-cols-3 gap-3 w-full max-w-3xl px-4">
-                {uiState.upgrades.map((u) => (
+                {uiState.upgrades.map((u, idx) => (
                   <button
-                    key={u.id + Math.random()}
+                    key={`${uiState.wave}-${idx}-${u.id}`}
                     onClick={() => pickUpgrade(u)}
                     className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition"
                   >
