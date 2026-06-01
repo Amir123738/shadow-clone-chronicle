@@ -1383,33 +1383,43 @@ function Game() {
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <div className="relative" style={{ width: 220, height: 220 }}>
-                      {/* pointer */}
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10" style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "16px solid #ffe066" }} />
-                      <div
-                        className="rounded-full ring-2 ring-[#ffe066]/60 shadow-2xl"
-                        style={{
-                          width: 220, height: 220,
-                          background: `conic-gradient(${WHEEL_REWARDS.map((r, i) => {
+                    <div className="relative flex flex-col items-center" style={{ width: 220 }}>
+                      <div className="relative" style={{ width: 220, height: 220 }}>
+                        {/* pointer */}
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10" style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "16px solid #ffe066" }} />
+                        <div
+                          className="rounded-full ring-2 ring-[#ffe066]/60 shadow-2xl"
+                          style={{
+                            width: 220, height: 220,
+                            background: `conic-gradient(${WHEEL_REWARDS.map((r, i) => {
+                              const slice = 360 / WHEEL_REWARDS.length;
+                              return `${r.color} ${i*slice}deg ${(i+1)*slice}deg`;
+                            }).join(",")})`,
+                            transform: `rotate(${wheelAngle}deg)`,
+                            transition: wheelSpinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.21, 1)" : undefined,
+                          }}
+                        >
+                          {WHEEL_REWARDS.map((r, i) => {
                             const slice = 360 / WHEEL_REWARDS.length;
-                            return `${r.color} ${i*slice}deg ${(i+1)*slice}deg`;
-                          }).join(",")})`,
-                          transform: `rotate(${wheelAngle}deg)`,
-                          transition: wheelSpinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.21, 1)" : undefined,
-                        }}
-                      >
-                        {WHEEL_REWARDS.map((r, i) => {
-                          const slice = 360 / WHEEL_REWARDS.length;
-                          const angle = i * slice + slice / 2;
-                          return (
-                            <div key={r.id} className="absolute left-1/2 top-1/2 origin-left text-[9px] font-black text-black/80 whitespace-nowrap pointer-events-none"
-                              style={{ transform: `rotate(${angle - 90}deg) translateX(20px)` }}>
-                              {r.label}
-                            </div>
-                          );
-                        })}
+                            const angle = i * slice + slice / 2;
+                            return (
+                              <div key={r.id} className="absolute left-1/2 top-1/2 origin-left text-[9px] font-black text-black/80 whitespace-nowrap pointer-events-none"
+                                style={{ transform: `rotate(${angle - 90}deg) translateX(20px)` }}>
+                                {r.label}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#0b0d1a] ring-2 ring-[#ffe066]" />
                       </div>
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#0b0d1a] ring-2 ring-[#ffe066]" />
+                      {wheelSpinning && (
+                        <button
+                          onClick={skipWheel}
+                          className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition"
+                        >
+                          Skip ▶▶
+                        </button>
+                      )}
                     </div>
                     <div className="flex-1 w-full">
                       <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
