@@ -977,6 +977,66 @@ function Game() {
         }
       }
 
+      // Dragon Breath: cone of fire bullets toward aim
+      if (s.dragonBreathTime > 0) {
+        s.dragonBreathCd -= dt;
+        if (s.dragonBreathCd <= 0) {
+          const ang = Math.atan2(s.input.aim.y - s.player.pos.y, s.input.aim.x - s.player.pos.x);
+          for (let k = 0; k < 3; k++) {
+            const spread = (Math.random() - 0.5) * 0.7;
+            const a = ang + spread;
+            s.bullets.push({
+              pos: { x: s.player.pos.x, y: s.player.pos.y },
+              vel: { x: Math.cos(a) * 480, y: Math.sin(a) * 480 },
+              life: 0.55, dmg: s.stats.bulletDmg * 0.9, from: "player", color: "#ff7a18",
+            });
+          }
+          s.dragonBreathCd = 0.05;
+        }
+      }
+
+      // Radiation waves: expand, damage each enemy once
+      if (s.radiationWaves.length > 0) {
+        for (const w of s.radiationWaves) {
+          const prev = w.r;
+          w.r += 280 * dt;
+          if (prev < 0) continue;
+          for (const e of s.enemies) {
+            if (e.hp <= 0 || w.hit.has(e)) continue;
+            const d = dist(e.pos, s.player.pos);
+            if (d <= w.r && d >= w.r - 40) {
+              e.hp -= e.kind === "boss" ? 60 : 120;
+              w.hit.add(e);
+            }
+          }
+        }
+        s.radiationWaves = s.radiationWaves.filter(w => w.r < w.maxR);
+      }
+
+      // Blackhole: pull enemies, small damage
+      if (s.blackholeTime > 0) {
+        const bp = s.blackholePos;
+        for (const e of s.enemies) {
+          const d = dist(e.pos, bp);
+          if (d > 4) {
+            const dir = norm({ x: bp.x - e.pos.x, y: bp.y - e.pos.y });
+            const pull = e.kind === "boss" ? 80 : 260;
+            e.pos.x += dir.x * pull * dt;
+            e.pos.y += dir.y * pull * dt;
+          }
+          if (d < 30) e.hp -= (e.kind === "boss" ? 30 : 80) * dt;
+        }
+      }
+
+      // Explosion FX decay
+      if (s.explosionFx.length > 0) {
+        for (const fx of s.explosionFx) {
+          fx.life -= dt;
+          fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 4);
+        }
+        s.explosionFx = s.explosionFx.filter(f => f.life > 0);
+      }
+
       // Spawn waves
       const isBossWave = !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
@@ -985,6 +1045,7 @@ function Game() {
 
       // Enemies
       const darkActive = s.darknessTime > 0;
+      const slowMul = s.slowTime > 0 ? 0.55 : 1;
       for (const e of s.enemies) {
         if (!frozen || e.kind === "boss") {
           if (darkActive && e.kind !== "boss") {
@@ -994,14 +1055,14 @@ function Game() {
               e.randomDir = { x: Math.cos(a), y: Math.sin(a) };
               e.randomTimer = 0.5 + Math.random() * 0.7;
             }
-            e.pos.x += e.randomDir.x * e.speed * 0.6 * dt;
-            e.pos.y += e.randomDir.y * e.speed * 0.6 * dt;
+            e.pos.x += e.randomDir.x * e.speed * 0.6 * slowMul * dt;
+            e.pos.y += e.randomDir.y * e.speed * 0.6 * slowMul * dt;
             e.pos.x = Math.max(20, Math.min(W - 20, e.pos.x));
             e.pos.y = Math.max(20, Math.min(H - 20, e.pos.y));
           } else {
             const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
-            e.pos.x += d.x * e.speed * dt;
-            e.pos.y += d.y * e.speed * dt;
+            e.pos.x += d.x * e.speed * slowMul * dt;
+            e.pos.y += d.y * e.speed * slowMul * dt;
           }
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
