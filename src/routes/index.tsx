@@ -276,6 +276,18 @@ function Game() {
           s.cloneFireCd.push(0);
         } };
       } },
+    { id: "bronze", name: "Bronze Defence", desc: "Shield reduces enemy damage by 45% for 20s", apply: () => {
+        const s = stateRef.current; s.shieldTime = Math.max(s.shieldTime, 20);
+        return { id: "bronze", name: "Bronze Defence", undo: () => {}, redo: () => { s.shieldTime = Math.max(s.shieldTime, 20); } };
+      } },
+    { id: "superspeed", name: "Super Speed", desc: "+500% move speed & fire trail for 5s", apply: () => {
+        const s = stateRef.current; s.speedBoostTime = Math.max(s.speedBoostTime, 5);
+        return { id: "superspeed", name: "Super Speed", undo: () => {}, redo: () => { s.speedBoostTime = Math.max(s.speedBoostTime, 5); } };
+      } },
+    { id: "firearrows", name: "Fire Arrows", desc: "Shots deal +50% damage as fire for 25s", apply: () => {
+        const s = stateRef.current; s.fireArrowTime = Math.max(s.fireArrowTime, 25);
+        return { id: "firearrows", name: "Fire Arrows", undo: () => {}, redo: () => { s.fireArrowTime = Math.max(s.fireArrowTime, 25); } };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
