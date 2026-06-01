@@ -1209,6 +1209,80 @@ function Game() {
                 <button onClick={() => setShopOpen(true)} className="px-6 py-3 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition">
                   Shop ◆ {shop.shadowCoins}
                 </button>
+                <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
+                  Inventory
+                </button>
+              </div>
+            </Overlay>
+          )}
+
+          {inventoryOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">Inventory</h2>
+                  <div className="text-xs text-white/60">{shop.owned.length} skins · {shop.accessories.length} accessories</div>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">Accessories</div>
+                  {shop.accessories.length === 0 ? (
+                    <div className="text-white/50 text-sm">No accessories yet. Try the Wheel of Fortune in the Shop!</div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {ACCESSORIES.filter(a => shop.accessories.includes(a.id)).map(a => {
+                        const eq = shop.equippedAccessory === a.id;
+                        return (
+                          <div key={a.id} className={`p-3 rounded-lg ring-1 ${eq ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-8 h-8 rounded" style={{ background: a.color, boxShadow: `0 0 14px ${a.glow}` }} />
+                              <div className="font-bold text-sm">{a.name}</div>
+                            </div>
+                            <button
+                              onClick={() => setShop(v => ({ ...v, equippedAccessory: eq ? null : a.id }))}
+                              className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
+                            >{eq ? "Unequip" : "Equip"}</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {RARITY_ORDER.map((rar) => {
+                  const items = SKINS.filter(s => s.rarity === rar && shop.owned.includes(s.id));
+                  if (items.length === 0) return null;
+                  const meta = RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
+                      </div>
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                        {items.map(sk => {
+                          const sel = shop.selected === sk.id;
+                          return (
+                            <button key={sk.id} onClick={() => setShop(v => ({ ...v, selected: sk.id }))}
+                              className={`p-2 rounded-lg ring-1 text-left ${sel ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5 hover:bg-white/10"}`}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full" style={{ background: sk.color, boxShadow: `0 0 10px ${sk.glow ?? sk.color}` }} />
+                                <div className="text-[11px] font-bold truncate">{sk.name}</div>
+                              </div>
+                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">Equipped</div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                </div>
               </div>
             </Overlay>
           )}
