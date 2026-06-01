@@ -655,7 +655,7 @@ function Game() {
       s.fireCd -= dt;
       if (!frozen && i.shoot && s.fireCd <= 0) {
         fireBullet(s.player.pos, i.aim, "player");
-        s.fireCd = 1 / s.stats.fireRate;
+        s.fireCd = 1 / (s.stats.fireRate * (s.hyperTime > 0 ? 2 : 1));
       }
 
       // Record
