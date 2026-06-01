@@ -135,6 +135,11 @@ function Game() {
     pullTime: 0,
     stolenUpgrade: null as AppliedUpgrade | null,
     stolenTimer: 0,
+    // player buffs
+    shieldTime: 0,
+    speedBoostTime: 0,
+    fireArrowTime: 0,
+    fireTrail: [] as { x: number; y: number; life: number }[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
@@ -151,6 +156,7 @@ function Game() {
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
+    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
@@ -270,6 +276,18 @@ function Game() {
           s.cloneFireCd.push(0);
         } };
       } },
+    { id: "bronze", name: "Bronze Defence", desc: "Shield reduces enemy damage by 45% for 20s", apply: () => {
+        const s = stateRef.current; s.shieldTime = Math.max(s.shieldTime, 20);
+        return { id: "bronze", name: "Bronze Defence", undo: () => {}, redo: () => { s.shieldTime = Math.max(s.shieldTime, 20); } };
+      } },
+    { id: "superspeed", name: "Super Speed", desc: "+500% move speed & fire trail for 5s", apply: () => {
+        const s = stateRef.current; s.speedBoostTime = Math.max(s.speedBoostTime, 5);
+        return { id: "superspeed", name: "Super Speed", undo: () => {}, redo: () => { s.speedBoostTime = Math.max(s.speedBoostTime, 5); } };
+      } },
+    { id: "firearrows", name: "Fire Arrows", desc: "Shots deal +50% damage as fire for 25s", apply: () => {
+        const s = stateRef.current; s.fireArrowTime = Math.max(s.fireArrowTime, 25);
+        return { id: "firearrows", name: "Fire Arrows", undo: () => {}, redo: () => { s.fireArrowTime = Math.max(s.fireArrowTime, 25); } };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -337,8 +355,9 @@ function Game() {
       const s = stateRef.current;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
-      const dmg = (from === "player" ? s.stats.bulletDmg : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult);
-      const color = from === "player" ? "#ffe066" : "#b388ff";
+      const fireMul = s.fireArrowTime > 0 ? 1.5 : 1;
+      const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
+      const color = s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff");
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => s.bullets.push({
         pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
@@ -370,7 +389,7 @@ function Game() {
         cds.freeze -= dt;
         if (cds.freeze <= 0) {
           s.freezeTime = isPP ? 3 : 2.5;
-          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6);
+          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6) * (s.shieldTime > 0 ? 0.55 : 1);
           cds.freeze = isPP ? 9 : id === "final" ? 12 : 15;
         }
       }
@@ -409,6 +428,12 @@ function Game() {
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
       if (s.freezeTime > 0) s.freezeTime = Math.max(0, s.freezeTime - dt);
       if (s.pullTime > 0) s.pullTime = Math.max(0, s.pullTime - dt);
+      if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
+      if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
+      if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      // age fire trail
+      for (const t of s.fireTrail) t.life -= dt;
+      s.fireTrail = s.fireTrail.filter(t => t.life > 0);
       if (s.stolenUpgrade) {
         s.stolenTimer -= dt;
         if (s.stolenTimer <= 0) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
@@ -423,8 +448,13 @@ function Game() {
         let dy = (i.down ? 1 : 0) - (i.up ? 1 : 0);
         const mag = Math.hypot(dx, dy);
         if (mag > 0) { dx /= mag; dy /= mag; }
-        s.player.pos.x += dx * s.stats.moveSpeed * dt;
-        s.player.pos.y += dy * s.stats.moveSpeed * dt;
+        const speedMul = s.speedBoostTime > 0 ? 6 : 1;
+        const prevX = s.player.pos.x, prevY = s.player.pos.y;
+        s.player.pos.x += dx * s.stats.moveSpeed * speedMul * dt;
+        s.player.pos.y += dy * s.stats.moveSpeed * speedMul * dt;
+        if (s.speedBoostTime > 0 && (dx !== 0 || dy !== 0)) {
+          s.fireTrail.push({ x: prevX, y: prevY, life: 0.6 });
+        }
       }
 
       // Pull effect
@@ -502,7 +532,7 @@ function Game() {
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
         if (dist(e.pos, s.player.pos) < e.r + s.player.r) {
-          s.player.hp -= e.dmg * dt;
+          s.player.hp -= e.dmg * dt * (s.shieldTime > 0 ? 0.55 : 1);
         }
       }
 
@@ -636,9 +666,23 @@ function Game() {
         ctx.beginPath(); ctx.arc(b.pos.x, b.pos.y, 4, 0, Math.PI * 2); ctx.fill();
       }
 
+      // Fire trail (super speed)
+      for (const t of s.fireTrail) {
+        const a = Math.max(0, t.life / 0.6);
+        ctx.fillStyle = `rgba(255,${Math.floor(120 + 100 * a)},24,${a * 0.7})`;
+        ctx.beginPath(); ctx.arc(t.x, t.y, 10 * a + 3, 0, Math.PI * 2); ctx.fill();
+      }
+
       const p = s.player;
       ctx.fillStyle = "#ffe066";
       ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r, 0, Math.PI * 2); ctx.fill();
+      // Shield ring (bronze defence)
+      if (s.shieldTime > 0) {
+        ctx.strokeStyle = "rgba(205,127,50,0.9)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 6 + Math.sin(s.time * 6) * 1.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(255,200,120,0.4)"; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 9, 0, Math.PI * 2); ctx.stroke();
+      }
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
       const ang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
       ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
