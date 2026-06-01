@@ -546,6 +546,8 @@ function Game() {
           if (p.kind === "xp") {
             s.xp += p.value;
             while (s.xp >= s.xpNext) { s.xp -= s.xpNext; s.level++; s.xpNext = Math.round(s.xpNext * 1.4 + 2); }
+          } else if (p.kind === "shadow") {
+            setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + p.value }));
           } else { s.coins += p.value; }
         } else remPick.push(p);
       }
