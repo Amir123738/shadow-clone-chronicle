@@ -434,6 +434,38 @@ function Game() {
         const s = stateRef.current; s.fireArrowTime = Math.max(s.fireArrowTime, 25);
         return { id: "firearrows", name: "Fire Arrows", undo: () => {}, redo: () => { s.fireArrowTime = Math.max(s.fireArrowTime, 25); } };
       } },
+    { id: "kingshadows", name: "King of Shadows", desc: "Two orbiting clones shoot electric arrows for 15s", apply: () => {
+        const s = stateRef.current;
+        const spawn = () => {
+          s.kingShadowTime = Math.max(s.kingShadowTime, 15);
+          s.specialClones.push({ kind: "electric", angle: 0,         radius: 46, orbitSpeed: 2.2, life: 15, fireCd: 0.2 });
+          s.specialClones.push({ kind: "electric", angle: Math.PI,   radius: 46, orbitSpeed: 2.2, life: 15, fireCd: 0.2 });
+        };
+        spawn();
+        return { id: "kingshadows", name: "King of Shadows", undo: () => {}, redo: spawn };
+      } },
+    { id: "hypersonic", name: "Hypersonic Killer", desc: "+100% attack speed and x2 damage for 12s", apply: () => {
+        const s = stateRef.current; s.hyperTime = Math.max(s.hyperTime, 12);
+        return { id: "hypersonic", name: "Hypersonic Killer", undo: () => {}, redo: () => { s.hyperTime = Math.max(s.hyperTime, 12); } };
+      } },
+    { id: "tornado", name: "Quick Tornado", desc: "Tornado pushes enemies & heals 5% HP/s for 10s", apply: () => {
+        const s = stateRef.current; s.tornadoTime = Math.max(s.tornadoTime, 10);
+        return { id: "tornado", name: "Quick Tornado", undo: () => {}, redo: () => { s.tornadoTime = Math.max(s.tornadoTime, 10); } };
+      } },
+    { id: "darkness", name: "Aura of Darkness", desc: "Enemies wander; shadows strike them for 15s", apply: () => {
+        const s = stateRef.current; s.darknessTime = Math.max(s.darknessTime, 15);
+        return { id: "darkness", name: "Aura of Darkness", undo: () => {}, redo: () => { s.darknessTime = Math.max(s.darknessTime, 15); } };
+      } },
+    { id: "bigclones", name: "CLONES CLOOOONES!!!", desc: "Spawn 3 BIG orbiting clones (+50% damage)", apply: () => {
+        const s = stateRef.current;
+        const spawn = () => {
+          for (let k = 0; k < 3; k++) {
+            s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+          }
+        };
+        spawn();
+        return { id: "bigclones", name: "CLONES CLOOOONES!!!", undo: () => {}, redo: spawn };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
