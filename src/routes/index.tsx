@@ -156,6 +156,7 @@ function Game() {
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
+    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
