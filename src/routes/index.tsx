@@ -958,39 +958,54 @@ function Game() {
                   <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
                 <p className="text-white/60 text-xs mb-3">Earn Shadow Coins by defeating enemies (bosses drop big). Skins change your shadow clones' look.</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {SKINS.map((sk) => {
-                    const owned = shop.owned.includes(sk.id);
-                    const selected = shop.selected === sk.id;
-                    const canBuy = !owned && shop.shadowCoins >= sk.price;
-                    return (
-                      <div key={sk.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
-                          <div className="font-bold text-sm">{sk.name}</div>
-                        </div>
-                        <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price}`}</div>
-                        {owned ? (
-                          <button
-                            disabled={selected}
-                            onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
-                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
-                          >
-                            {selected ? "Equipped" : "Equip"}
-                          </button>
-                        ) : (
-                          <button
-                            disabled={!canBuy}
-                            onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
-                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
-                          >
-                            {canBuy ? "Buy & Equip" : `Need ◆${sk.price - shop.shadowCoins}`}
-                          </button>
-                        )}
+                {RARITY_ORDER.map((rar) => {
+                  const items = SKINS.filter(s => s.rarity === rar);
+                  if (items.length === 0) return null;
+                  const meta = RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {items.map((sk) => {
+                          const owned = shop.owned.includes(sk.id);
+                          const selected = shop.selected === sk.id;
+                          const canBuy = !owned && shop.shadowCoins >= sk.price;
+                          return (
+                            <div key={sk.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`} style={{ boxShadow: `inset 0 0 0 1px ${meta.color}22` }}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
+                                <div className="font-bold text-sm leading-tight">{sk.name}</div>
+                              </div>
+                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price.toLocaleString()}`}</div>
+                              {owned ? (
+                                <button
+                                  disabled={selected}
+                                  onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
+                                >
+                                  {selected ? "Equipped" : "Equip"}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={!canBuy}
+                                  onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
+                                >
+                                  {canBuy ? "Buy & Equip" : `Need ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
                 <div className="flex justify-end mt-4">
                   <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
                 </div>
