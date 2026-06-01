@@ -59,10 +59,11 @@ const H = 600;
 const CLONE_INTERVAL = 15;
 const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
-const BOSS_WAVES: Record<number, BossId> = { 15: "super", 30: "mega", 50: "hyper", 75: "plantium", 100: "final" };
+const BOSS_WAVES: Record<number, BossId> = { 15: "super", 30: "mega", 50: "hyper", 75: "plantium", 100: "plusplantium" };
 const BOSS_NAMES: Record<string, string> = {
   super: "SHADOW TYRANT", mega: "VOID REAPER", hyper: "CHRONO LICH",
   plantium: "MEGAPLANTIUM OVERLORD", final: "OMEGA ANNIHILATOR",
+  plusplantium: "PLUSPLANTIUM — THE ABSOLUTE",
 };
 
 function rand(a: number, b: number) { return a + Math.random() * (b - a); }
