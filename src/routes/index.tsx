@@ -335,7 +335,7 @@ function Game() {
       const s = stateRef.current;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
-      const dmg = (from === "player" ? s.stats.bulletDmg : s.stats.bulletDmg * 0.7 * s.stats.cloneDmgMult);
+      const dmg = (from === "player" ? s.stats.bulletDmg : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult);
       const color = from === "player" ? "#ffe066" : "#b388ff";
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => s.bullets.push({
