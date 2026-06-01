@@ -277,6 +277,13 @@ function Game() {
     speedBoostTime: 0,
     fireArrowTime: 0,
     fireTrail: [] as { x: number; y: number; life: number }[],
+    // new abilities
+    kingShadowTime: 0,
+    hyperTime: 0,
+    tornadoTime: 0,
+    darknessTime: 0,
+    shadowAttackCd: 0,
+    specialClones: [] as SpecialClone[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
