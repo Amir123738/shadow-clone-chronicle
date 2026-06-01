@@ -315,11 +315,15 @@ function Game() {
       const target = 360 * 6 + (360 - (idx * slice + slice / 2));
       setWheelSpinning(true);
       setWheelMsg(null);
+      setWheelRevealOpen(false);
       setWheelAngle((prev) => prev + target);
       window.setTimeout(() => {
         setShop((cur) => {
           const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
           setWheelMsg(msg);
+          setWheelRevealReward(reward);
+          setWheelRevealOpen(true);
+          toast.success(msg, { duration: 4000 });
           return next;
         });
         setWheelSpinning(false);
