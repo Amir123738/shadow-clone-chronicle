@@ -24,9 +24,11 @@ type Enemy = {
   dmg: number; baseDmg: number; color: string; xp: number; coin: number;
   kind: "grunt" | "fast" | "tank" | "boss"; bossId?: BossId;
   abilityCds?: Record<string, number>; abilityFlags?: Record<string, boolean>;
+  randomDir?: Vec; randomTimer?: number;
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
+type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number };
 type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
@@ -275,6 +277,13 @@ function Game() {
     speedBoostTime: 0,
     fireArrowTime: 0,
     fireTrail: [] as { x: number; y: number; life: number }[],
+    // new abilities
+    kingShadowTime: 0,
+    hyperTime: 0,
+    tornadoTime: 0,
+    darknessTime: 0,
+    shadowAttackCd: 0,
+    specialClones: [] as SpecialClone[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
@@ -292,6 +301,8 @@ function Game() {
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
+    s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
+    s.shadowAttackCd = 0; s.specialClones = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
@@ -423,6 +434,38 @@ function Game() {
         const s = stateRef.current; s.fireArrowTime = Math.max(s.fireArrowTime, 25);
         return { id: "firearrows", name: "Fire Arrows", undo: () => {}, redo: () => { s.fireArrowTime = Math.max(s.fireArrowTime, 25); } };
       } },
+    { id: "kingshadows", name: "King of Shadows", desc: "Two orbiting clones shoot electric arrows for 15s", apply: () => {
+        const s = stateRef.current;
+        const spawn = () => {
+          s.kingShadowTime = Math.max(s.kingShadowTime, 15);
+          s.specialClones.push({ kind: "electric", angle: 0,         radius: 46, orbitSpeed: 2.2, life: 15, fireCd: 0.2 });
+          s.specialClones.push({ kind: "electric", angle: Math.PI,   radius: 46, orbitSpeed: 2.2, life: 15, fireCd: 0.2 });
+        };
+        spawn();
+        return { id: "kingshadows", name: "King of Shadows", undo: () => {}, redo: spawn };
+      } },
+    { id: "hypersonic", name: "Hypersonic Killer", desc: "+100% attack speed and x2 damage for 12s", apply: () => {
+        const s = stateRef.current; s.hyperTime = Math.max(s.hyperTime, 12);
+        return { id: "hypersonic", name: "Hypersonic Killer", undo: () => {}, redo: () => { s.hyperTime = Math.max(s.hyperTime, 12); } };
+      } },
+    { id: "tornado", name: "Quick Tornado", desc: "Tornado pushes enemies & heals 5% HP/s for 10s", apply: () => {
+        const s = stateRef.current; s.tornadoTime = Math.max(s.tornadoTime, 10);
+        return { id: "tornado", name: "Quick Tornado", undo: () => {}, redo: () => { s.tornadoTime = Math.max(s.tornadoTime, 10); } };
+      } },
+    { id: "darkness", name: "Aura of Darkness", desc: "Enemies wander; shadows strike them for 15s", apply: () => {
+        const s = stateRef.current; s.darknessTime = Math.max(s.darknessTime, 15);
+        return { id: "darkness", name: "Aura of Darkness", undo: () => {}, redo: () => { s.darknessTime = Math.max(s.darknessTime, 15); } };
+      } },
+    { id: "bigclones", name: "CLONES CLOOOONES!!!", desc: "Spawn 3 BIG orbiting clones (+50% damage)", apply: () => {
+        const s = stateRef.current;
+        const spawn = () => {
+          for (let k = 0; k < 3; k++) {
+            s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+          }
+        };
+        spawn();
+        return { id: "bigclones", name: "CLONES CLOOOONES!!!", undo: () => {}, redo: spawn };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -490,9 +533,9 @@ function Game() {
       const s = stateRef.current;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
-      const fireMul = s.fireArrowTime > 0 ? 1.5 : 1;
+      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1);
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
-      const color = s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff");
+      const color = s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff"));
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => s.bullets.push({
         pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
@@ -566,6 +609,10 @@ function Game() {
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
       if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      if (s.kingShadowTime > 0) s.kingShadowTime = Math.max(0, s.kingShadowTime - dt);
+      if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
+      if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
+      if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
@@ -608,7 +655,7 @@ function Game() {
       s.fireCd -= dt;
       if (!frozen && i.shoot && s.fireCd <= 0) {
         fireBullet(s.player.pos, i.aim, "player");
-        s.fireCd = 1 / s.stats.fireRate;
+        s.fireCd = 1 / (s.stats.fireRate * (s.hyperTime > 0 ? 2 : 1));
       }
 
       // Record
@@ -652,6 +699,73 @@ function Game() {
       for (let c = 0; c < s.clones.length; c++) if (cloneSurvive[c]) { newClones.push(s.clones[c]); newCds.push(s.cloneFireCd[c]); }
       s.clones = newClones; s.cloneFireCd = newCds;
 
+      // Helper: nearest live enemy
+      const nearestEnemy = (from: Vec): Enemy | null => {
+        let best: Enemy | null = null; let bd = Infinity;
+        for (const e of s.enemies) {
+          if (e.hp <= 0) continue;
+          const d = dist(e.pos, from);
+          if (d < bd) { bd = d; best = e; }
+        }
+        return best;
+      };
+
+      // Special clones (King of Shadows electric + CLONES CLOOOONES big)
+      for (const sc of s.specialClones) {
+        sc.angle += sc.orbitSpeed * dt;
+        if (sc.life !== undefined) sc.life -= dt;
+        sc.fireCd -= dt;
+        const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
+        const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
+        if (sc.fireCd <= 0) {
+          const target = nearestEnemy({ x: sx, y: sy });
+          if (target) {
+            const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
+            const isElectric = sc.kind === "electric";
+            s.bullets.push({
+              pos: { x: sx, y: sy },
+              vel: { x: d.x * 620, y: d.y * 620 },
+              life: 1.2,
+              dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
+              from: "clone",
+              color: isElectric ? "#7df9ff" : "#ff66ff",
+            });
+            sc.fireCd = isElectric ? 0.35 : 0.45;
+          }
+        }
+      }
+      s.specialClones = s.specialClones.filter(sc => sc.life === undefined || sc.life > 0);
+
+      // Tornado: push enemies & heal
+      if (s.tornadoTime > 0) {
+        s.player.hp = Math.min(s.player.maxHp, s.player.hp + s.player.maxHp * 0.05 * dt);
+        for (const e of s.enemies) {
+          const d = dist(e.pos, s.player.pos);
+          if (d < 110 && e.kind !== "boss") {
+            const dir = norm({ x: e.pos.x - s.player.pos.x, y: e.pos.y - s.player.pos.y });
+            e.pos.x += dir.x * 240 * dt;
+            e.pos.y += dir.y * 240 * dt;
+          }
+        }
+      }
+
+      // Darkness: shadow strikes
+      if (s.darknessTime > 0) {
+        s.shadowAttackCd -= dt;
+        if (s.shadowAttackCd <= 0) {
+          const target = nearestEnemy(s.player.pos);
+          if (target) {
+            const d = norm({ x: target.pos.x - s.player.pos.x, y: target.pos.y - s.player.pos.y });
+            s.bullets.push({
+              pos: { x: s.player.pos.x, y: s.player.pos.y },
+              vel: { x: d.x * 560, y: d.y * 560 },
+              life: 1.5, dmg: 55, from: "clone", color: "#7c3aed",
+            });
+            s.shadowAttackCd = 0.22;
+          }
+        }
+      }
+
       // Spawn waves
       const isBossWave = !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
@@ -659,17 +773,33 @@ function Game() {
       }
 
       // Enemies
+      const darkActive = s.darknessTime > 0;
       for (const e of s.enemies) {
         if (!frozen || e.kind === "boss") {
-          const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
-          e.pos.x += d.x * e.speed * dt;
-          e.pos.y += d.y * e.speed * dt;
+          if (darkActive && e.kind !== "boss") {
+            e.randomTimer = (e.randomTimer ?? 0) - dt;
+            if (!e.randomDir || (e.randomTimer ?? 0) <= 0) {
+              const a = Math.random() * Math.PI * 2;
+              e.randomDir = { x: Math.cos(a), y: Math.sin(a) };
+              e.randomTimer = 0.5 + Math.random() * 0.7;
+            }
+            e.pos.x += e.randomDir.x * e.speed * 0.6 * dt;
+            e.pos.y += e.randomDir.y * e.speed * 0.6 * dt;
+            e.pos.x = Math.max(20, Math.min(W - 20, e.pos.x));
+            e.pos.y = Math.max(20, Math.min(H - 20, e.pos.y));
+          } else {
+            const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
+            e.pos.x += d.x * e.speed * dt;
+            e.pos.y += d.y * e.speed * dt;
+          }
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
         if (dist(e.pos, s.player.pos) < e.r + s.player.r) {
           s.player.hp -= e.dmg * dt * (s.shieldTime > 0 ? 0.55 : 1);
         }
       }
+
+
 
       // Bullets
       for (const b of s.bullets) {
@@ -786,6 +916,22 @@ function Game() {
         }
       }
 
+      // Special clones (electric / big)
+      for (const sc of s.specialClones) {
+        const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
+        const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
+        const isElec = sc.kind === "electric";
+        const r = isElec ? 11 : 22;
+        ctx.fillStyle = isElec ? "rgba(125,249,255,0.45)" : "rgba(255,102,255,0.45)";
+        ctx.beginPath(); ctx.arc(sx, sy, r + 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = isElec ? "#7df9ff" : "#ff66ff";
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = isElec ? "#e0fbff" : "#ffd6ff"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, sy, r + 2, 0, Math.PI * 2); ctx.stroke();
+      }
+
+
+
       for (const e of s.enemies) {
         ctx.fillStyle = e.color;
         ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, e.r, 0, Math.PI * 2); ctx.fill();
@@ -843,6 +989,28 @@ function Game() {
       if (s.pullTime > 0) {
         ctx.strokeStyle = "rgba(160,0,255,0.6)"; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 30 + s.pullTime * 30, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Tornado
+      if (s.tornadoTime > 0) {
+        for (let i = 0; i < 4; i++) {
+          const baseA = s.time * 7 + i * (Math.PI / 2);
+          const rad = 70 + Math.sin(s.time * 4 + i) * 18;
+          ctx.strokeStyle = `rgba(186,230,253,${0.55 - i * 0.1})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, rad, baseA, baseA + Math.PI * 1.3); ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(125,211,252,0.08)";
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 100, 0, Math.PI * 2); ctx.fill();
+      }
+      // Darkness aura
+      if (s.darknessTime > 0) {
+        const grad = ctx.createRadialGradient(p.pos.x, p.pos.y, 20, p.pos.x, p.pos.y, 320);
+        grad.addColorStop(0, "rgba(124,58,237,0.0)");
+        grad.addColorStop(1, "rgba(10,5,30,0.55)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(124,58,237,0.5)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 180 + Math.sin(s.time * 3) * 6, 0, Math.PI * 2); ctx.stroke();
       }
     };
 
