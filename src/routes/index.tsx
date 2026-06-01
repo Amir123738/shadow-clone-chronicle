@@ -1284,6 +1284,52 @@ function Game() {
         ctx.strokeStyle = "rgba(124,58,237,0.5)"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 180 + Math.sin(s.time * 3) * 6, 0, Math.PI * 2); ctx.stroke();
       }
+      // Slow time tint
+      if (s.slowTime > 0) {
+        ctx.fillStyle = "rgba(96,165,250,0.10)";
+        ctx.fillRect(0, 0, W, H);
+      }
+      // Radiation waves
+      for (const w of s.radiationWaves) {
+        if (w.r <= 0) continue;
+        const a = Math.max(0, 1 - w.r / w.maxR);
+        ctx.strokeStyle = `rgba(74,222,128,${0.7 * a})`;
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(190,242,100,${0.4 * a})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r - 18, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Explosion FX
+      for (const fx of s.explosionFx) {
+        const a = Math.max(0, fx.life / 0.6);
+        const grad = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, fx.r);
+        grad.addColorStop(0, `rgba(255,240,120,${0.85 * a})`);
+        grad.addColorStop(0.5, `rgba(255,140,40,${0.55 * a})`);
+        grad.addColorStop(1, "rgba(255,80,0,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,200,80,${a})`; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Blackhole
+      if (s.blackholeTime > 0) {
+        const bp = s.blackholePos;
+        const baseR = 36 + Math.sin(s.time * 6) * 3;
+        for (let i = 0; i < 4; i++) {
+          ctx.strokeStyle = `rgba(168,85,247,${0.35 - i * 0.07})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(bp.x, bp.y, baseR + 18 + i * 14, s.time * 2 + i, s.time * 2 + i + Math.PI * 1.5);
+          ctx.stroke();
+        }
+        const grad = ctx.createRadialGradient(bp.x, bp.y, 2, bp.x, bp.y, baseR);
+        grad.addColorStop(0, "rgba(0,0,0,1)");
+        grad.addColorStop(0.7, "rgba(40,0,60,0.95)");
+        grad.addColorStop(1, "rgba(168,85,247,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(bp.x, bp.y, baseR, 0, Math.PI * 2); ctx.fill();
+      }
     };
 
     const loop = (now: number) => {
