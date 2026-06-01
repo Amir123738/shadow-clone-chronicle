@@ -191,6 +191,7 @@ function Game() {
     if (id === "hyper") { hp = 50000; dmg = 100; sp = 160; r = 60; color = "#00e5ff"; guards = 16; }
     if (id === "plantium") { hp = 85000; dmg = 130; sp = 175; r = 68; color = "#7cf24a"; guards = 20; }
     if (id === "final") { hp = 160000; dmg = 170; sp = 195; r = 80; color = "#ff0040"; guards = 26; }
+    if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
