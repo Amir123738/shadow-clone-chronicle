@@ -296,6 +296,35 @@ function Game() {
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
   const [shopOpen, setShopOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelMsg, setWheelMsg] = useState<string | null>(null);
+
+  const spinWheel = useCallback(() => {
+    if (wheelSpinning) return;
+    setShop((sv) => {
+      if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return sv; }
+      const reward = rollWheel();
+      const idx = WHEEL_REWARDS.indexOf(reward);
+      // each slice = 360/N; rotate so chosen slice lands at pointer (top)
+      const slice = 360 / WHEEL_REWARDS.length;
+      const target = 360 * 6 + (360 - (idx * slice + slice / 2));
+      setWheelSpinning(true);
+      setWheelMsg(null);
+      setWheelAngle((prev) => prev + target);
+      window.setTimeout(() => {
+        setShop((cur) => {
+          const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
+          setWheelMsg(msg);
+          return next;
+        });
+        setWheelSpinning(false);
+      }, 4200);
+      return { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
+    });
+  }, [wheelSpinning]);
+
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
   useEffect(() => { setShop(loadShop()); setHydrated(true); }, []);
