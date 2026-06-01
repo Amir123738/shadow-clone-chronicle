@@ -301,6 +301,8 @@ function Game() {
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelMsg, setWheelMsg] = useState<string | null>(null);
+  const [wheelRevealOpen, setWheelRevealOpen] = useState(false);
+  const [wheelRevealReward, setWheelRevealReward] = useState<WheelReward | null>(null);
 
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
