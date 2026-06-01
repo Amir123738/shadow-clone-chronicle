@@ -699,6 +699,73 @@ function Game() {
       for (let c = 0; c < s.clones.length; c++) if (cloneSurvive[c]) { newClones.push(s.clones[c]); newCds.push(s.cloneFireCd[c]); }
       s.clones = newClones; s.cloneFireCd = newCds;
 
+      // Helper: nearest live enemy
+      const nearestEnemy = (from: Vec): Enemy | null => {
+        let best: Enemy | null = null; let bd = Infinity;
+        for (const e of s.enemies) {
+          if (e.hp <= 0) continue;
+          const d = dist(e.pos, from);
+          if (d < bd) { bd = d; best = e; }
+        }
+        return best;
+      };
+
+      // Special clones (King of Shadows electric + CLONES CLOOOONES big)
+      for (const sc of s.specialClones) {
+        sc.angle += sc.orbitSpeed * dt;
+        if (sc.life !== undefined) sc.life -= dt;
+        sc.fireCd -= dt;
+        const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
+        const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
+        if (sc.fireCd <= 0) {
+          const target = nearestEnemy({ x: sx, y: sy });
+          if (target) {
+            const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
+            const isElectric = sc.kind === "electric";
+            s.bullets.push({
+              pos: { x: sx, y: sy },
+              vel: { x: d.x * 620, y: d.y * 620 },
+              life: 1.2,
+              dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
+              from: "clone",
+              color: isElectric ? "#7df9ff" : "#ff66ff",
+            });
+            sc.fireCd = isElectric ? 0.35 : 0.45;
+          }
+        }
+      }
+      s.specialClones = s.specialClones.filter(sc => sc.life === undefined || sc.life > 0);
+
+      // Tornado: push enemies & heal
+      if (s.tornadoTime > 0) {
+        s.player.hp = Math.min(s.player.maxHp, s.player.hp + s.player.maxHp * 0.05 * dt);
+        for (const e of s.enemies) {
+          const d = dist(e.pos, s.player.pos);
+          if (d < 110 && e.kind !== "boss") {
+            const dir = norm({ x: e.pos.x - s.player.pos.x, y: e.pos.y - s.player.pos.y });
+            e.pos.x += dir.x * 240 * dt;
+            e.pos.y += dir.y * 240 * dt;
+          }
+        }
+      }
+
+      // Darkness: shadow strikes
+      if (s.darknessTime > 0) {
+        s.shadowAttackCd -= dt;
+        if (s.shadowAttackCd <= 0) {
+          const target = nearestEnemy(s.player.pos);
+          if (target) {
+            const d = norm({ x: target.pos.x - s.player.pos.x, y: target.pos.y - s.player.pos.y });
+            s.bullets.push({
+              pos: { x: s.player.pos.x, y: s.player.pos.y },
+              vel: { x: d.x * 560, y: d.y * 560 },
+              life: 1.5, dmg: 55, from: "clone", color: "#7c3aed",
+            });
+            s.shadowAttackCd = 0.22;
+          }
+        }
+      }
+
       // Spawn waves
       const isBossWave = !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
@@ -706,17 +773,33 @@ function Game() {
       }
 
       // Enemies
+      const darkActive = s.darknessTime > 0;
       for (const e of s.enemies) {
         if (!frozen || e.kind === "boss") {
-          const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
-          e.pos.x += d.x * e.speed * dt;
-          e.pos.y += d.y * e.speed * dt;
+          if (darkActive && e.kind !== "boss") {
+            e.randomTimer = (e.randomTimer ?? 0) - dt;
+            if (!e.randomDir || (e.randomTimer ?? 0) <= 0) {
+              const a = Math.random() * Math.PI * 2;
+              e.randomDir = { x: Math.cos(a), y: Math.sin(a) };
+              e.randomTimer = 0.5 + Math.random() * 0.7;
+            }
+            e.pos.x += e.randomDir.x * e.speed * 0.6 * dt;
+            e.pos.y += e.randomDir.y * e.speed * 0.6 * dt;
+            e.pos.x = Math.max(20, Math.min(W - 20, e.pos.x));
+            e.pos.y = Math.max(20, Math.min(H - 20, e.pos.y));
+          } else {
+            const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
+            e.pos.x += d.x * e.speed * dt;
+            e.pos.y += d.y * e.speed * dt;
+          }
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
         if (dist(e.pos, s.player.pos) < e.r + s.player.r) {
           s.player.hp -= e.dmg * dt * (s.shieldTime > 0 ? 0.55 : 1);
         }
       }
+
+
 
       // Bullets
       for (const b of s.bullets) {
