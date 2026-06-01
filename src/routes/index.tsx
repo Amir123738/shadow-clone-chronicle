@@ -1479,10 +1479,15 @@ function Game() {
                   <button
                     key={`${uiState.wave}-${idx}-${u.id}`}
                     onClick={() => pickUpgrade(u)}
-                    className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition"
+                    className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition flex gap-3 items-start"
                   >
-                    <div className="font-bold text-[#ffe066]">{u.name}</div>
-                    <div className="text-sm text-white/70 mt-1">{u.desc}</div>
+                    {UPGRADE_ICONS[u.id] && (
+                      <img src={UPGRADE_ICONS[u.id]} alt={u.name} loading="lazy" width={56} height={56} className="w-14 h-14 object-contain shrink-0 drop-shadow-[0_0_8px_rgba(255,224,102,0.35)]" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#ffe066]">{u.name}</div>
+                      <div className="text-sm text-white/70 mt-1">{u.desc}</div>
+                    </div>
                   </button>
                 ))}
               </div>
