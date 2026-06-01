@@ -477,7 +477,7 @@ function Game() {
             s.cloneFireCd[c] -= dt;
             if (f.shoot && s.cloneFireCd[c] <= 0) {
               fireBullet(f.pos, f.aim, "clone");
-              s.cloneFireCd[c] = 1 / s.stats.fireRate;
+              s.cloneFireCd[c] = 1 / (s.stats.fireRate * 0.4);
             }
             cl.idx++;
             if (cl.idx >= cl.frames.length) cl.idx = 0;
