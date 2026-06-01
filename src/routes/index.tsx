@@ -176,17 +176,83 @@ const SKINS: Skin[] = [
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 ];
 
-const SHOP_KEY = "scs_shop_v1";
-type ShopSave = { shadowCoins: number; owned: string[]; selected: string };
+type Accessory = { id: string; name: string; color: string; glow: string };
+const ACCESSORIES: Accessory[] = [
+  { id: "white_hat", name: "White Hat", color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+];
+
+const SHOP_KEY = "scs_shop_v2";
+type ShopSave = { shadowCoins: number; owned: string[]; selected: string; accessories: string[]; equippedAccessory: string | null };
+const DEFAULT_SHOP: ShopSave = { shadowCoins: 0, owned: ["violet"], selected: "violet", accessories: [], equippedAccessory: null };
 function loadShop(): ShopSave {
-  if (typeof window === "undefined") return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+  if (typeof window === "undefined") return { ...DEFAULT_SHOP };
   try {
     const raw = localStorage.getItem(SHOP_KEY);
-    if (raw) { const v = JSON.parse(raw); if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet" }; }
+    if (raw) {
+      const v = JSON.parse(raw);
+      if (v && Array.isArray(v.owned)) return {
+        shadowCoins: v.shadowCoins || 0,
+        owned: v.owned,
+        selected: v.selected || "violet",
+        accessories: Array.isArray(v.accessories) ? v.accessories : [],
+        equippedAccessory: v.equippedAccessory ?? null,
+      };
+    }
+    // migrate legacy
+    const legacy = localStorage.getItem("scs_shop_v1");
+    if (legacy) {
+      const v = JSON.parse(legacy);
+      if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null };
+    }
   } catch {}
-  return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+  return { ...DEFAULT_SHOP };
 }
 function saveShop(v: ShopSave) { try { localStorage.setItem(SHOP_KEY, JSON.stringify(v)); } catch {} }
+
+type WheelReward = { id: string; label: string; color: string; weight: number; apply: (s: ShopSave) => { next: ShopSave; msg: string } };
+const SPIN_COST = 1000;
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+const WHEEL_REWARDS: WheelReward[] = [
+  { id: "c250",  label: "250 ◆",   color: "#9ca3af", weight: 50, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 250 }, msg: "+250 Shadow Coins" }) },
+  { id: "c500",  label: "500 ◆",   color: "#60a5fa", weight: 25, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 500 }, msg: "+500 Shadow Coins" }) },
+  { id: "hat",   label: "White Hat", color: "#ffffff", weight: 10, apply: (s) => {
+      if (s.accessories.includes("white_hat")) return { next: { ...s, shadowCoins: s.shadowCoins + 500 }, msg: "White Hat (duplicate) → +500 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "white_hat"] }, msg: "Unlocked accessory: White Hat!" };
+    } },
+  { id: "c1000", label: "1000 ◆",  color: "#a855f7", weight: 5,  apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 1000 }, msg: "+1000 Shadow Coins" }) },
+  { id: "leg",   label: "Legendary Skin", color: "#fde68a", weight: 5, apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "legendary" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 5000 }, msg: "All Legendaries owned → +5000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `Legendary Skin: ${sk.name}!` };
+    } },
+  { id: "2epic", label: "2 Epic Skins", color: "#ec4899", weight: 4, apply: (s) => {
+      const owned = new Set(s.owned);
+      const pool = SKINS.filter(sk => sk.rarity === "epic" && !owned.has(sk.id));
+      const picks: string[] = [];
+      const got: string[] = [];
+      let bonus = 0;
+      for (let i = 0; i < 2; i++) {
+        const avail = pool.filter(p => !picks.includes(p.id));
+        if (avail.length === 0) { bonus += 2500; continue; }
+        const sk = pickRandom(avail); picks.push(sk.id); got.push(sk.name);
+      }
+      return { next: { ...s, owned: [...s.owned, ...picks], shadowCoins: s.shadowCoins + bonus }, msg: got.length ? `Epic Skins: ${got.join(", ")}${bonus?` +${bonus} ◆`:""}` : `All Epics owned → +${bonus} ◆` };
+    } },
+  { id: "rain",  label: "Rainbow Skin", color: "#ff5dff", weight: 0.5, apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "rainbow" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 50000 }, msg: "All Rainbows owned → +50000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `RAINBOW Skin: ${sk.name}!` };
+    } },
+  { id: "c10000", label: "10000 ◆", color: "#ffe066", weight: 0.5, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 10000 }, msg: "JACKPOT! +10000 Shadow Coins" }) },
+];
+const WHEEL_TOTAL_WEIGHT = WHEEL_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollWheel(): WheelReward {
+  let r = Math.random() * WHEEL_TOTAL_WEIGHT;
+  for (const w of WHEEL_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return WHEEL_REWARDS[0];
+}
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
@@ -228,8 +294,37 @@ function Game() {
     shadowCoins: 0,
   });
 
-  const [shop, setShop] = useState<ShopSave>({ shadowCoins: 0, owned: ["violet"], selected: "violet" });
+  const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
   const [shopOpen, setShopOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelMsg, setWheelMsg] = useState<string | null>(null);
+
+  const spinWheel = useCallback(() => {
+    if (wheelSpinning) return;
+    setShop((sv) => {
+      if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return sv; }
+      const reward = rollWheel();
+      const idx = WHEEL_REWARDS.indexOf(reward);
+      // each slice = 360/N; rotate so chosen slice lands at pointer (top)
+      const slice = 360 / WHEEL_REWARDS.length;
+      const target = 360 * 6 + (360 - (idx * slice + slice / 2));
+      setWheelSpinning(true);
+      setWheelMsg(null);
+      setWheelAngle((prev) => prev + target);
+      window.setTimeout(() => {
+        setShop((cur) => {
+          const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
+          setWheelMsg(msg);
+          return next;
+        });
+        setWheelSpinning(false);
+      }, 4200);
+      return { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
+    });
+  }, [wheelSpinning]);
+
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
   useEffect(() => { setShop(loadShop()); setHydrated(true); }, []);
@@ -1114,6 +1209,80 @@ function Game() {
                 <button onClick={() => setShopOpen(true)} className="px-6 py-3 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition">
                   Shop ◆ {shop.shadowCoins}
                 </button>
+                <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
+                  Inventory
+                </button>
+              </div>
+            </Overlay>
+          )}
+
+          {inventoryOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">Inventory</h2>
+                  <div className="text-xs text-white/60">{shop.owned.length} skins · {shop.accessories.length} accessories</div>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">Accessories</div>
+                  {shop.accessories.length === 0 ? (
+                    <div className="text-white/50 text-sm">No accessories yet. Try the Wheel of Fortune in the Shop!</div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {ACCESSORIES.filter(a => shop.accessories.includes(a.id)).map(a => {
+                        const eq = shop.equippedAccessory === a.id;
+                        return (
+                          <div key={a.id} className={`p-3 rounded-lg ring-1 ${eq ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-8 h-8 rounded" style={{ background: a.color, boxShadow: `0 0 14px ${a.glow}` }} />
+                              <div className="font-bold text-sm">{a.name}</div>
+                            </div>
+                            <button
+                              onClick={() => setShop(v => ({ ...v, equippedAccessory: eq ? null : a.id }))}
+                              className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
+                            >{eq ? "Unequip" : "Equip"}</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {RARITY_ORDER.map((rar) => {
+                  const items = SKINS.filter(s => s.rarity === rar && shop.owned.includes(s.id));
+                  if (items.length === 0) return null;
+                  const meta = RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
+                      </div>
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                        {items.map(sk => {
+                          const sel = shop.selected === sk.id;
+                          return (
+                            <button key={sk.id} onClick={() => setShop(v => ({ ...v, selected: sk.id }))}
+                              className={`p-2 rounded-lg ring-1 text-left ${sel ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5 hover:bg-white/10"}`}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full" style={{ background: sk.color, boxShadow: `0 0 10px ${sk.glow ?? sk.color}` }} />
+                                <div className="text-[11px] font-bold truncate">{sk.name}</div>
+                              </div>
+                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">Equipped</div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                </div>
               </div>
             </Overlay>
           )}
@@ -1174,6 +1343,70 @@ function Game() {
                     </div>
                   );
                 })}
+                {/* Wheel of Fortune */}
+                <div className="mt-6 p-4 rounded-xl ring-1 ring-[#ffe066]/30 bg-gradient-to-br from-[#1a0f2e] to-[#0b0d1a]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Wheel of Fortune</h3>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}</p>
+                    </div>
+                    <button
+                      onClick={spinWheel}
+                      disabled={wheelSpinning || shop.shadowCoins < SPIN_COST}
+                      className="px-5 py-2.5 rounded-lg bg-[#ffe066] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100"
+                    >
+                      {wheelSpinning ? "Spinning…" : `SPIN (◆${SPIN_COST})`}
+                    </button>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="relative" style={{ width: 220, height: 220 }}>
+                      {/* pointer */}
+                      <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10" style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "16px solid #ffe066" }} />
+                      <div
+                        className="rounded-full ring-2 ring-[#ffe066]/60 shadow-2xl"
+                        style={{
+                          width: 220, height: 220,
+                          background: `conic-gradient(${WHEEL_REWARDS.map((r, i) => {
+                            const slice = 360 / WHEEL_REWARDS.length;
+                            return `${r.color} ${i*slice}deg ${(i+1)*slice}deg`;
+                          }).join(",")})`,
+                          transform: `rotate(${wheelAngle}deg)`,
+                          transition: wheelSpinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.21, 1)" : undefined,
+                        }}
+                      >
+                        {WHEEL_REWARDS.map((r, i) => {
+                          const slice = 360 / WHEEL_REWARDS.length;
+                          const angle = i * slice + slice / 2;
+                          return (
+                            <div key={r.id} className="absolute left-1/2 top-1/2 origin-left text-[9px] font-black text-black/80 whitespace-nowrap pointer-events-none"
+                              style={{ transform: `rotate(${angle - 90}deg) translateX(20px)` }}>
+                              {r.label}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#0b0d1a] ring-2 ring-[#ffe066]" />
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <ul className="text-xs space-y-1">
+                        {WHEEL_REWARDS.map(r => (
+                          <li key={r.id} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded" style={{ background: r.color }} />
+                            <span className="flex-1">{r.label}</span>
+                            <span className="text-white/50">{((r.weight / WHEEL_TOTAL_WEIGHT) * 100).toFixed(r.weight < 1 ? 1 : 0)}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {wheelMsg && (
+                        <div className="mt-3 p-2 rounded bg-[#ffe066]/10 ring-1 ring-[#ffe066]/40 text-[#ffe066] text-sm font-bold text-center">
+                          {wheelMsg}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end mt-4">
                   <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
                 </div>
