@@ -1,6 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import upgFire from "@/assets/upgrades/fire.png";
+import upgDmg from "@/assets/upgrades/dmg.png";
+import upgSpd from "@/assets/upgrades/spd.png";
+import upgHp from "@/assets/upgrades/hp.png";
+import upgDouble from "@/assets/upgrades/double.png";
+import upgClone from "@/assets/upgrades/clone.png";
+import upgHeal from "@/assets/upgrades/heal.png";
+import upgBronze from "@/assets/upgrades/bronze.png";
+import upgSuperspeed from "@/assets/upgrades/superspeed.png";
+import upgFirearrows from "@/assets/upgrades/firearrows.png";
+import upgKingshadows from "@/assets/upgrades/kingshadows.png";
+import upgHypersonic from "@/assets/upgrades/hypersonic.png";
+import upgTornado from "@/assets/upgrades/tornado.png";
+import upgDarkness from "@/assets/upgrades/darkness.png";
+import upgBigclones from "@/assets/upgrades/bigclones.png";
+
+const UPGRADE_ICONS: Record<string, string> = {
+  fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
+  clone: upgClone, heal: upgHeal, bronze: upgBronze, superspeed: upgSuperspeed,
+  firearrows: upgFirearrows, kingshadows: upgKingshadows, hypersonic: upgHypersonic,
+  tornado: upgTornado, darkness: upgDarkness, bigclones: upgBigclones,
+};
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -1457,10 +1479,15 @@ function Game() {
                   <button
                     key={`${uiState.wave}-${idx}-${u.id}`}
                     onClick={() => pickUpgrade(u)}
-                    className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition"
+                    className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition flex gap-3 items-start"
                   >
-                    <div className="font-bold text-[#ffe066]">{u.name}</div>
-                    <div className="text-sm text-white/70 mt-1">{u.desc}</div>
+                    {UPGRADE_ICONS[u.id] && (
+                      <img src={UPGRADE_ICONS[u.id]} alt={u.name} loading="lazy" width={56} height={56} className="w-14 h-14 object-contain shrink-0 drop-shadow-[0_0_8px_rgba(255,224,102,0.35)]" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#ffe066]">{u.name}</div>
+                      <div className="text-sm text-white/70 mt-1">{u.desc}</div>
+                    </div>
                   </button>
                 ))}
               </div>
