@@ -16,12 +16,19 @@ import upgHypersonic from "@/assets/upgrades/hypersonic.png";
 import upgTornado from "@/assets/upgrades/tornado.png";
 import upgDarkness from "@/assets/upgrades/darkness.png";
 import upgBigclones from "@/assets/upgrades/bigclones.png";
+import upgDragonbreath from "@/assets/upgrades/dragonbreath.png";
+import upgBigexplosion from "@/assets/upgrades/bigexplosion.png";
+import upgRadiation from "@/assets/upgrades/radiation.png";
+import upgBlackhole from "@/assets/upgrades/blackhole.png";
+import upgSlowtime from "@/assets/upgrades/slowtime.png";
 
 const UPGRADE_ICONS: Record<string, string> = {
   fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
   clone: upgClone, heal: upgHeal, bronze: upgBronze, superspeed: upgSuperspeed,
   firearrows: upgFirearrows, kingshadows: upgKingshadows, hypersonic: upgHypersonic,
   tornado: upgTornado, darkness: upgDarkness, bigclones: upgBigclones,
+  dragonbreath: upgDragonbreath, bigexplosion: upgBigexplosion,
+  radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
 };
 
 export const Route = createFileRoute("/")({
@@ -425,6 +432,14 @@ function Game() {
     darknessTime: 0,
     shadowAttackCd: 0,
     specialClones: [] as SpecialClone[],
+    // new instant/timed abilities
+    dragonBreathTime: 0,
+    dragonBreathCd: 0,
+    radiationWaves: [] as { r: number; maxR: number; hit: WeakSet<Enemy> }[],
+    blackholeTime: 0,
+    blackholePos: { x: W / 2, y: H / 2 } as Vec,
+    slowTime: 0,
+    explosionFx: [] as { x: number; y: number; r: number; maxR: number; life: number }[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
@@ -444,6 +459,9 @@ function Game() {
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
     s.shadowAttackCd = 0; s.specialClones = [];
+    s.dragonBreathTime = 0; s.dragonBreathCd = 0; s.radiationWaves = [];
+    s.blackholeTime = 0; s.blackholePos = { x: W / 2, y: H / 2 }; s.slowTime = 0;
+    s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
@@ -607,6 +625,55 @@ function Game() {
         spawn();
         return { id: "bigclones", name: "CLONES CLOOOONES!!!", undo: () => {}, redo: spawn };
       } },
+    { id: "dragonbreath", name: "Dragon Breath", desc: "Spit fire in a cone for 4s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.dragonBreathTime = Math.max(s.dragonBreathTime, 4); s.dragonBreathCd = 0; };
+        go();
+        return { id: "dragonbreath", name: "Dragon Breath", undo: () => {}, redo: go };
+      } },
+    { id: "bigexplosion", name: "Big Explosion", desc: "Massive blast: damage & push enemies away", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          const cx = s.player.pos.x, cy = s.player.pos.y;
+          s.explosionFx.push({ x: cx, y: cy, r: 10, maxR: 280, life: 0.6 });
+          for (const e of s.enemies) {
+            const d = dist(e.pos, s.player.pos);
+            if (d < 280) {
+              const isBoss = e.kind === "boss";
+              e.hp -= isBoss ? 220 : 600;
+              if (!isBoss) {
+                const dir = norm({ x: e.pos.x - cx, y: e.pos.y - cy });
+                e.pos.x += dir.x * 180;
+                e.pos.y += dir.y * 180;
+              }
+            }
+          }
+        };
+        go();
+        return { id: "bigexplosion", name: "Big Explosion", undo: () => {}, redo: go };
+      } },
+    { id: "radiation", name: "Radiation Waves", desc: "Release 5 expanding waves that damage enemies", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          for (let k = 0; k < 5; k++) {
+            s.radiationWaves.push({ r: -k * 60, maxR: 380, hit: new WeakSet<Enemy>() });
+          }
+        };
+        go();
+        return { id: "radiation", name: "Radiation Waves", undo: () => {}, redo: go };
+      } },
+    { id: "blackhole", name: "Blackhole", desc: "Spawn a blackhole that pulls enemies to the center for 6s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.blackholePos = { x: W / 2, y: H / 2 }; s.blackholeTime = Math.max(s.blackholeTime, 6); };
+        go();
+        return { id: "blackhole", name: "Blackhole", undo: () => {}, redo: go };
+      } },
+    { id: "slowtime", name: "Slowed-Down Time", desc: "Enemies move 45% slower for 8s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.slowTime = Math.max(s.slowTime, 8); };
+        go();
+        return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -754,6 +821,9 @@ function Game() {
       if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
       if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
+      if (s.dragonBreathTime > 0) s.dragonBreathTime = Math.max(0, s.dragonBreathTime - dt);
+      if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
+      if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
@@ -907,6 +977,66 @@ function Game() {
         }
       }
 
+      // Dragon Breath: cone of fire bullets toward aim
+      if (s.dragonBreathTime > 0) {
+        s.dragonBreathCd -= dt;
+        if (s.dragonBreathCd <= 0) {
+          const ang = Math.atan2(s.input.aim.y - s.player.pos.y, s.input.aim.x - s.player.pos.x);
+          for (let k = 0; k < 3; k++) {
+            const spread = (Math.random() - 0.5) * 0.7;
+            const a = ang + spread;
+            s.bullets.push({
+              pos: { x: s.player.pos.x, y: s.player.pos.y },
+              vel: { x: Math.cos(a) * 480, y: Math.sin(a) * 480 },
+              life: 0.55, dmg: s.stats.bulletDmg * 0.9, from: "player", color: "#ff7a18",
+            });
+          }
+          s.dragonBreathCd = 0.05;
+        }
+      }
+
+      // Radiation waves: expand, damage each enemy once
+      if (s.radiationWaves.length > 0) {
+        for (const w of s.radiationWaves) {
+          const prev = w.r;
+          w.r += 280 * dt;
+          if (prev < 0) continue;
+          for (const e of s.enemies) {
+            if (e.hp <= 0 || w.hit.has(e)) continue;
+            const d = dist(e.pos, s.player.pos);
+            if (d <= w.r && d >= w.r - 40) {
+              e.hp -= e.kind === "boss" ? 60 : 120;
+              w.hit.add(e);
+            }
+          }
+        }
+        s.radiationWaves = s.radiationWaves.filter(w => w.r < w.maxR);
+      }
+
+      // Blackhole: pull enemies, small damage
+      if (s.blackholeTime > 0) {
+        const bp = s.blackholePos;
+        for (const e of s.enemies) {
+          const d = dist(e.pos, bp);
+          if (d > 4) {
+            const dir = norm({ x: bp.x - e.pos.x, y: bp.y - e.pos.y });
+            const pull = e.kind === "boss" ? 80 : 260;
+            e.pos.x += dir.x * pull * dt;
+            e.pos.y += dir.y * pull * dt;
+          }
+          if (d < 30) e.hp -= (e.kind === "boss" ? 30 : 80) * dt;
+        }
+      }
+
+      // Explosion FX decay
+      if (s.explosionFx.length > 0) {
+        for (const fx of s.explosionFx) {
+          fx.life -= dt;
+          fx.r += (fx.maxR - fx.r) * Math.min(1, dt * 4);
+        }
+        s.explosionFx = s.explosionFx.filter(f => f.life > 0);
+      }
+
       // Spawn waves
       const isBossWave = !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
@@ -915,6 +1045,7 @@ function Game() {
 
       // Enemies
       const darkActive = s.darknessTime > 0;
+      const slowMul = s.slowTime > 0 ? 0.55 : 1;
       for (const e of s.enemies) {
         if (!frozen || e.kind === "boss") {
           if (darkActive && e.kind !== "boss") {
@@ -924,14 +1055,14 @@ function Game() {
               e.randomDir = { x: Math.cos(a), y: Math.sin(a) };
               e.randomTimer = 0.5 + Math.random() * 0.7;
             }
-            e.pos.x += e.randomDir.x * e.speed * 0.6 * dt;
-            e.pos.y += e.randomDir.y * e.speed * 0.6 * dt;
+            e.pos.x += e.randomDir.x * e.speed * 0.6 * slowMul * dt;
+            e.pos.y += e.randomDir.y * e.speed * 0.6 * slowMul * dt;
             e.pos.x = Math.max(20, Math.min(W - 20, e.pos.x));
             e.pos.y = Math.max(20, Math.min(H - 20, e.pos.y));
           } else {
             const d = norm({ x: s.player.pos.x - e.pos.x, y: s.player.pos.y - e.pos.y });
-            e.pos.x += d.x * e.speed * dt;
-            e.pos.y += d.y * e.speed * dt;
+            e.pos.x += d.x * e.speed * slowMul * dt;
+            e.pos.y += d.y * e.speed * slowMul * dt;
           }
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
@@ -1152,6 +1283,52 @@ function Game() {
         ctx.fillRect(0, 0, W, H);
         ctx.strokeStyle = "rgba(124,58,237,0.5)"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 180 + Math.sin(s.time * 3) * 6, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Slow time tint
+      if (s.slowTime > 0) {
+        ctx.fillStyle = "rgba(96,165,250,0.10)";
+        ctx.fillRect(0, 0, W, H);
+      }
+      // Radiation waves
+      for (const w of s.radiationWaves) {
+        if (w.r <= 0) continue;
+        const a = Math.max(0, 1 - w.r / w.maxR);
+        ctx.strokeStyle = `rgba(74,222,128,${0.7 * a})`;
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(190,242,100,${0.4 * a})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r - 18, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Explosion FX
+      for (const fx of s.explosionFx) {
+        const a = Math.max(0, fx.life / 0.6);
+        const grad = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, fx.r);
+        grad.addColorStop(0, `rgba(255,240,120,${0.85 * a})`);
+        grad.addColorStop(0.5, `rgba(255,140,40,${0.55 * a})`);
+        grad.addColorStop(1, "rgba(255,80,0,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,200,80,${a})`; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Blackhole
+      if (s.blackholeTime > 0) {
+        const bp = s.blackholePos;
+        const baseR = 36 + Math.sin(s.time * 6) * 3;
+        for (let i = 0; i < 4; i++) {
+          ctx.strokeStyle = `rgba(168,85,247,${0.35 - i * 0.07})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(bp.x, bp.y, baseR + 18 + i * 14, s.time * 2 + i, s.time * 2 + i + Math.PI * 1.5);
+          ctx.stroke();
+        }
+        const grad = ctx.createRadialGradient(bp.x, bp.y, 2, bp.x, bp.y, baseR);
+        grad.addColorStop(0, "rgba(0,0,0,1)");
+        grad.addColorStop(0.7, "rgba(40,0,60,0.95)");
+        grad.addColorStop(1, "rgba(168,85,247,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(bp.x, bp.y, baseR, 0, Math.PI * 2); ctx.fill();
       }
     };
 
