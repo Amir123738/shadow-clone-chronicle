@@ -609,6 +609,10 @@ function Game() {
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
       if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      if (s.kingShadowTime > 0) s.kingShadowTime = Math.max(0, s.kingShadowTime - dt);
+      if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
+      if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
+      if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
