@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -300,6 +301,8 @@ function Game() {
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelMsg, setWheelMsg] = useState<string | null>(null);
+  const [wheelRevealOpen, setWheelRevealOpen] = useState(false);
+  const [wheelRevealReward, setWheelRevealReward] = useState<WheelReward | null>(null);
 
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
@@ -312,11 +315,15 @@ function Game() {
       const target = 360 * 6 + (360 - (idx * slice + slice / 2));
       setWheelSpinning(true);
       setWheelMsg(null);
+      setWheelRevealOpen(false);
       setWheelAngle((prev) => prev + target);
       window.setTimeout(() => {
         setShop((cur) => {
           const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
           setWheelMsg(msg);
+          setWheelRevealReward(reward);
+          setWheelRevealOpen(true);
+          toast.success(msg, { duration: 4000 });
           return next;
         });
         setWheelSpinning(false);
@@ -1443,6 +1450,29 @@ function Game() {
                 Play Again
               </button>
             </Overlay>
+          )}
+
+          {wheelRevealOpen && wheelRevealReward && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-[fade-in_0.3s_ease-out]">
+              <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]">
+                <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse" style={{ background: `radial-gradient(circle, ${wheelRevealReward.color} 0%, transparent 70%)` }} />
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-white/60">You Won</div>
+                <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: wheelRevealReward.color, textShadow: `0 0 30px ${wheelRevealReward.color}88, 0 0 60px ${wheelRevealReward.color}44` }}>
+                  {wheelRevealReward.label}
+                </div>
+                <div className="flex gap-2 mb-8">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: wheelRevealReward.color, animationDelay: `${i * 0.15}s`, animationDuration: '1.2s' }} />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setWheelRevealOpen(false)}
+                  className="px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                >
+                  Claim Reward
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
