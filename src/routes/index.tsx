@@ -607,9 +607,9 @@ function Game() {
               <h2 className="text-xl font-bold mb-1">Wave {uiState.wave} cleared!</h2>
               <p className="text-white/60 text-sm mb-4">Pick an upgrade</p>
               <div className="grid md:grid-cols-3 gap-3 w-full max-w-3xl px-4">
-                {uiState.upgrades.map((u) => (
+                {uiState.upgrades.map((u, idx) => (
                   <button
-                    key={u.id + Math.random()}
+                    key={`${uiState.wave}-${idx}-${u.id}`}
                     onClick={() => pickUpgrade(u)}
                     className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition"
                   >
