@@ -301,6 +301,8 @@ function Game() {
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
+    s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
+    s.shadowAttackCd = 0; s.specialClones = [];
     s.lastWaveEnemyCount = 0;
   }, []);
 
