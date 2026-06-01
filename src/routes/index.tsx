@@ -582,10 +582,25 @@ function Game() {
       for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
       for (const p of s.pickups) {
-        ctx.fillStyle = p.kind === "xp" ? "#7cf24a" : "#ffd54a";
-        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 4, 0, Math.PI * 2); ctx.fill();
+        if (p.kind === "shadow") {
+          ctx.fillStyle = "#b388ff";
+          ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.font = "bold 7px system-ui"; ctx.textAlign = "center";
+          ctx.fillText("S", p.pos.x, p.pos.y + 2.5);
+        } else {
+          ctx.fillStyle = p.kind === "xp" ? "#7cf24a" : "#ffd54a";
+          ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 4, 0, Math.PI * 2); ctx.fill();
+        }
       }
 
+      const skin = SKINS.find(sk => sk.id === shopRef.current.selected) ?? SKINS[0];
+      let skinColor = skin.color;
+      let skinGlow = skin.glow ?? "rgba(179,136,255,0.55)";
+      if (skin.rainbow) {
+        const hue = (s.time * 120) % 360;
+        skinColor = `hsl(${hue},90%,65%)`;
+        skinGlow = `hsla(${hue},90%,65%,0.55)`;
+      }
       for (const cl of s.clones) {
         if (cl.healer) {
           const px = s.player.pos.x, py = s.player.pos.y - 26;
@@ -595,9 +610,9 @@ function Game() {
           ctx.fillText("+", px, py + 4);
         } else {
           const f = cl.frames[cl.idx]; if (!f) continue;
-          ctx.fillStyle = "rgba(179,136,255,0.55)";
+          ctx.fillStyle = skinGlow;
           ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y, 12, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = "rgba(179,136,255,0.9)"; ctx.lineWidth = 2;
+          ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
           const ang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
           ctx.lineTo(f.pos.x + Math.cos(ang) * 18, f.pos.y + Math.sin(ang) * 18); ctx.stroke();
