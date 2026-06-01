@@ -79,6 +79,7 @@ function Game() {
     enemiesLeft: number; betweenWaves: boolean; upgrades: Upgrade[];
     blur: number; frozen: boolean; stolen: { name: string; time: number } | null;
     bossName: string | null;
+    shadowCoins: number;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -86,7 +87,13 @@ function Game() {
     coins: 0, time: 0, cloneTimer: CLONE_INTERVAL, clones: 0,
     enemiesLeft: 0, betweenWaves: false, upgrades: [],
     blur: 0, frozen: false, stolen: null, bossName: null,
+    shadowCoins: 0,
   });
+
+  const [shop, setShop] = useState<ShopSave>(() => loadShop());
+  const [shopOpen, setShopOpen] = useState(false);
+  const shopRef = useRef(shop);
+  useEffect(() => { shopRef.current = shop; saveShop(shop); }, [shop]);
 
   const stateRef = useRef({
     player: { pos: { x: W / 2, y: H / 2 } as Vec, r: 14, hp: 100, maxHp: 100 },
