@@ -90,10 +90,12 @@ function Game() {
     shadowCoins: 0,
   });
 
-  const [shop, setShop] = useState<ShopSave>(() => loadShop());
+  const [shop, setShop] = useState<ShopSave>({ shadowCoins: 0, owned: ["violet"], selected: "violet" });
   const [shopOpen, setShopOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
-  useEffect(() => { shopRef.current = shop; saveShop(shop); }, [shop]);
+  useEffect(() => { setShop(loadShop()); setHydrated(true); }, []);
+  useEffect(() => { shopRef.current = shop; if (hydrated) saveShop(shop); }, [shop, hydrated]);
 
   const stateRef = useRef({
     player: { pos: { x: W / 2, y: H / 2 } as Vec, r: 14, hp: 100, maxHp: 100 },
