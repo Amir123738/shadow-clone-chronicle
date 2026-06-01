@@ -305,33 +305,50 @@ function Game() {
   const [wheelRevealReward, setWheelRevealReward] = useState<WheelReward | null>(null);
   const wheelTimeoutRef = useRef<number | null>(null);
 
+  const finishSpin = useCallback((reward: WheelReward) => {
+    setShop((cur) => {
+      const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
+      setWheelMsg(msg);
+      setWheelRevealReward(reward);
+      setWheelRevealOpen(true);
+      toast.success(msg, { duration: 4000 });
+      return next;
+    });
+    setWheelSpinning(false);
+  }, []);
+
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
     setShop((sv) => {
       if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return sv; }
       const reward = rollWheel();
       const idx = WHEEL_REWARDS.indexOf(reward);
-      // each slice = 360/N; rotate so chosen slice lands at pointer (top)
       const slice = 360 / WHEEL_REWARDS.length;
       const target = 360 * 6 + (360 - (idx * slice + slice / 2));
       setWheelSpinning(true);
       setWheelMsg(null);
       setWheelRevealOpen(false);
       setWheelAngle((prev) => prev + target);
-      window.setTimeout(() => {
-        setShop((cur) => {
-          const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
-          setWheelMsg(msg);
-          setWheelRevealReward(reward);
-          setWheelRevealOpen(true);
-          toast.success(msg, { duration: 4000 });
-          return next;
-        });
-        setWheelSpinning(false);
+      wheelTimeoutRef.current = window.setTimeout(() => {
+        finishSpin(reward);
       }, 4200);
       return { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
     });
-  }, [wheelSpinning]);
+  }, [wheelSpinning, finishSpin]);
+
+  const skipWheel = useCallback(() => {
+    if (wheelTimeoutRef.current) {
+      window.clearTimeout(wheelTimeoutRef.current);
+      wheelTimeoutRef.current = null;
+    }
+    setWheelAngle((prev) => {
+      // Snap to nearest multiple of 360 so the wheel lands cleanly
+      const mod = prev % 360;
+      return prev - mod;
+    });
+    // Reconstruct reward from current wheel angle state is tricky;
+    // instead, store pending reward in a ref.
+  }, []);
 
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
