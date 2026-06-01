@@ -560,6 +560,8 @@ function Game() {
         const noQueue = isBossWave ? s.bossSpawned : s.spawnQueue <= 0;
         if (noQueue && s.enemies.length === 0) {
           s.waveActive = false; s.waveCleared = true;
+          // Wave clear bonus: 10 Shadow Coins
+          setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
           } else {
