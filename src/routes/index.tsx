@@ -330,7 +330,9 @@ function Game() {
       setWheelMsg(null);
       setWheelRevealOpen(false);
       setWheelAngle((prev) => prev + target);
+      pendingRewardRef.current = reward;
       wheelTimeoutRef.current = window.setTimeout(() => {
+        pendingRewardRef.current = null;
         finishSpin(reward);
       }, 4200);
       return { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
@@ -342,14 +344,10 @@ function Game() {
       window.clearTimeout(wheelTimeoutRef.current);
       wheelTimeoutRef.current = null;
     }
-    setWheelAngle((prev) => {
-      // Snap to nearest multiple of 360 so the wheel lands cleanly
-      const mod = prev % 360;
-      return prev - mod;
-    });
-    // Reconstruct reward from current wheel angle state is tricky;
-    // instead, store pending reward in a ref.
-  }, []);
+    const reward = pendingRewardRef.current;
+    pendingRewardRef.current = null;
+    if (reward) finishSpin(reward);
+  }, [finishSpin]);
 
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
