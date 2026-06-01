@@ -821,6 +821,9 @@ function Game() {
       if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
       if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
+      if (s.dragonBreathTime > 0) s.dragonBreathTime = Math.max(0, s.dragonBreathTime - dt);
+      if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
+      if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
