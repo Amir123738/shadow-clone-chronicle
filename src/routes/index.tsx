@@ -690,6 +690,7 @@ function Game() {
           blur: s.blurTime, frozen: s.freezeTime > 0,
           stolen: s.stolenUpgrade ? { name: s.stolenUpgrade.name, time: s.stolenTimer } : null,
           bossName: boss ? (BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
+          shadowCoins: shopRef.current.shadowCoins,
         };
       });
       raf = requestAnimationFrame(loop);
