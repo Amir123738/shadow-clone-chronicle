@@ -294,7 +294,7 @@ function Game() {
     shadowCoins: 0,
   });
 
-  const [shop, setShop] = useState<ShopSave>({ shadowCoins: 0, owned: ["violet"], selected: "violet" });
+  const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
   const [shopOpen, setShopOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
