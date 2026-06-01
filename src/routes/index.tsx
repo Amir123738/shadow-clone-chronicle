@@ -25,8 +25,31 @@ type Enemy = {
   kind: "grunt" | "fast" | "tank" | "boss"; bossId?: BossId;
   abilityCds?: Record<string, number>; abilityFlags?: Record<string, boolean>;
 };
-type Pickup = { pos: Vec; kind: "xp" | "coin"; value: number };
+type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
+type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean };
+
+const SKINS: Skin[] = [
+  { id: "violet",   name: "Violet Echo",      price: 0,   color: "#b388ff", glow: "rgba(179,136,255,0.55)" },
+  { id: "crimson",  name: "Crimson Wraith",   price: 50,  color: "#ff5d7a", glow: "rgba(255,93,122,0.55)" },
+  { id: "emerald",  name: "Emerald Phantom",  price: 120, color: "#4ade80", glow: "rgba(74,222,128,0.55)" },
+  { id: "azure",    name: "Azure Spectre",    price: 200, color: "#38bdf8", glow: "rgba(56,189,248,0.55)" },
+  { id: "gold",     name: "Golden Specter",   price: 350, color: "#ffd54a", glow: "rgba(255,213,74,0.65)" },
+  { id: "inferno",  name: "Inferno Echo",     price: 550, color: "#ff7a18", glow: "rgba(255,122,24,0.75)" },
+  { id: "rainbow",  name: "Rainbow Mirage",   price: 900, color: "#ff5dff", glow: "rgba(255,93,255,0.55)", rainbow: true },
+];
+
+const SHOP_KEY = "scs_shop_v1";
+type ShopSave = { shadowCoins: number; owned: string[]; selected: string };
+function loadShop(): ShopSave {
+  if (typeof window === "undefined") return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+  try {
+    const raw = localStorage.getItem(SHOP_KEY);
+    if (raw) { const v = JSON.parse(raw); if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet" }; }
+  } catch {}
+  return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+}
+function saveShop(v: ShopSave) { try { localStorage.setItem(SHOP_KEY, JSON.stringify(v)); } catch {} }
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
