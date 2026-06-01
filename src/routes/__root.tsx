@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Shadow Clone Survival." },
+      { name: "description", content: "This game is survival game where you need to destroy enemies and clones will spawn. Might Cause Chaos:)|Rus: это игра выживание где ты должен побеждать врагов." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Shadow Clone Survival." },
+      { property: "og:description", content: "This game is survival game where you need to destroy enemies and clones will spawn. Might Cause Chaos:)|Rus: это игра выживание где ты должен побеждать врагов." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Shadow Clone Survival." },
+      { name: "twitter:description", content: "This game is survival game where you need to destroy enemies and clones will spawn. Might Cause Chaos:)|Rus: это игра выживание где ты должен побеждать врагов." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/465e7e63-f858-41a8-ac44-6e66cf077f58/id-preview-361ae865--a2e4d141-907b-4510-837a-213a13b5f252.lovable.app-1780300569817.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/465e7e63-f858-41a8-ac44-6e66cf077f58/id-preview-361ae865--a2e4d141-907b-4510-837a-213a13b5f252.lovable.app-1780300569817.png" },
     ],
     links: [
       {
