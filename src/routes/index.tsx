@@ -750,6 +750,12 @@ function Game() {
 
           {!uiState.started && !shopOpen && (
             <Overlay>
+              {uiState.wave > 0 && (
+                <div className="text-center mb-4">
+                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">You fell.</h2>
+                  <p className="text-white/70 text-sm">Wave reached: {uiState.wave} · Score: {uiState.score}</p>
+                </div>
+              )}
               <h2 className="text-2xl font-bold mb-2">Ready to survive?</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
