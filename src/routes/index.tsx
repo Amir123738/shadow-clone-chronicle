@@ -304,6 +304,7 @@ function Game() {
   const [wheelRevealOpen, setWheelRevealOpen] = useState(false);
   const [wheelRevealReward, setWheelRevealReward] = useState<WheelReward | null>(null);
   const wheelTimeoutRef = useRef<number | null>(null);
+  const pendingRewardRef = useRef<WheelReward | null>(null);
 
   const finishSpin = useCallback((reward: WheelReward) => {
     setShop((cur) => {
