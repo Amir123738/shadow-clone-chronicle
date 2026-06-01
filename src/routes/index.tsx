@@ -135,6 +135,11 @@ function Game() {
     pullTime: 0,
     stolenUpgrade: null as AppliedUpgrade | null,
     stolenTimer: 0,
+    // player buffs
+    shieldTime: 0,
+    speedBoostTime: 0,
+    fireArrowTime: 0,
+    fireTrail: [] as { x: number; y: number; life: number }[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
