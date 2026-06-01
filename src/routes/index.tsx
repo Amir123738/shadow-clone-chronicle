@@ -176,17 +176,83 @@ const SKINS: Skin[] = [
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 ];
 
-const SHOP_KEY = "scs_shop_v1";
-type ShopSave = { shadowCoins: number; owned: string[]; selected: string };
+type Accessory = { id: string; name: string; color: string; glow: string };
+const ACCESSORIES: Accessory[] = [
+  { id: "white_hat", name: "White Hat", color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+];
+
+const SHOP_KEY = "scs_shop_v2";
+type ShopSave = { shadowCoins: number; owned: string[]; selected: string; accessories: string[]; equippedAccessory: string | null };
+const DEFAULT_SHOP: ShopSave = { shadowCoins: 0, owned: ["violet"], selected: "violet", accessories: [], equippedAccessory: null };
 function loadShop(): ShopSave {
-  if (typeof window === "undefined") return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+  if (typeof window === "undefined") return { ...DEFAULT_SHOP };
   try {
     const raw = localStorage.getItem(SHOP_KEY);
-    if (raw) { const v = JSON.parse(raw); if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet" }; }
+    if (raw) {
+      const v = JSON.parse(raw);
+      if (v && Array.isArray(v.owned)) return {
+        shadowCoins: v.shadowCoins || 0,
+        owned: v.owned,
+        selected: v.selected || "violet",
+        accessories: Array.isArray(v.accessories) ? v.accessories : [],
+        equippedAccessory: v.equippedAccessory ?? null,
+      };
+    }
+    // migrate legacy
+    const legacy = localStorage.getItem("scs_shop_v1");
+    if (legacy) {
+      const v = JSON.parse(legacy);
+      if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null };
+    }
   } catch {}
-  return { shadowCoins: 0, owned: ["violet"], selected: "violet" };
+  return { ...DEFAULT_SHOP };
 }
 function saveShop(v: ShopSave) { try { localStorage.setItem(SHOP_KEY, JSON.stringify(v)); } catch {} }
+
+type WheelReward = { id: string; label: string; color: string; weight: number; apply: (s: ShopSave) => { next: ShopSave; msg: string } };
+const SPIN_COST = 1000;
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+const WHEEL_REWARDS: WheelReward[] = [
+  { id: "c250",  label: "250 ◆",   color: "#9ca3af", weight: 50, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 250 }, msg: "+250 Shadow Coins" }) },
+  { id: "c500",  label: "500 ◆",   color: "#60a5fa", weight: 25, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 500 }, msg: "+500 Shadow Coins" }) },
+  { id: "hat",   label: "White Hat", color: "#ffffff", weight: 10, apply: (s) => {
+      if (s.accessories.includes("white_hat")) return { next: { ...s, shadowCoins: s.shadowCoins + 500 }, msg: "White Hat (duplicate) → +500 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "white_hat"] }, msg: "Unlocked accessory: White Hat!" };
+    } },
+  { id: "c1000", label: "1000 ◆",  color: "#a855f7", weight: 5,  apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 1000 }, msg: "+1000 Shadow Coins" }) },
+  { id: "leg",   label: "Legendary Skin", color: "#fde68a", weight: 5, apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "legendary" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 5000 }, msg: "All Legendaries owned → +5000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `Legendary Skin: ${sk.name}!` };
+    } },
+  { id: "2epic", label: "2 Epic Skins", color: "#ec4899", weight: 4, apply: (s) => {
+      const owned = new Set(s.owned);
+      const pool = SKINS.filter(sk => sk.rarity === "epic" && !owned.has(sk.id));
+      const picks: string[] = [];
+      const got: string[] = [];
+      let bonus = 0;
+      for (let i = 0; i < 2; i++) {
+        const avail = pool.filter(p => !picks.includes(p.id));
+        if (avail.length === 0) { bonus += 2500; continue; }
+        const sk = pickRandom(avail); picks.push(sk.id); got.push(sk.name);
+      }
+      return { next: { ...s, owned: [...s.owned, ...picks], shadowCoins: s.shadowCoins + bonus }, msg: got.length ? `Epic Skins: ${got.join(", ")}${bonus?` +${bonus} ◆`:""}` : `All Epics owned → +${bonus} ◆` };
+    } },
+  { id: "rain",  label: "Rainbow Skin", color: "#ff5dff", weight: 0.5, apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "rainbow" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 50000 }, msg: "All Rainbows owned → +50000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `RAINBOW Skin: ${sk.name}!` };
+    } },
+  { id: "c10000", label: "10000 ◆", color: "#ffe066", weight: 0.5, apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 10000 }, msg: "JACKPOT! +10000 Shadow Coins" }) },
+];
+const WHEEL_TOTAL_WEIGHT = WHEEL_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollWheel(): WheelReward {
+  let r = Math.random() * WHEEL_TOTAL_WEIGHT;
+  for (const w of WHEEL_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return WHEEL_REWARDS[0];
+}
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
