@@ -990,6 +990,28 @@ function Game() {
         ctx.strokeStyle = "rgba(160,0,255,0.6)"; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 30 + s.pullTime * 30, 0, Math.PI * 2); ctx.stroke();
       }
+      // Tornado
+      if (s.tornadoTime > 0) {
+        for (let i = 0; i < 4; i++) {
+          const baseA = s.time * 7 + i * (Math.PI / 2);
+          const rad = 70 + Math.sin(s.time * 4 + i) * 18;
+          ctx.strokeStyle = `rgba(186,230,253,${0.55 - i * 0.1})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, rad, baseA, baseA + Math.PI * 1.3); ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(125,211,252,0.08)";
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 100, 0, Math.PI * 2); ctx.fill();
+      }
+      // Darkness aura
+      if (s.darknessTime > 0) {
+        const grad = ctx.createRadialGradient(p.pos.x, p.pos.y, 20, p.pos.x, p.pos.y, 320);
+        grad.addColorStop(0, "rgba(124,58,237,0.0)");
+        grad.addColorStop(1, "rgba(10,5,30,0.55)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(124,58,237,0.5)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, 180 + Math.sin(s.time * 3) * 6, 0, Math.PI * 2); ctx.stroke();
+      }
     };
 
     const loop = (now: number) => {
