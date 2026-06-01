@@ -625,6 +625,55 @@ function Game() {
         spawn();
         return { id: "bigclones", name: "CLONES CLOOOONES!!!", undo: () => {}, redo: spawn };
       } },
+    { id: "dragonbreath", name: "Dragon Breath", desc: "Spit fire in a cone for 4s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.dragonBreathTime = Math.max(s.dragonBreathTime, 4); s.dragonBreathCd = 0; };
+        go();
+        return { id: "dragonbreath", name: "Dragon Breath", undo: () => {}, redo: go };
+      } },
+    { id: "bigexplosion", name: "Big Explosion", desc: "Massive blast: damage & push enemies away", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          const cx = s.player.pos.x, cy = s.player.pos.y;
+          s.explosionFx.push({ x: cx, y: cy, r: 10, maxR: 280, life: 0.6 });
+          for (const e of s.enemies) {
+            const d = dist(e.pos, s.player.pos);
+            if (d < 280) {
+              const isBoss = e.kind === "boss";
+              e.hp -= isBoss ? 220 : 600;
+              if (!isBoss) {
+                const dir = norm({ x: e.pos.x - cx, y: e.pos.y - cy });
+                e.pos.x += dir.x * 180;
+                e.pos.y += dir.y * 180;
+              }
+            }
+          }
+        };
+        go();
+        return { id: "bigexplosion", name: "Big Explosion", undo: () => {}, redo: go };
+      } },
+    { id: "radiation", name: "Radiation Waves", desc: "Release 5 expanding waves that damage enemies", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          for (let k = 0; k < 5; k++) {
+            s.radiationWaves.push({ r: -k * 60, maxR: 380, hit: new WeakSet<Enemy>() });
+          }
+        };
+        go();
+        return { id: "radiation", name: "Radiation Waves", undo: () => {}, redo: go };
+      } },
+    { id: "blackhole", name: "Blackhole", desc: "Spawn a blackhole that pulls enemies to the center for 6s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.blackholePos = { x: W / 2, y: H / 2 }; s.blackholeTime = Math.max(s.blackholeTime, 6); };
+        go();
+        return { id: "blackhole", name: "Blackhole", undo: () => {}, redo: go };
+      } },
+    { id: "slowtime", name: "Slowed-Down Time", desc: "Enemies move 45% slower for 8s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.slowTime = Math.max(s.slowTime, 8); };
+        go();
+        return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
