@@ -838,16 +838,6 @@ function Game() {
             </Overlay>
           )}
 
-          {uiState.over && (
-            <Overlay>
-              <h2 className="text-3xl font-black text-[#ff5d5d] mb-2">You fell.</h2>
-              <p className="text-white/70 mb-1">Wave reached: {uiState.wave}</p>
-              <p className="text-white/70 mb-4">Final score: {uiState.score}</p>
-              <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                Play Again
-              </button>
-            </Overlay>
-          )}
 
           {uiState.won && (
             <Overlay>
