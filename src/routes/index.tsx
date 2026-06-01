@@ -532,7 +532,7 @@ function Game() {
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
         if (dist(e.pos, s.player.pos) < e.r + s.player.r) {
-          s.player.hp -= e.dmg * dt;
+          s.player.hp -= e.dmg * dt * (s.shieldTime > 0 ? 0.55 : 1);
         }
       }
 
