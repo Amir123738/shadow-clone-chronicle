@@ -123,9 +123,18 @@ function Game() {
     const pos = edgeSpawn();
     s.enemies.push({
       pos, vel: { x: 0, y: 0 },
-      hp: 1200, maxHp: 1200, r: 38, speed: 70, dmg: 25,
-      color: "#ff2e88", xp: 50, coin: 25, kind: "boss",
+      hp: 6000, maxHp: 6000, r: 48, speed: 110, dmg: 45,
+      color: "#ff2e88", xp: 120, coin: 80, kind: "boss",
     });
+    // elite guards for nightmare difficulty
+    for (let k = 0; k < 6; k++) {
+      const gp = edgeSpawn();
+      s.enemies.push({
+        pos: gp, vel: { x: 0, y: 0 },
+        hp: 140, maxHp: 140, r: 14, speed: 200,
+        dmg: 14, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+      });
+    }
     s.bossSpawned = true;
   }
 
