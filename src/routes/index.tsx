@@ -676,6 +676,9 @@ function Game() {
 
       const s = stateRef.current;
       setUiState((u) => {
+        if (s.over) {
+          return { ...u, started: false, over: false, wave: s.wave, score: s.score };
+        }
         const upg = s.pendingUpgrades ?? u.upgrades;
         const boss = s.enemies.find(e => e.kind === "boss");
         return {
@@ -747,6 +750,12 @@ function Game() {
 
           {!uiState.started && !shopOpen && (
             <Overlay>
+              {uiState.wave > 0 && (
+                <div className="text-center mb-4">
+                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">You fell.</h2>
+                  <p className="text-white/70 text-sm">Wave reached: {uiState.wave} · Score: {uiState.score}</p>
+                </div>
+              )}
               <h2 className="text-2xl font-bold mb-2">Ready to survive?</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
@@ -829,16 +838,6 @@ function Game() {
             </Overlay>
           )}
 
-          {uiState.over && (
-            <Overlay>
-              <h2 className="text-3xl font-black text-[#ff5d5d] mb-2">You fell.</h2>
-              <p className="text-white/70 mb-1">Wave reached: {uiState.wave}</p>
-              <p className="text-white/70 mb-4">Final score: {uiState.score}</p>
-              <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                Play Again
-              </button>
-            </Overlay>
-          )}
 
           {uiState.won && (
             <Overlay>
