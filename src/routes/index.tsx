@@ -163,21 +163,21 @@ function Game() {
 
   function spawnGrunt() {
     const s = stateRef.current;
-    const waveBoost = 1 + s.wave * 0.08;
+    const waveBoost = 1 + s.wave * 0.15;
     const r = Math.random();
     let e: Enemy;
     if (r < 0.55) {
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 30 * waveBoost, maxHp: 30 * waveBoost, r: 14, speed: 95, baseSpeed: 95,
-        dmg: 10, baseDmg: 10, color: "#7cf24a", xp: 1, coin: 1, kind: "grunt" };
+        hp: 55 * waveBoost, maxHp: 55 * waveBoost, r: 14, speed: 110 + s.wave * 1.2, baseSpeed: 110 + s.wave * 1.2,
+        dmg: 16 + s.wave * 0.4, baseDmg: 16 + s.wave * 0.4, color: "#7cf24a", xp: 1, coin: 1, kind: "grunt" };
     } else if (r < 0.85) {
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 18 * waveBoost, maxHp: 18 * waveBoost, r: 10, speed: 170, baseSpeed: 170,
-        dmg: 8, baseDmg: 8, color: "#4ad6ff", xp: 2, coin: 1, kind: "fast" };
+        hp: 32 * waveBoost, maxHp: 32 * waveBoost, r: 10, speed: 195 + s.wave * 1.5, baseSpeed: 195 + s.wave * 1.5,
+        dmg: 13 + s.wave * 0.3, baseDmg: 13 + s.wave * 0.3, color: "#4ad6ff", xp: 2, coin: 1, kind: "fast" };
     } else {
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 90 * waveBoost, maxHp: 90 * waveBoost, r: 20, speed: 60, baseSpeed: 60,
-        dmg: 18, baseDmg: 18, color: "#ff8a3d", xp: 3, coin: 3, kind: "tank" };
+        hp: 170 * waveBoost, maxHp: 170 * waveBoost, r: 20, speed: 75 + s.wave * 0.6, baseSpeed: 75 + s.wave * 0.6,
+        dmg: 28 + s.wave * 0.6, baseDmg: 28 + s.wave * 0.6, color: "#ff8a3d", xp: 3, coin: 3, kind: "tank" };
     }
     s.enemies.push(e);
   }
