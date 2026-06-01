@@ -389,7 +389,7 @@ function Game() {
         cds.freeze -= dt;
         if (cds.freeze <= 0) {
           s.freezeTime = isPP ? 3 : 2.5;
-          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6);
+          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6) * (s.shieldTime > 0 ? 0.55 : 1);
           cds.freeze = isPP ? 9 : id === "final" ? 12 : 15;
         }
       }
