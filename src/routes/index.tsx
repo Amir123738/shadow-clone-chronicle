@@ -200,8 +200,8 @@ function Game() {
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 140, maxHp: 140, r: 14, speed: 200, baseSpeed: 200,
-        dmg: 14, baseDmg: 14, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+        hp: 280, maxHp: 280, r: 14, speed: 230, baseSpeed: 230,
+        dmg: 24, baseDmg: 24, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
       });
     }
     s.bossSpawned = true;
