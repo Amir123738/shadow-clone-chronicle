@@ -916,6 +916,22 @@ function Game() {
         }
       }
 
+      // Special clones (electric / big)
+      for (const sc of s.specialClones) {
+        const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
+        const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
+        const isElec = sc.kind === "electric";
+        const r = isElec ? 11 : 22;
+        ctx.fillStyle = isElec ? "rgba(125,249,255,0.45)" : "rgba(255,102,255,0.45)";
+        ctx.beginPath(); ctx.arc(sx, sy, r + 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = isElec ? "#7df9ff" : "#ff66ff";
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = isElec ? "#e0fbff" : "#ffd6ff"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, sy, r + 2, 0, Math.PI * 2); ctx.stroke();
+      }
+
+
+
       for (const e of s.enemies) {
         ctx.fillStyle = e.color;
         ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, e.r, 0, Math.PI * 2); ctx.fill();
