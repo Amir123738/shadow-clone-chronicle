@@ -676,6 +676,9 @@ function Game() {
 
       const s = stateRef.current;
       setUiState((u) => {
+        if (s.over) {
+          return { ...u, started: false, over: false, wave: s.wave, score: s.score };
+        }
         const upg = s.pendingUpgrades ?? u.upgrades;
         const boss = s.enemies.find(e => e.kind === "boss");
         return {
