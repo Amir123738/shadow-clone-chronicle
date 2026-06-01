@@ -719,6 +719,7 @@ function Game() {
           <Stat label="Wave" value={`${uiState.wave}/${TOTAL_WAVES}`} />
           <Stat label="Score" value={uiState.score.toString()} />
           <Stat label="Coins" value={uiState.coins.toString()} />
+          <Stat label="Shadow ◆" value={uiState.shadowCoins.toString()} />
           <Stat label="Lvl" value={uiState.level.toString()} />
           <Stat label="Clones" value={uiState.clones.toString()} />
           <Stat label="Next Clone" value={`${uiState.cloneTimer.toFixed(1)}s`} />
