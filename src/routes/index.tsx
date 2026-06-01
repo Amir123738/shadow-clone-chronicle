@@ -743,15 +743,68 @@ function Game() {
             style={{ aspectRatio: `${W}/${H}`, filter: uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : undefined, transition: "filter 0.2s" }}
           />
 
-          {!uiState.started && (
+          {!uiState.started && !shopOpen && (
             <Overlay>
               <h2 className="text-2xl font-bold mb-2">Ready to survive?</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
               </p>
-              <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                Start Game
-              </button>
+              <div className="flex gap-3">
+                <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+                  Start Game
+                </button>
+                <button onClick={() => setShopOpen(true)} className="px-6 py-3 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition">
+                  Shop ◆ {shop.shadowCoins}
+                </button>
+              </div>
+            </Overlay>
+          )}
+
+          {shopOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#b388ff] to-[#ffe066] bg-clip-text text-transparent">Shadow Shop</h2>
+                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                </div>
+                <p className="text-white/60 text-xs mb-3">Earn Shadow Coins by defeating enemies (bosses drop big). Skins change your shadow clones' look.</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {SKINS.map((sk) => {
+                    const owned = shop.owned.includes(sk.id);
+                    const selected = shop.selected === sk.id;
+                    const canBuy = !owned && shop.shadowCoins >= sk.price;
+                    return (
+                      <div key={sk.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
+                          <div className="font-bold text-sm">{sk.name}</div>
+                        </div>
+                        <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price}`}</div>
+                        {owned ? (
+                          <button
+                            disabled={selected}
+                            onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
+                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
+                          >
+                            {selected ? "Equipped" : "Equip"}
+                          </button>
+                        ) : (
+                          <button
+                            disabled={!canBuy}
+                            onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
+                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
+                          >
+                            {canBuy ? "Buy & Equip" : `Need ◆${sk.price - shop.shadowCoins}`}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                </div>
+              </div>
             </Overlay>
           )}
 
