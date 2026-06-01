@@ -432,6 +432,14 @@ function Game() {
     darknessTime: 0,
     shadowAttackCd: 0,
     specialClones: [] as SpecialClone[],
+    // new instant/timed abilities
+    dragonBreathTime: 0,
+    dragonBreathCd: 0,
+    radiationWaves: [] as { r: number; maxR: number; hit: WeakSet<Enemy> }[],
+    blackholeTime: 0,
+    blackholePos: { x: W / 2, y: H / 2 } as Vec,
+    slowTime: 0,
+    explosionFx: [] as { x: number; y: number; r: number; maxR: number; life: number }[],
     // wave history for revive
     lastWaveEnemyCount: 0,
   });
