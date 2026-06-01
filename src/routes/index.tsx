@@ -220,7 +220,7 @@ function Game() {
       spawnBossFor(bossId);
       s.lastWaveEnemyCount = 1;
     } else {
-      const count = 6 + Math.floor(s.wave * 1.4);
+      const count = 8 + Math.floor(s.wave * 2.2);
       s.spawnQueue = count;
       s.lastWaveEnemyCount = count;
     }
