@@ -303,6 +303,7 @@ function Game() {
   const [wheelMsg, setWheelMsg] = useState<string | null>(null);
   const [wheelRevealOpen, setWheelRevealOpen] = useState(false);
   const [wheelRevealReward, setWheelRevealReward] = useState<WheelReward | null>(null);
+  const wheelTimeoutRef = useRef<number | null>(null);
 
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
