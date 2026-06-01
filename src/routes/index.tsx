@@ -27,16 +27,151 @@ type Enemy = {
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
-type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean };
+type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova";
+type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
+
+const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova"];
+const RARITY_META: Record<Rarity, { label: string; color: string }> = {
+  common:       { label: "Common",        color: "#9ca3af" },
+  rare:         { label: "Rare",          color: "#38bdf8" },
+  superrare:    { label: "Super Rare",    color: "#22d3ee" },
+  epic:         { label: "Epic",          color: "#a78bfa" },
+  mythical:     { label: "Mythical",      color: "#f472b6" },
+  legendary:    { label: "Legendary",     color: "#ffd54a" },
+  secret:       { label: "Secret",        color: "#6b7280" },
+  ultra:        { label: "Ultra",         color: "#ff7a18" },
+  diamond:      { label: "Diamond",       color: "#7dd3fc" },
+  rainbow:      { label: "Rainbow",       color: "#ff5dff" },
+  prismatic:    { label: "Prismatic",     color: "#c084fc" },
+  vip:          { label: "VIP",           color: "#fde047" },
+  nebula:       { label: "Nebula",        color: "#818cf8" },
+  plantiumplus: { label: "Plantium Plus", color: "#a3e635" },
+  cosmetic:     { label: "Cosmetic",      color: "#f0abfc" },
+  ultranova:    { label: "Ultra Nova",    color: "#fff" },
+};
 
 const SKINS: Skin[] = [
-  { id: "violet",   name: "Violet Echo",      price: 0,   color: "#b388ff", glow: "rgba(179,136,255,0.55)" },
-  { id: "crimson",  name: "Crimson Wraith",   price: 50,  color: "#ff5d7a", glow: "rgba(255,93,122,0.55)" },
-  { id: "emerald",  name: "Emerald Phantom",  price: 120, color: "#4ade80", glow: "rgba(74,222,128,0.55)" },
-  { id: "azure",    name: "Azure Spectre",    price: 200, color: "#38bdf8", glow: "rgba(56,189,248,0.55)" },
-  { id: "gold",     name: "Golden Specter",   price: 350, color: "#ffd54a", glow: "rgba(255,213,74,0.65)" },
-  { id: "inferno",  name: "Inferno Echo",     price: 550, color: "#ff7a18", glow: "rgba(255,122,24,0.75)" },
-  { id: "rainbow",  name: "Rainbow Mirage",   price: 900, color: "#ff5dff", glow: "rgba(255,93,255,0.55)", rainbow: true },
+  // Common (15) — starter + cheap variants
+  { id: "violet",       name: "Violet Echo",        rarity: "common", price: 0,   color: "#b388ff", glow: "rgba(179,136,255,0.55)" },
+  { id: "ash",          name: "Ash Wisp",           rarity: "common", price: 30,  color: "#9ca3af", glow: "rgba(156,163,175,0.55)" },
+  { id: "ember",        name: "Ember Glint",        rarity: "common", price: 50,  color: "#fb923c", glow: "rgba(251,146,60,0.55)" },
+  { id: "moss",         name: "Moss Shade",         rarity: "common", price: 75,  color: "#84cc16", glow: "rgba(132,204,22,0.55)" },
+  { id: "sky",          name: "Sky Whisper",        rarity: "common", price: 100, color: "#7dd3fc", glow: "rgba(125,211,252,0.55)" },
+  { id: "rose",         name: "Rose Mist",          rarity: "common", price: 125, color: "#fda4af", glow: "rgba(253,164,175,0.55)" },
+  { id: "sand",         name: "Sand Drift",         rarity: "common", price: 150, color: "#d6c79c", glow: "rgba(214,199,156,0.55)" },
+  { id: "teal",         name: "Teal Murmur",        rarity: "common", price: 175, color: "#5eead4", glow: "rgba(94,234,212,0.55)" },
+  { id: "plum",         name: "Plum Veil",          rarity: "common", price: 200, color: "#a855f7", glow: "rgba(168,85,247,0.55)" },
+  { id: "coral",        name: "Coral Hum",          rarity: "common", price: 225, color: "#fb7185", glow: "rgba(251,113,133,0.55)" },
+  { id: "lime",         name: "Lime Spark",         rarity: "common", price: 250, color: "#bef264", glow: "rgba(190,242,100,0.55)" },
+  { id: "iron",         name: "Iron Faint",         rarity: "common", price: 275, color: "#6b7280", glow: "rgba(107,114,128,0.55)" },
+  { id: "honey",        name: "Honey Drop",         rarity: "common", price: 300, color: "#fcd34d", glow: "rgba(252,211,77,0.55)" },
+  { id: "fern",         name: "Fern Glow",          rarity: "common", price: 325, color: "#65a30d", glow: "rgba(101,163,13,0.55)" },
+  { id: "lilac",        name: "Lilac Dust",         rarity: "common", price: 350, color: "#c4b5fd", glow: "rgba(196,181,253,0.55)" },
+
+  // Rare (10)
+  { id: "crimson",      name: "Crimson Wraith",     rarity: "rare", price: 450,  color: "#ff5d7a", glow: "rgba(255,93,122,0.65)" },
+  { id: "emerald",      name: "Emerald Phantom",    rarity: "rare", price: 550,  color: "#4ade80", glow: "rgba(74,222,128,0.65)" },
+  { id: "azure",        name: "Azure Spectre",      rarity: "rare", price: 650,  color: "#38bdf8", glow: "rgba(56,189,248,0.65)" },
+  { id: "amber",        name: "Amber Phantom",      rarity: "rare", price: 750,  color: "#f59e0b", glow: "rgba(245,158,11,0.65)" },
+  { id: "jade",         name: "Jade Hollow",        rarity: "rare", price: 850,  color: "#10b981", glow: "rgba(16,185,129,0.65)" },
+  { id: "ruby",         name: "Ruby Pulse",         rarity: "rare", price: 950,  color: "#e11d48", glow: "rgba(225,29,72,0.65)" },
+  { id: "sapphire",     name: "Sapphire Vow",       rarity: "rare", price: 1100, color: "#3b82f6", glow: "rgba(59,130,246,0.65)" },
+  { id: "topaz",        name: "Topaz Beam",         rarity: "rare", price: 1250, color: "#fbbf24", glow: "rgba(251,191,36,0.65)" },
+  { id: "onyx",         name: "Onyx Shade",         rarity: "rare", price: 1400, color: "#1f2937", glow: "rgba(75,85,99,0.75)" },
+  { id: "magenta",      name: "Magenta Pulse",      rarity: "rare", price: 1600, color: "#d946ef", glow: "rgba(217,70,239,0.65)" },
+
+  // Super Rare (10)
+  { id: "gold",         name: "Golden Specter",     rarity: "superrare", price: 1800, color: "#ffd54a", glow: "rgba(255,213,74,0.75)" },
+  { id: "inferno",      name: "Inferno Echo",       rarity: "superrare", price: 2100, color: "#ff7a18", glow: "rgba(255,122,24,0.85)" },
+  { id: "frost",        name: "Frost Caller",       rarity: "superrare", price: 2400, color: "#bae6fd", glow: "rgba(186,230,253,0.85)" },
+  { id: "venom",        name: "Venom Sigil",        rarity: "superrare", price: 2700, color: "#a3e635", glow: "rgba(163,230,53,0.85)" },
+  { id: "stormy",       name: "Storm Bringer",      rarity: "superrare", price: 3000, color: "#60a5fa", glow: "rgba(96,165,250,0.85)" },
+  { id: "abyss",        name: "Abyss Walker",       rarity: "superrare", price: 3400, color: "#1e293b", glow: "rgba(99,102,241,0.85)" },
+  { id: "solar",        name: "Solar Flare",        rarity: "superrare", price: 3800, color: "#facc15", glow: "rgba(250,204,21,0.9)" },
+  { id: "lunar",        name: "Lunar Tide",         rarity: "superrare", price: 4200, color: "#e0e7ff", glow: "rgba(224,231,255,0.85)" },
+  { id: "toxic",        name: "Toxic Bloom",        rarity: "superrare", price: 4600, color: "#22c55e", glow: "rgba(34,197,94,0.85)" },
+  { id: "ember2",       name: "Cinder Lord",        rarity: "superrare", price: 5000, color: "#dc2626", glow: "rgba(220,38,38,0.9)" },
+
+  // Epic (5)
+  { id: "phoenix",      name: "Phoenix Heart",      rarity: "epic", price: 6000,  color: "#ff5722", glow: "rgba(255,87,34,0.9)" },
+  { id: "wraithking",   name: "Wraith King",        rarity: "epic", price: 7000,  color: "#7c3aed", glow: "rgba(124,58,237,0.9)" },
+  { id: "voidstep",     name: "Void Stepper",       rarity: "epic", price: 8000,  color: "#312e81", glow: "rgba(99,102,241,0.9)" },
+  { id: "bloodmoon",    name: "Blood Moon",         rarity: "epic", price: 9000,  color: "#b91c1c", glow: "rgba(185,28,28,0.9)" },
+  { id: "stormlord",    name: "Storm Lord",         rarity: "epic", price: 10000, color: "#0ea5e9", glow: "rgba(14,165,233,0.9)" },
+
+  // Mythical (5)
+  { id: "myth_drake",   name: "Drake Whisper",      rarity: "mythical", price: 12000, color: "#ec4899", glow: "rgba(236,72,153,0.95)" },
+  { id: "myth_titan",   name: "Titan Shard",        rarity: "mythical", price: 14000, color: "#f43f5e", glow: "rgba(244,63,94,0.95)" },
+  { id: "myth_oracle",  name: "Oracle Eye",         rarity: "mythical", price: 16000, color: "#a21caf", glow: "rgba(162,28,175,0.95)" },
+  { id: "myth_chimera", name: "Chimera Veil",       rarity: "mythical", price: 18000, color: "#f97316", glow: "rgba(249,115,22,0.95)" },
+  { id: "myth_kraken",  name: "Kraken Ink",         rarity: "mythical", price: 20000, color: "#0f766e", glow: "rgba(15,118,110,0.95)" },
+
+  // Legendary (6)
+  { id: "leg_dragon",   name: "Dragon Sovereign",   rarity: "legendary", price: 24000, color: "#ef4444", glow: "rgba(239,68,68,1)" },
+  { id: "leg_archmage", name: "Archmage Aura",      rarity: "legendary", price: 28000, color: "#8b5cf6", glow: "rgba(139,92,246,1)" },
+  { id: "leg_seraph",   name: "Seraph Wing",        rarity: "legendary", price: 32000, color: "#fde68a", glow: "rgba(253,230,138,1)" },
+  { id: "leg_lich",     name: "Lich Crown",         rarity: "legendary", price: 36000, color: "#14b8a6", glow: "rgba(20,184,166,1)" },
+  { id: "leg_phantom",  name: "Phantom King",       rarity: "legendary", price: 40000, color: "#6d28d9", glow: "rgba(109,40,217,1)" },
+  { id: "leg_chrono",   name: "Chrono Warden",      rarity: "legendary", price: 45000, color: "#06b6d4", glow: "rgba(6,182,212,1)" },
+
+  // Secret (5)
+  { id: "sec_null",     name: "Null Sigil",         rarity: "secret", price: 55000, color: "#111827", glow: "rgba(75,85,99,1)" },
+  { id: "sec_eye",      name: "Hidden Eye",         rarity: "secret", price: 65000, color: "#374151", glow: "rgba(156,163,175,0.9)" },
+  { id: "sec_ghost",    name: "Ghost Cipher",       rarity: "secret", price: 75000, color: "#9ca3af", glow: "rgba(229,231,235,0.95)" },
+  { id: "sec_shroud",   name: "Shroud Walker",      rarity: "secret", price: 85000, color: "#1e1b4b", glow: "rgba(67,56,202,1)" },
+  { id: "sec_glyph",    name: "Forbidden Glyph",    rarity: "secret", price: 95000, color: "#7f1d1d", glow: "rgba(220,38,38,1)" },
+
+  // Ultra (5)
+  { id: "ult_blaze",    name: "Ultra Blaze",        rarity: "ultra", price: 110000, color: "#f97316", glow: "rgba(249,115,22,1)" },
+  { id: "ult_void",     name: "Ultra Void",         rarity: "ultra", price: 130000, color: "#4c1d95", glow: "rgba(124,58,237,1)" },
+  { id: "ult_frost",    name: "Ultra Frost",        rarity: "ultra", price: 150000, color: "#22d3ee", glow: "rgba(34,211,238,1)" },
+  { id: "ult_storm",    name: "Ultra Storm",        rarity: "ultra", price: 170000, color: "#2563eb", glow: "rgba(37,99,235,1)" },
+  { id: "ult_inferno",  name: "Ultra Inferno",      rarity: "ultra", price: 190000, color: "#dc2626", glow: "rgba(220,38,38,1)" },
+
+  // Diamond (5)
+  { id: "dia_clear",    name: "Clear Diamond",      rarity: "diamond", price: 220000, color: "#e0f2fe", glow: "rgba(186,230,253,1)" },
+  { id: "dia_blue",     name: "Blue Diamond",       rarity: "diamond", price: 260000, color: "#7dd3fc", glow: "rgba(125,211,252,1)" },
+  { id: "dia_pink",     name: "Pink Diamond",       rarity: "diamond", price: 300000, color: "#f9a8d4", glow: "rgba(249,168,212,1)" },
+  { id: "dia_black",    name: "Black Diamond",      rarity: "diamond", price: 340000, color: "#0f172a", glow: "rgba(148,163,184,1)" },
+  { id: "dia_royal",    name: "Royal Diamond",      rarity: "diamond", price: 380000, color: "#a78bfa", glow: "rgba(167,139,250,1)" },
+
+  // Rainbow (5)
+  { id: "rainbow",      name: "Rainbow Mirage",     rarity: "rainbow", price: 450000, color: "#ff5dff", glow: "rgba(255,93,255,0.8)", rainbow: true },
+  { id: "rain_arc",     name: "Rainbow Arc",        rarity: "rainbow", price: 520000, color: "#ff8fff", glow: "rgba(255,143,255,0.8)", rainbow: true },
+  { id: "rain_prism",   name: "Rainbow Prism",      rarity: "rainbow", price: 600000, color: "#bb88ff", glow: "rgba(187,136,255,0.85)", rainbow: true },
+  { id: "rain_burst",   name: "Rainbow Burst",      rarity: "rainbow", price: 700000, color: "#88ffea", glow: "rgba(136,255,234,0.85)", rainbow: true },
+  { id: "rain_aurora",  name: "Rainbow Aurora",     rarity: "rainbow", price: 800000, color: "#ffdd66", glow: "rgba(255,221,102,0.85)", rainbow: true },
+
+  // Prismatic (5)
+  { id: "prism_shard",  name: "Prismatic Shard",    rarity: "prismatic", price: 950000,  color: "#c084fc", glow: "rgba(192,132,252,1)", rainbow: true },
+  { id: "prism_core",   name: "Prismatic Core",     rarity: "prismatic", price: 1100000, color: "#f0abfc", glow: "rgba(240,171,252,1)", rainbow: true },
+  { id: "prism_wave",   name: "Prismatic Wave",     rarity: "prismatic", price: 1300000, color: "#67e8f9", glow: "rgba(103,232,249,1)", rainbow: true },
+  { id: "prism_flare",  name: "Prismatic Flare",    rarity: "prismatic", price: 1500000, color: "#fef08a", glow: "rgba(254,240,138,1)", rainbow: true },
+  { id: "prism_storm",  name: "Prismatic Storm",    rarity: "prismatic", price: 1700000, color: "#fca5a5", glow: "rgba(252,165,165,1)", rainbow: true },
+
+  // VIP (4)
+  { id: "vip_gold",     name: "VIP Gold",           rarity: "vip", price: 2000000, color: "#fde047", glow: "rgba(253,224,71,1)" },
+  { id: "vip_plat",     name: "VIP Platinum",       rarity: "vip", price: 2400000, color: "#e5e7eb", glow: "rgba(229,231,235,1)" },
+  { id: "vip_obsidian", name: "VIP Obsidian",       rarity: "vip", price: 2800000, color: "#0b0b12", glow: "rgba(255,213,74,0.9)" },
+  { id: "vip_crown",    name: "VIP Crown",          rarity: "vip", price: 3200000, color: "#fbbf24", glow: "rgba(251,191,36,1)" },
+
+  // Nebula (4)
+  { id: "neb_drift",    name: "Nebula Drift",       rarity: "nebula", price: 4000000, color: "#818cf8", glow: "rgba(129,140,248,1)", rainbow: true },
+  { id: "neb_pulse",    name: "Nebula Pulse",       rarity: "nebula", price: 4800000, color: "#c084fc", glow: "rgba(192,132,252,1)", rainbow: true },
+  { id: "neb_storm",    name: "Nebula Storm",       rarity: "nebula", price: 5600000, color: "#f472b6", glow: "rgba(244,114,182,1)", rainbow: true },
+  { id: "neb_void",     name: "Nebula Void",        rarity: "nebula", price: 6400000, color: "#1e1b4b", glow: "rgba(124,58,237,1)", rainbow: true },
+
+  // Plantium Plus (3)
+  { id: "pp_bloom",     name: "Plantium Bloom",     rarity: "plantiumplus", price: 8000000,  color: "#a3e635", glow: "rgba(163,230,53,1)" },
+  { id: "pp_overlord",  name: "Plantium Overlord",  rarity: "plantiumplus", price: 10000000, color: "#ffe066", glow: "rgba(255,224,102,1)" },
+  { id: "pp_sovereign", name: "Plantium Sovereign", rarity: "plantiumplus", price: 12000000, color: "#84cc16", glow: "rgba(132,204,22,1)", rainbow: true },
+
+  // Cosmetic (2)
+  { id: "cos_halo",     name: "Cosmetic Halo",      rarity: "cosmetic", price: 16000000, color: "#f0abfc", glow: "rgba(240,171,252,1)" },
+  { id: "cos_crown",    name: "Cosmetic Crown",     rarity: "cosmetic", price: 20000000, color: "#fbcfe8", glow: "rgba(251,207,232,1)", rainbow: true },
+
+  // Ultra Nova (1)
+  { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 ];
 
 const SHOP_KEY = "scs_shop_v1";
@@ -823,39 +958,54 @@ function Game() {
                   <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
                 <p className="text-white/60 text-xs mb-3">Earn Shadow Coins by defeating enemies (bosses drop big). Skins change your shadow clones' look.</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {SKINS.map((sk) => {
-                    const owned = shop.owned.includes(sk.id);
-                    const selected = shop.selected === sk.id;
-                    const canBuy = !owned && shop.shadowCoins >= sk.price;
-                    return (
-                      <div key={sk.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
-                          <div className="font-bold text-sm">{sk.name}</div>
-                        </div>
-                        <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price}`}</div>
-                        {owned ? (
-                          <button
-                            disabled={selected}
-                            onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
-                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
-                          >
-                            {selected ? "Equipped" : "Equip"}
-                          </button>
-                        ) : (
-                          <button
-                            disabled={!canBuy}
-                            onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
-                            className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
-                          >
-                            {canBuy ? "Buy & Equip" : `Need ◆${sk.price - shop.shadowCoins}`}
-                          </button>
-                        )}
+                {RARITY_ORDER.map((rar) => {
+                  const items = SKINS.filter(s => s.rarity === rar);
+                  if (items.length === 0) return null;
+                  const meta = RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {items.map((sk) => {
+                          const owned = shop.owned.includes(sk.id);
+                          const selected = shop.selected === sk.id;
+                          const canBuy = !owned && shop.shadowCoins >= sk.price;
+                          return (
+                            <div key={sk.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`} style={{ boxShadow: `inset 0 0 0 1px ${meta.color}22` }}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
+                                <div className="font-bold text-sm leading-tight">{sk.name}</div>
+                              </div>
+                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price.toLocaleString()}`}</div>
+                              {owned ? (
+                                <button
+                                  disabled={selected}
+                                  onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
+                                >
+                                  {selected ? "Equipped" : "Equip"}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={!canBuy}
+                                  onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
+                                >
+                                  {canBuy ? "Buy & Equip" : `Need ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
                 <div className="flex justify-end mt-4">
                   <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
                 </div>
