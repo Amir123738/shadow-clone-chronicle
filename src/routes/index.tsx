@@ -89,7 +89,7 @@ function Game() {
     waveCleared: false,
   });
 
-  const TOTAL_WAVES = 8; // last one = boss
+  const TOTAL_WAVES = 15; // last one = boss
 
   const resetGame = useCallback(() => {
     const s = stateRef.current;
