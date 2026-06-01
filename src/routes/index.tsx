@@ -428,6 +428,12 @@ function Game() {
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
       if (s.freezeTime > 0) s.freezeTime = Math.max(0, s.freezeTime - dt);
       if (s.pullTime > 0) s.pullTime = Math.max(0, s.pullTime - dt);
+      if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
+      if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
+      if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      // age fire trail
+      for (const t of s.fireTrail) t.life -= dt;
+      s.fireTrail = s.fireTrail.filter(t => t.life > 0);
       if (s.stolenUpgrade) {
         s.stolenTimer -= dt;
         if (s.stolenTimer <= 0) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
@@ -442,8 +448,13 @@ function Game() {
         let dy = (i.down ? 1 : 0) - (i.up ? 1 : 0);
         const mag = Math.hypot(dx, dy);
         if (mag > 0) { dx /= mag; dy /= mag; }
-        s.player.pos.x += dx * s.stats.moveSpeed * dt;
-        s.player.pos.y += dy * s.stats.moveSpeed * dt;
+        const speedMul = s.speedBoostTime > 0 ? 6 : 1;
+        const prevX = s.player.pos.x, prevY = s.player.pos.y;
+        s.player.pos.x += dx * s.stats.moveSpeed * speedMul * dt;
+        s.player.pos.y += dy * s.stats.moveSpeed * speedMul * dt;
+        if (s.speedBoostTime > 0 && (dx !== 0 || dy !== 0)) {
+          s.fireTrail.push({ x: prevX, y: prevY, life: 0.6 });
+        }
       }
 
       // Pull effect
