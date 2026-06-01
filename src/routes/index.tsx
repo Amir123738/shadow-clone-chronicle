@@ -18,7 +18,7 @@ type Vec = { x: number; y: number };
 type Input = { up: boolean; down: boolean; left: boolean; right: boolean; shoot: boolean; aim: Vec };
 type Frame = { pos: Vec; aim: Vec; shoot: boolean };
 type Bullet = { pos: Vec; vel: Vec; life: number; dmg: number; from: "player" | "clone"; color: string };
-type BossId = "super" | "mega" | "hyper" | "plantium" | "final" | null;
+type BossId = "super" | "mega" | "hyper" | "plantium" | "final" | "plusplantium" | null;
 type Enemy = {
   pos: Vec; vel: Vec; hp: number; maxHp: number; r: number; speed: number; baseSpeed: number;
   dmg: number; baseDmg: number; color: string; xp: number; coin: number;
@@ -59,10 +59,11 @@ const H = 600;
 const CLONE_INTERVAL = 15;
 const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
-const BOSS_WAVES: Record<number, BossId> = { 15: "super", 30: "mega", 50: "hyper", 75: "plantium", 100: "final" };
+const BOSS_WAVES: Record<number, BossId> = { 15: "super", 30: "mega", 50: "hyper", 75: "plantium", 100: "plusplantium" };
 const BOSS_NAMES: Record<string, string> = {
   super: "SHADOW TYRANT", mega: "VOID REAPER", hyper: "CHRONO LICH",
   plantium: "MEGAPLANTIUM OVERLORD", final: "OMEGA ANNIHILATOR",
+  plusplantium: "PLUSPLANTIUM — THE ABSOLUTE",
 };
 
 function rand(a: number, b: number) { return a + Math.random() * (b - a); }
@@ -190,6 +191,7 @@ function Game() {
     if (id === "hyper") { hp = 50000; dmg = 100; sp = 160; r = 60; color = "#00e5ff"; guards = 16; }
     if (id === "plantium") { hp = 85000; dmg = 130; sp = 175; r = 68; color = "#7cf24a"; guards = 20; }
     if (id === "final") { hp = 160000; dmg = 170; sp = 195; r = 80; color = "#ff0040"; guards = 26; }
+    if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -356,48 +358,44 @@ function Game() {
       const flags = boss.abilityFlags!;
       const id = boss.bossId;
       // shared: pull (mega, plantium, final)
-      if (id === "mega" || id === "plantium" || id === "final") {
+      const isPP = id === "plusplantium";
+      if (id === "mega" || id === "plantium" || id === "final" || isPP) {
         cds.pull -= dt;
         if (cds.pull <= 0) {
-          s.pullTime = 1.2;
-          cds.pull = id === "final" ? 6 : 8;
+          s.pullTime = isPP ? 1.6 : 1.2;
+          cds.pull = isPP ? 4 : id === "final" ? 6 : 8;
         }
       }
-      // freeze (hyper, plantium, final)
-      if (id === "hyper" || id === "plantium" || id === "final") {
+      if (id === "hyper" || id === "plantium" || id === "final" || isPP) {
         cds.freeze -= dt;
         if (cds.freeze <= 0) {
-          s.freezeTime = 2.5;
-          // hit during freeze
-          s.player.hp -= boss.dmg * 0.6;
-          cds.freeze = id === "final" ? 12 : 15;
+          s.freezeTime = isPP ? 3 : 2.5;
+          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6);
+          cds.freeze = isPP ? 9 : id === "final" ? 12 : 15;
         }
       }
-      // steal upgrade (hyper, final)
-      if (id === "hyper" || id === "final") {
+      if (id === "hyper" || id === "final" || isPP) {
         cds.steal -= dt;
         if (cds.steal <= 0 && !s.stolenUpgrade && s.appliedUpgrades.length > 0) {
           const idx = Math.floor(Math.random() * s.appliedUpgrades.length);
           const stolen = s.appliedUpgrades[idx];
           stolen.undo();
           s.stolenUpgrade = stolen;
-          s.stolenTimer = 25;
-          cds.steal = 30;
+          s.stolenTimer = isPP ? 35 : 25;
+          cds.steal = isPP ? 22 : 30;
         }
       }
-      // revive (plantium, final)
-      if (id === "plantium" || id === "final") {
+      if (id === "plantium" || id === "final" || isPP) {
         cds.revive -= dt;
         if (cds.revive <= 0) {
-          const n = Math.max(4, Math.floor(s.lastWaveEnemyCount * 0.5));
+          const n = isPP ? Math.max(8, s.lastWaveEnemyCount) : Math.max(4, Math.floor(s.lastWaveEnemyCount * 0.5));
           for (let k = 0; k < n; k++) spawnGrunt();
-          cds.revive = 25;
+          cds.revive = isPP ? 18 : 25;
         }
         cds.blur -= dt;
-        if (cds.blur <= 0) { s.blurTime = 6; cds.blur = 18; }
-        // permanent buffs (once)
-        if (!flags.hastened) { cds.hasten -= dt; if (cds.hasten <= 0) { boss.speed = boss.baseSpeed * 1.5; flags.hastened = true; } }
-        if (!flags.empowered) { cds.empower -= dt; if (cds.empower <= 0) { boss.dmg = boss.baseDmg * 1.25; flags.empowered = true; } }
+        if (cds.blur <= 0) { s.blurTime = isPP ? 9 : 6; cds.blur = isPP ? 14 : 18; }
+        if (!flags.hastened) { cds.hasten -= dt; if (cds.hasten <= 0) { boss.speed = boss.baseSpeed * (isPP ? 1.8 : 1.5); flags.hastened = true; } }
+        if (!flags.empowered) { cds.empower -= dt; if (cds.empower <= 0) { boss.dmg = boss.baseDmg * (isPP ? 1.5 : 1.25); flags.empowered = true; } }
       }
     };
 
@@ -562,6 +560,8 @@ function Game() {
         const noQueue = isBossWave ? s.bossSpawned : s.spawnQueue <= 0;
         if (noQueue && s.enemies.length === 0) {
           s.waveActive = false; s.waveCleared = true;
+          // Wave clear bonus: 10 Shadow Coins
+          setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
           } else {
