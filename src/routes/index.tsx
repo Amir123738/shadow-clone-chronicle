@@ -1298,7 +1298,7 @@ function Game() {
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r, 0, Math.PI * 2); ctx.stroke();
         ctx.strokeStyle = `rgba(190,242,100,${0.4 * a})`;
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r - 18, 0, Math.PI * 2); ctx.stroke();
+        if (w.r > 18) { ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, w.r - 18, 0, Math.PI * 2); ctx.stroke(); }
       }
       // Explosion FX
       for (const fx of s.explosionFx) {
