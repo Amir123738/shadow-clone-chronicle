@@ -666,9 +666,23 @@ function Game() {
         ctx.beginPath(); ctx.arc(b.pos.x, b.pos.y, 4, 0, Math.PI * 2); ctx.fill();
       }
 
+      // Fire trail (super speed)
+      for (const t of s.fireTrail) {
+        const a = Math.max(0, t.life / 0.6);
+        ctx.fillStyle = `rgba(255,${Math.floor(120 + 100 * a)},24,${a * 0.7})`;
+        ctx.beginPath(); ctx.arc(t.x, t.y, 10 * a + 3, 0, Math.PI * 2); ctx.fill();
+      }
+
       const p = s.player;
       ctx.fillStyle = "#ffe066";
       ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r, 0, Math.PI * 2); ctx.fill();
+      // Shield ring (bronze defence)
+      if (s.shieldTime > 0) {
+        ctx.strokeStyle = "rgba(205,127,50,0.9)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 6 + Math.sin(s.time * 6) * 1.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(255,200,120,0.4)"; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 9, 0, Math.PI * 2); ctx.stroke();
+      }
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
       const ang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
       ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
