@@ -1327,8 +1327,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       // Dead => drops
       const survivors: Enemy[] = [];
+      let killsThisFrame = 0;
       for (const e of s.enemies) {
         if (e.hp <= 0) {
+          killsThisFrame++;
           s.score += Math.round(e.maxHp);
           for (let k = 0; k < e.xp; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "xp", value: 1 });
           for (let k = 0; k < e.coin; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "coin", value: 1 });
@@ -1338,6 +1340,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         } else survivors.push(e);
       }
       s.enemies = survivors;
+      if (killsThisFrame > 0) bumpLifetime({ kills: killsThisFrame });
+
 
       // Pickups
       const remPick: Pickup[] = [];
