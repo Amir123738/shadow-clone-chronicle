@@ -727,6 +727,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
     // Wave 50+ bosses: +50% HP, +100% damage
     if (s.wave >= 50) { hp = Math.round(hp * 1.5); dmg = Math.round(dmg * 2); }
+    // Wave 75+ bosses: additional +250% HP, +150% damage, +50% speed
+    if (s.wave >= 75) { hp = Math.round(hp * 3.5); dmg = Math.round(dmg * 2.5); sp = Math.round(sp * 1.5); }
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -734,8 +736,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       abilityCds: { pull: 5, freeze: 8, steal: 12, revive: 10, blur: 15, hasten: 20, empower: 25 },
       abilityFlags: {},
     });
-    const guardHp = s.wave >= 50 ? 280 * 6 : 280;
-    const guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
+    let guardHp = s.wave >= 50 ? 280 * 6 : 280;
+    let guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
+    if (s.wave >= 75) { guardHp = Math.round(guardHp * 3.5); guardDmg = Math.round(guardDmg * 2.5); }
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
