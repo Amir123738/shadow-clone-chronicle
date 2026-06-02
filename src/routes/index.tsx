@@ -326,6 +326,56 @@ function rollWheel(): WheelReward {
   for (const w of WHEEL_REWARDS) { if ((r -= w.weight) <= 0) return w; }
   return WHEEL_REWARDS[0];
 }
+
+// ---------- Levels / Bosses Mode ----------
+type LevelDef = {
+  id: number; name: string; bossName: string; bossColor: string;
+  bossHp: number; bossDmg: number; bossSpd: number; bossR: number;
+  gruntMult: number; guards: number; spinReward: number;
+};
+const LEVELS: LevelDef[] = [
+  { id: 1,  name: "Level 1 — Shade Hollow",    bossName: "SHADE WHELP",         bossColor: "#7cf24a", bossHp: 28000,   bossDmg: 55,  bossSpd: 130, bossR: 46, gruntMult: 1.3,  guards: 6,  spinReward: 1 },
+  { id: 2,  name: "Level 2 — Ember Wastes",    bossName: "ASH REAVER",          bossColor: "#ff8a3d", bossHp: 55000,   bossDmg: 75,  bossSpd: 140, bossR: 50, gruntMult: 1.8,  guards: 8,  spinReward: 2 },
+  { id: 3,  name: "Level 3 — Crimson Forge",   bossName: "CRIMSON HOUND",       bossColor: "#ff2e88", bossHp: 95000,   bossDmg: 100, bossSpd: 155, bossR: 54, gruntMult: 2.5,  guards: 10, spinReward: 3 },
+  { id: 4,  name: "Level 4 — Glacier Vault",   bossName: "GLACIER MAW",         bossColor: "#7dd3fc", bossHp: 160000,  bossDmg: 130, bossSpd: 165, bossR: 58, gruntMult: 3.4,  guards: 12, spinReward: 4 },
+  { id: 5,  name: "Level 5 — Void Abyss",      bossName: "VOIDFANG",            bossColor: "#a000ff", bossHp: 260000,  bossDmg: 170, bossSpd: 175, bossR: 62, gruntMult: 4.6,  guards: 14, spinReward: 5 },
+  { id: 6,  name: "Level 6 — Storm Spire",     bossName: "STORMCALLER THRAX",   bossColor: "#00e5ff", bossHp: 420000,  bossDmg: 220, bossSpd: 185, bossR: 66, gruntMult: 6.2,  guards: 16, spinReward: 6 },
+  { id: 7,  name: "Level 7 — Plague Marsh",    bossName: "PLAGUE SOVEREIGN",    bossColor: "#a3e635", bossHp: 680000,  bossDmg: 280, bossSpd: 195, bossR: 70, gruntMult: 8.4,  guards: 18, spinReward: 7 },
+  { id: 8,  name: "Level 8 — Obsidian Throne", bossName: "OBSIDIAN TYRANT",     bossColor: "#fde047", bossHp: 1100000, bossDmg: 360, bossSpd: 205, bossR: 76, gruntMult: 11.0, guards: 22, spinReward: 8 },
+  { id: 9,  name: "Level 9 — Null King's Hall",bossName: "NULLKING VORATH",     bossColor: "#c084fc", bossHp: 1800000, bossDmg: 460, bossSpd: 215, bossR: 84, gruntMult: 14.5, guards: 26, spinReward: 9 },
+  { id: 10, name: "Level 10 — Eternal Eclipse",bossName: "THE ETERNAL SHADOWLORD", bossColor: "#ff0033", bossHp: 3200000, bossDmg: 620, bossSpd: 230, bossR: 96, gruntMult: 20.0, guards: 32, spinReward: 10 },
+];
+const LEVEL_WAVES = 5;
+
+type ShadyReward = { coins: number; weight: number; color: string };
+const SHADY_REWARDS: ShadyReward[] = [
+  { coins: 100,    weight: 25, color: "#9ca3af" },
+  { coins: 250,    weight: 25, color: "#60a5fa" },
+  { coins: 500,    weight: 25, color: "#a855f7" },
+  { coins: 1000,   weight: 25, color: "#ec4899" },
+  { coins: 2500,   weight: 5,  color: "#fde68a" },
+  { coins: 5000,   weight: 4,  color: "#ff7a18" },
+  { coins: 100000, weight: 1,  color: "#ffe066" },
+];
+const SHADY_TOTAL_WEIGHT = SHADY_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollShady(): ShadyReward {
+  let r = Math.random() * SHADY_TOTAL_WEIGHT;
+  for (const w of SHADY_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return SHADY_REWARDS[0];
+}
+
+const SHADY_SPINS_KEY = "scs_shady_spins_v1";
+const LEVELS_CLEARED_KEY = "scs_levels_cleared_v1";
+function loadShadySpins(): number {
+  if (typeof window === "undefined") return 0;
+  try { return Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0; } catch { return 0; }
+}
+function saveShadySpins(n: number) { try { localStorage.setItem(SHADY_SPINS_KEY, String(n)); } catch {} }
+function loadLevelsCleared(): number[] {
+  if (typeof window === "undefined") return [];
+  try { const raw = localStorage.getItem(LEVELS_CLEARED_KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v.filter(x => typeof x === "number") : []; } catch { return []; }
+}
+function saveLevelsCleared(v: number[]) { try { localStorage.setItem(LEVELS_CLEARED_KEY, JSON.stringify(v)); } catch {} }
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
