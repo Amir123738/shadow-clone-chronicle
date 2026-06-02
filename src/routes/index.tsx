@@ -2483,7 +2483,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 })()}
 
                 <div className="flex gap-3 justify-end">
-                  <button onClick={rerollTasks} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Reroll Tasks</button>
+                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title="You can reroll 3 times each day." className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">Reroll Tasks ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
                   <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">Close</button>
                 </div>
               </div>
