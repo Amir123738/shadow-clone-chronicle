@@ -848,6 +848,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.betweenWaves = false;
     s.waveCleared = false;
     s.bossSpawned = false;
+    if (s.gameMode === "level") {
+      const level = LEVELS.find(l => l.id === s.levelId);
+      const isFinal = s.wave >= LEVEL_WAVES;
+      if (isFinal && level) {
+        s.spawnQueue = 0;
+        spawnLevelBossFor(level);
+        s.lastWaveEnemyCount = 1;
+      } else {
+        const mult = level ? level.gruntMult : 1;
+        const count = 6 + Math.floor(s.wave * (2 + mult * 0.4));
+        s.spawnQueue = count;
+        s.lastWaveEnemyCount = count;
+      }
+      return;
+    }
     if (s.wave === 50) {
       s.waveWarningTimer = 4;
       playWave50Alarm();
