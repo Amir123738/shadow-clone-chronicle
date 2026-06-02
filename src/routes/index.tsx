@@ -475,6 +475,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
+  const [superPickOpen, setSuperPickOpen] = useState(false);
+  const [pendingSuperLevelId, setPendingSuperLevelId] = useState<number | null>(null);
   const [shadySpins, setShadySpins] = useState<number>(() => loadShadySpins());
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
