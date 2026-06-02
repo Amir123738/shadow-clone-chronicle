@@ -1238,13 +1238,40 @@ function Game() {
 
 
       for (const e of s.enemies) {
-        ctx.fillStyle = e.color;
-        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, e.r, 0, Math.PI * 2); ctx.fill();
-        const w = e.r * 2;
+        const er = e.r;
+        // Evil shadow: dark wispy aura + black body + glowing red eyes
+        ctx.fillStyle = "rgba(120,0,0,0.35)";
+        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.2, er + 4, er + 6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(10,5,15,0.95)";
+        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.15, er, er + 2, 0, 0, Math.PI * 2); ctx.fill();
+        // head
+        ctx.fillStyle = "rgba(5,0,10,1)";
+        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y - er * 0.55, er * 0.55, 0, Math.PI * 2); ctx.fill();
+        // jagged crown
+        ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = -2; i <= 2; i++) {
+          const sx = e.pos.x + i * (er * 0.22);
+          ctx.moveTo(sx, e.pos.y - er * 0.9);
+          ctx.lineTo(sx + er * 0.1, e.pos.y - er * 1.15);
+        }
+        ctx.stroke();
+        // red eyes
+        const eyeY = e.pos.y - er * 0.6;
+        ctx.fillStyle = "#ff2a2a";
+        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,120,120,0.45)";
+        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+        // tint by original color (boss/elite)
+        ctx.fillStyle = e.color + "33";
+        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
+        const w = er * 2;
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - e.r - 8, w, 4);
+        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w, 4);
         ctx.fillStyle = "#ff5d5d";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - e.r - 8, w * (e.hp / e.maxHp), 4);
+        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w * (e.hp / e.maxHp), 4);
       }
 
       for (const b of s.bullets) {
