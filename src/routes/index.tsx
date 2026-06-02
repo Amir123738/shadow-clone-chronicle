@@ -683,6 +683,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     // ability effects
     blurTime: 0,
     freezeTime: 0,
+    enemyFreezeTime: 0,
     pullTime: 0,
     stolenUpgrade: null as AppliedUpgrade | null,
     stolenTimer: 0,
@@ -728,7 +729,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false; s.wonRewardGiven = false;
     s.betweenWaves = false; s.pendingUpgrades = null; s.waveCleared = false;
     s.appliedUpgrades = [];
-    s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
+    s.blurTime = 0; s.freezeTime = 0; s.enemyFreezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.poisonArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
@@ -1092,7 +1093,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       desc: "Freeze all enemies 25s + 50% damage + clones 25% faster & stronger",
       apply: () => {
         const s = stateRef.current;
-        s.freezeTime = Math.max(s.freezeTime, 25);
+        s.enemyFreezeTime = Math.max(s.enemyFreezeTime, 25);
         s.stats.bulletDmg *= 1.5;
         s.stats.cloneDmgMult *= 1.25;
         for (const sc of s.specialClones) sc.orbitSpeed *= 1.25;
@@ -1323,6 +1324,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       // tick effect timers
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
       if (s.freezeTime > 0) s.freezeTime = Math.max(0, s.freezeTime - dt);
+      if (s.enemyFreezeTime > 0) s.enemyFreezeTime = Math.max(0, s.enemyFreezeTime - dt);
       if (s.pullTime > 0) s.pullTime = Math.max(0, s.pullTime - dt);
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
@@ -1561,7 +1563,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const darkActive = s.darknessTime > 0;
       const slowMul = s.slowTime > 0 ? 0.55 : 1;
       for (const e of s.enemies) {
-        if (!frozen || e.kind === "boss") {
+        if ((!frozen && s.enemyFreezeTime <= 0) || e.kind === "boss") {
           if (darkActive && e.kind !== "boss") {
             e.randomTimer = (e.randomTimer ?? 0) - dt;
             if (!e.randomDir || (e.randomTimer ?? 0) <= 0) {
