@@ -1944,18 +1944,94 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         }
       }
 
-      // Special clones (electric / big)
+      // Special clones (electric King of Shadows / big CLONES CLOOOONES)
+      // Rendered as distinct humanoid warriors — NOT copies of the player.
+      const elecPalette = [
+        { body: "#1e3a8a", head: "#fde68a", glow: "rgba(125,249,255,0.55)", accent: "#7df9ff", cape: "#0ea5e9" }, // blue royal w/ cyan cape
+        { body: "#065f46", head: "#fed7aa", glow: "rgba(110,231,183,0.55)", accent: "#6ee7b7", cape: "#10b981" }, // emerald ranger
+        { body: "#4c1d95", head: "#f5d0fe", glow: "rgba(167,139,250,0.55)", accent: "#a78bfa", cape: "#7c3aed" }, // violet mage
+        { body: "#7c2d12", head: "#fed7aa", glow: "rgba(251,146,60,0.55)",  accent: "#fb923c", cape: "#ea580c" }, // orange knight
+      ];
+      const bigPalette = [
+        { body: "#831843", head: "#fda4af", glow: "rgba(244,114,182,0.55)", accent: "#ec4899", cape: "#be185d" }, // pink brute
+        { body: "#312e81", head: "#c7d2fe", glow: "rgba(129,140,248,0.55)", accent: "#818cf8", cape: "#4338ca" }, // indigo titan
+        { body: "#14532d", head: "#bbf7d0", glow: "rgba(74,222,128,0.55)",  accent: "#4ade80", cape: "#16a34a" }, // green giant
+      ];
+      let _elecIdx = 0, _bigIdx = 0;
       for (const sc of s.specialClones) {
         const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
         const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
         const isElec = sc.kind === "electric";
-        const r = isElec ? 11 : 22;
-        ctx.fillStyle = isElec ? "rgba(125,249,255,0.45)" : "rgba(255,102,255,0.45)";
-        ctx.beginPath(); ctx.arc(sx, sy, r + 6, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = isElec ? "#7df9ff" : "#ff66ff";
-        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = isElec ? "#e0fbff" : "#ffd6ff"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(sx, sy, r + 2, 0, Math.PI * 2); ctx.stroke();
+        const pal = isElec ? elecPalette[(_elecIdx++) % elecPalette.length]
+                           : bigPalette[(_bigIdx++) % bigPalette.length];
+        const scale = isElec ? 1.0 : 1.55;
+        const facing = Math.atan2(s.player.pos.y - sy, s.player.pos.x - sx);
+        const t = performance.now() / 1000;
+
+        // aura glow
+        ctx.fillStyle = pal.glow;
+        ctx.beginPath(); ctx.arc(sx, sy, 18 * scale, 0, Math.PI * 2); ctx.fill();
+
+        // cape behind
+        ctx.fillStyle = pal.cape;
+        ctx.beginPath();
+        ctx.moveTo(sx - 6 * scale, sy - 2 * scale);
+        ctx.lineTo(sx + 6 * scale, sy - 2 * scale);
+        ctx.lineTo(sx + 8 * scale, sy + 12 * scale);
+        ctx.lineTo(sx - 8 * scale, sy + 12 * scale);
+        ctx.closePath(); ctx.fill();
+
+        // body (torso)
+        ctx.fillStyle = pal.body;
+        ctx.beginPath(); ctx.ellipse(sx, sy + 3 * scale, 7 * scale, 10 * scale, 0, 0, Math.PI * 2); ctx.fill();
+
+        // shoulder pads / armor accent
+        ctx.fillStyle = pal.accent;
+        ctx.beginPath(); ctx.arc(sx - 6 * scale, sy - 1 * scale, 2.5 * scale, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + 6 * scale, sy - 1 * scale, 2.5 * scale, 0, Math.PI * 2); ctx.fill();
+
+        // legs
+        ctx.fillStyle = pal.body;
+        ctx.fillRect(sx - 4 * scale, sy + 10 * scale, 3 * scale, 5 * scale);
+        ctx.fillRect(sx + 1 * scale, sy + 10 * scale, 3 * scale, 5 * scale);
+
+        // head (skin tone, distinct from player's purple shadow)
+        ctx.fillStyle = pal.head;
+        ctx.beginPath(); ctx.arc(sx, sy - 7 * scale, 4.5 * scale, 0, Math.PI * 2); ctx.fill();
+
+        // hair / helmet on top
+        ctx.fillStyle = pal.cape;
+        ctx.beginPath();
+        ctx.arc(sx, sy - 9 * scale, 4.8 * scale, Math.PI, 0);
+        ctx.closePath(); ctx.fill();
+
+        // eyes
+        ctx.fillStyle = pal.accent;
+        ctx.beginPath(); ctx.arc(sx - 1.6 * scale, sy - 7 * scale, 0.9 * scale, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + 1.6 * scale, sy - 7 * scale, 0.9 * scale, 0, Math.PI * 2); ctx.fill();
+
+        // weapon arm — electric = bow/staff, big = greatsword
+        ctx.strokeStyle = pal.accent; ctx.lineWidth = 2 * scale; ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(sx, sy + 2 * scale);
+        ctx.lineTo(sx + Math.cos(facing) * 12 * scale, sy + Math.sin(facing) * 12 * scale);
+        ctx.stroke();
+
+        if (isElec) {
+          // crackling electric arcs around the warrior
+          ctx.strokeStyle = "#e0fbff"; ctx.lineWidth = 1;
+          for (let i = 0; i < 3; i++) {
+            const a = t * 6 + i * 2.1;
+            ctx.beginPath();
+            ctx.moveTo(sx + Math.cos(a) * 10, sy + Math.sin(a) * 10);
+            ctx.lineTo(sx + Math.cos(a + 0.6) * 14, sy + Math.sin(a + 0.6) * 14);
+            ctx.stroke();
+          }
+        } else {
+          // big clone: glowing rune on chest
+          ctx.fillStyle = "#fff";
+          ctx.beginPath(); ctx.arc(sx, sy + 3 * scale, 1.6 * scale, 0, Math.PI * 2); ctx.fill();
+        }
       }
 
 
