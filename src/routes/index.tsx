@@ -1931,7 +1931,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           over: s.over, won: s.won,
           blur: s.blurTime, frozen: s.freezeTime > 0,
           stolen: s.stolenUpgrade ? { name: s.stolenUpgrade.name, time: s.stolenTimer } : null,
-          bossName: boss ? (BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
+          bossName: boss ? (boss.customBossName ?? BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
           shadowCoins: shopRef.current.shadowCoins,
           waveWarning: s.waveWarningTimer,
         };
