@@ -2073,7 +2073,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       <div className="relative" style={{ width: "min(96vw, 960px)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm font-mono">
-          <Stat label="Wave" value={`${uiState.wave}/${TOTAL_WAVES}`} />
+          <Stat label="Wave" value={`${uiState.wave}/${uiState.totalWaves}`} />
           <Stat label="Score" value={uiState.score.toString()} />
           <Stat label="Coins" value={uiState.coins.toString()} />
           <Stat label="Shadow ◆" value={uiState.shadowCoins.toString()} />
