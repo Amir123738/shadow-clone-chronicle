@@ -1909,7 +1909,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap justify-center">
                 <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                   Start Game
                 </button>
@@ -1919,6 +1919,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
                   Inventory
                 </button>
+                <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
+                  Tasks
+                </button>
                 <button
                   onClick={toggleMusic}
                   className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
@@ -1927,6 +1930,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   {musicOn ? "♪ Music: On" : "♪ Music: Off"}
                 </button>
               </div>
+
             </Overlay>
           )}
 
