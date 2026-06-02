@@ -2028,6 +2028,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           bossName: boss ? (boss.customBossName ?? BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
           shadowCoins: shopRef.current.shadowCoins,
           waveWarning: s.waveWarningTimer,
+          totalWaves: s.gameMode === "level" ? LEVEL_WAVES : TOTAL_WAVES,
+          gameMode: s.gameMode,
         };
       });
       raf = requestAnimationFrame(loop);
