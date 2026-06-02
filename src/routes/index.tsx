@@ -1093,7 +1093,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       desc: "Freeze all enemies 25s + 50% damage + clones 25% faster & stronger",
       apply: () => {
         const s = stateRef.current;
-        s.freezeTime = Math.max(s.freezeTime, 25);
+        s.enemyFreezeTime = Math.max(s.enemyFreezeTime, 25);
         s.stats.bulletDmg *= 1.5;
         s.stats.cloneDmgMult *= 1.25;
         for (const sc of s.specialClones) sc.orbitSpeed *= 1.25;
