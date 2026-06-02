@@ -1821,7 +1821,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         ctx.fillStyle = boss.color;
         ctx.fillRect((W - bw) / 2, 14, bw * (boss.hp / boss.maxHp), 14);
         ctx.fillStyle = "#fff"; ctx.font = "bold 12px system-ui"; ctx.textAlign = "center";
-        ctx.fillText(BOSS_NAMES[boss.bossId ?? "super"] ?? "BOSS", W / 2, 24);
+        ctx.fillText(boss.customBossName ?? BOSS_NAMES[boss.bossId ?? "super"] ?? "BOSS", W / 2, 24);
       }
 
       if (s.freezeTime > 0) {
