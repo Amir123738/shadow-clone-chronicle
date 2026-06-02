@@ -683,6 +683,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     // ability effects
     blurTime: 0,
     freezeTime: 0,
+    enemyFreezeTime: 0,
     pullTime: 0,
     stolenUpgrade: null as AppliedUpgrade | null,
     stolenTimer: 0,
