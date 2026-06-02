@@ -220,12 +220,18 @@ const SKINS: Skin[] = [
 
   // Ultra Nova (1)
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
+
+  // Admin (1) — exclusive
+  { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
 
 type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
 type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
   { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "admin_hat",      name: "Admin Hat",      color: "#ff0033", glow: "rgba(255,0,51,1)" },
+  { id: "admin_jacket",   name: "Admin Jacket",   color: "#ff0033", glow: "rgba(255,0,51,1)" },
+
   { id: "bronze_hat",     name: "Bronze Hat",     color: "#cd7f32", glow: "rgba(205,127,50,0.85)" },
   { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
   { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
