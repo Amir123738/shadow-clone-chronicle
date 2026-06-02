@@ -69,6 +69,7 @@ type Enemy = {
   kind: "grunt" | "fast" | "tank" | "boss"; bossId?: BossId;
   abilityCds?: Record<string, number>; abilityFlags?: Record<string, boolean>;
   randomDir?: Vec; randomTimer?: number;
+  customBossName?: string;
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
