@@ -775,7 +775,36 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
+    // Levels/Bosses mode: enemies scaled by level multiplier
+    const lvlMult = s.levelMult || 1;
+    e.hp *= lvlMult; e.maxHp *= lvlMult;
+    e.dmg *= lvlMult; e.baseDmg *= lvlMult;
+    e.speed *= Math.min(1.6, 1 + (lvlMult - 1) * 0.05);
+    e.baseSpeed = e.speed;
     s.enemies.push(e);
+  }
+
+  function spawnLevelBossFor(level: LevelDef) {
+    const s = stateRef.current;
+    s.enemies.push({
+      pos: edgeSpawn(), vel: { x: 0, y: 0 },
+      hp: level.bossHp, maxHp: level.bossHp, r: level.bossR,
+      speed: level.bossSpd, baseSpeed: level.bossSpd,
+      dmg: level.bossDmg, baseDmg: level.bossDmg,
+      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: "super",
+      abilityCds: { pull: 4, freeze: 6, steal: 10, revive: 8, blur: 12, hasten: 16, empower: 20 },
+      abilityFlags: {},
+    });
+    const guardHp = Math.round(280 * level.gruntMult);
+    const guardDmg = Math.round(24 * level.gruntMult);
+    for (let k = 0; k < level.guards; k++) {
+      s.enemies.push({
+        pos: edgeSpawn(), vel: { x: 0, y: 0 },
+        hp: guardHp, maxHp: guardHp, r: 14, speed: 230, baseSpeed: 230,
+        dmg: guardDmg, baseDmg: guardDmg, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+      });
+    }
+    s.bossSpawned = true;
   }
 
   function spawnBossFor(id: BossId) {
