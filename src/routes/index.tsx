@@ -1203,12 +1203,21 @@ function Game() {
           ctx.fillText("+", px, py + 4);
         } else {
           const f = cl.frames[cl.idx]; if (!f) continue;
-          ctx.fillStyle = skinGlow;
-          ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y, 12, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
-          const ang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
+          const cang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
+          // Kind shadow: soft blue aura + translucent silhouette + friendly glowing eyes
+          ctx.fillStyle = "rgba(125,211,252,0.35)";
+          ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 4, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(40,80,140,0.85)";
+          ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(20,40,80,0.9)";
+          ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y - 8, 6, 0, Math.PI * 2); ctx.fill();
+          // friendly cyan eyes
+          ctx.fillStyle = "#bff5ff";
+          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "#7df9ff"; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
-          ctx.lineTo(f.pos.x + Math.cos(ang) * 18, f.pos.y + Math.sin(ang) * 18); ctx.stroke();
+          ctx.lineTo(f.pos.x + Math.cos(cang) * 18, f.pos.y + Math.sin(cang) * 18); ctx.stroke();
         }
       }
 
