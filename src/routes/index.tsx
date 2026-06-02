@@ -1629,7 +1629,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         const barY = e.pos.y - er - (isBossE ? 18 : 8);
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(e.pos.x - w / 2, barY, w, 4);
-        ctx.fillStyle = isBossE ? "#ffd84a" : "#ff5d5d";
+        const isGolden = s.wave >= 75;
+        ctx.fillStyle = isBossE ? "#ffd84a" : (isGolden ? "#ffd84a" : "#ff5d5d");
         ctx.fillRect(e.pos.x - w / 2, barY, w * (e.hp / e.maxHp), 4);
       }
 
