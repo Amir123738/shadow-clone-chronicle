@@ -402,8 +402,51 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
-  useEffect(() => { setShop(loadShop()); setHydrated(true); }, []);
-  useEffect(() => { shopRef.current = shop; if (hydrated) saveShop(shop); }, [shop, hydrated]);
+  const saveTimerRef = useRef<number | null>(null);
+
+  // Load from cloud on mount / user change
+  useEffect(() => {
+    let cancelled = false;
+    setHydrated(false);
+    loadProfile(userId).then((p) => {
+      if (cancelled) return;
+      if (p) {
+        const next: ShopSave = {
+          shadowCoins: p.shadow_coins,
+          owned: p.owned.length ? p.owned : ["violet"],
+          selected: p.selected || "violet",
+          accessories: p.accessories,
+          equippedAccessory: p.equipped_accessory,
+        };
+        shopRef.current = next;
+        setShop(next);
+      } else {
+        shopRef.current = { ...DEFAULT_SHOP };
+        setShop({ ...DEFAULT_SHOP });
+      }
+      setHydrated(true);
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  // Debounced cloud save on every change
+  useEffect(() => {
+    shopRef.current = shop;
+    if (!hydrated) return;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      saveProfile(userId, {
+        shadow_coins: shop.shadowCoins,
+        owned: shop.owned,
+        selected: shop.selected,
+        accessories: shop.accessories,
+        equipped_accessory: shop.equippedAccessory,
+      });
+    }, 600);
+    return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
+  }, [shop, hydrated, userId]);
+
+
 
   const stateRef = useRef({
     player: { pos: { x: W / 2, y: H / 2 } as Vec, r: 14, hp: 100, maxHp: 100 },
