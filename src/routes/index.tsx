@@ -1357,12 +1357,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             while (s.xp >= s.xpNext) { s.xp -= s.xpNext; s.level++; s.xpNext = Math.round(s.xpNext * 1.4 + 2); }
           } else if (p.kind === "shadow") {
             setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + p.value }));
+            bumpLifetime({ shadowEarned: p.value });
           } else { s.coins += p.value; }
         } else remPick.push(p);
       }
       s.pickups = remPick;
 
-      if (s.player.hp <= 0) { s.player.hp = 0; s.over = true; }
+      if (s.player.hp <= 0) {
+        s.player.hp = 0;
+        if (!s.over) {
+          s.over = true;
+          // Streak resets on death before 100
+          if (s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
+        }
+      }
 
       // Wave clear
       if (s.waveActive && !s.waveCleared) {
@@ -1371,6 +1379,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           s.waveActive = false; s.waveCleared = true;
           // Wave clear bonus: 10 Shadow Coins
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
+          bumpLifetime({ wavesCleared: 1, shadowEarned: 10 });
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
             if (!s.wonRewardGiven) {
@@ -1384,6 +1393,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               };
               shopRef.current = next;
               setShop(next);
+              bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
               toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
               if (!hadHat) {
                 toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
@@ -1398,6 +1408,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           }
         }
       }
+
     };
 
     const draw = () => {
