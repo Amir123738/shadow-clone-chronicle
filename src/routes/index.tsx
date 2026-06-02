@@ -1273,6 +1273,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         skinColor = `hsl(${hue},90%,65%)`;
         skinGlow = `hsla(${hue},90%,65%,0.55)`;
       }
+      const equippedAcc = shopRef.current.equippedAccessory
+        ? ACCESSORIES.find(a => a.id === shopRef.current.equippedAccessory) ?? null
+        : null;
+      const isHat = equippedAcc && /hat/.test(equippedAcc.id);
+      const isJacket = equippedAcc && /jacket/.test(equippedAcc.id);
+
+      // mix skin color into a darker silhouette body tone
+      const hexToRgb = (h: string) => {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+        if (!m) return { r: 60, g: 80, b: 140 };
+        return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+      };
+      const sc = skinColor.startsWith("#") ? hexToRgb(skinColor) : { r: 80, g: 120, b: 200 };
+      const bodyFill = `rgba(${Math.floor(sc.r*0.45)},${Math.floor(sc.g*0.45)},${Math.floor(sc.b*0.55)},0.92)`;
+      const headFill = `rgba(${Math.floor(sc.r*0.3)},${Math.floor(sc.g*0.3)},${Math.floor(sc.b*0.4)},0.95)`;
+
       for (const cl of s.clones) {
         if (cl.healer) {
           const px = s.player.pos.x, py = s.player.pos.y - 26;
@@ -1283,18 +1299,30 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         } else {
           const f = cl.frames[cl.idx]; if (!f) continue;
           const cang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
-          // Kind shadow: soft blue aura + translucent silhouette + friendly glowing eyes
-          ctx.fillStyle = "rgba(125,211,252,0.35)";
+          // Kind shadow tinted with the equipped skin color
+          ctx.fillStyle = skinGlow;
           ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 4, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "rgba(40,80,140,0.85)";
+          ctx.fillStyle = bodyFill;
           ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "rgba(20,40,80,0.9)";
+          ctx.fillStyle = headFill;
           ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y - 8, 6, 0, Math.PI * 2); ctx.fill();
-          // friendly cyan eyes
-          ctx.fillStyle = "#bff5ff";
-          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = "#7df9ff"; ctx.lineWidth = 2;
+          // friendly eyes glow with skin color
+          ctx.fillStyle = skinColor;
+          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+          // accessory mini-render
+          if (isHat && equippedAcc) {
+            ctx.fillStyle = equippedAcc.color;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y - 13.5, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(f.pos.x - 4, f.pos.y - 17, 8, 4);
+          }
+          if (isJacket && equippedAcc) {
+            ctx.fillStyle = equippedAcc.color;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+          ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
           ctx.lineTo(f.pos.x + Math.cos(cang) * 18, f.pos.y + Math.sin(cang) * 18); ctx.stroke();
         }
