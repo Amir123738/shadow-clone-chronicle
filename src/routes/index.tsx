@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { startMusic, stopMusic } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -355,6 +355,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     blur: number; frozen: boolean; stolen: { name: string; time: number } | null;
     bossName: string | null;
     shadowCoins: number;
+    waveWarning: number;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -363,6 +364,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     enemiesLeft: 0, betweenWaves: false, upgrades: [],
     blur: 0, frozen: false, stolen: null, bossName: null,
     shadowCoins: 0,
+    waveWarning: 0,
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
@@ -529,6 +531,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     // wave history for revive
     lastWaveEnemyCount: 0,
     bgColor: "#0b0d1a" as string,
+    waveWarningTimer: 0,
   });
 
   const resetGame = useCallback(() => {
@@ -551,6 +554,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
     s.bgColor = "#0b0d1a";
+    s.waveWarningTimer = 0;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -633,6 +637,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.betweenWaves = false;
     s.waveCleared = false;
     s.bossSpawned = false;
+    if (s.wave === 50) {
+      s.waveWarningTimer = 4;
+      playWave50Alarm();
+    }
     const bossId = BOSS_WAVES[s.wave] ?? null;
     if (bossId) {
       s.spawnQueue = 0;
