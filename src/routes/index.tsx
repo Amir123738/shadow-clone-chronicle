@@ -1203,12 +1203,21 @@ function Game() {
           ctx.fillText("+", px, py + 4);
         } else {
           const f = cl.frames[cl.idx]; if (!f) continue;
-          ctx.fillStyle = skinGlow;
-          ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y, 12, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
-          const ang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
+          const cang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
+          // Kind shadow: soft blue aura + translucent silhouette + friendly glowing eyes
+          ctx.fillStyle = "rgba(125,211,252,0.35)";
+          ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 4, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(40,80,140,0.85)";
+          ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(20,40,80,0.9)";
+          ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y - 8, 6, 0, Math.PI * 2); ctx.fill();
+          // friendly cyan eyes
+          ctx.fillStyle = "#bff5ff";
+          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "#7df9ff"; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
-          ctx.lineTo(f.pos.x + Math.cos(ang) * 18, f.pos.y + Math.sin(ang) * 18); ctx.stroke();
+          ctx.lineTo(f.pos.x + Math.cos(cang) * 18, f.pos.y + Math.sin(cang) * 18); ctx.stroke();
         }
       }
 
@@ -1229,13 +1238,40 @@ function Game() {
 
 
       for (const e of s.enemies) {
-        ctx.fillStyle = e.color;
-        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, e.r, 0, Math.PI * 2); ctx.fill();
-        const w = e.r * 2;
+        const er = e.r;
+        // Evil shadow: dark wispy aura + black body + glowing red eyes
+        ctx.fillStyle = "rgba(120,0,0,0.35)";
+        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.2, er + 4, er + 6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(10,5,15,0.95)";
+        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.15, er, er + 2, 0, 0, Math.PI * 2); ctx.fill();
+        // head
+        ctx.fillStyle = "rgba(5,0,10,1)";
+        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y - er * 0.55, er * 0.55, 0, Math.PI * 2); ctx.fill();
+        // jagged crown
+        ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = -2; i <= 2; i++) {
+          const sx = e.pos.x + i * (er * 0.22);
+          ctx.moveTo(sx, e.pos.y - er * 0.9);
+          ctx.lineTo(sx + er * 0.1, e.pos.y - er * 1.15);
+        }
+        ctx.stroke();
+        // red eyes
+        const eyeY = e.pos.y - er * 0.6;
+        ctx.fillStyle = "#ff2a2a";
+        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,120,120,0.45)";
+        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+        // tint by original color (boss/elite)
+        ctx.fillStyle = e.color + "33";
+        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
+        const w = er * 2;
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - e.r - 8, w, 4);
+        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w, 4);
         ctx.fillStyle = "#ff5d5d";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - e.r - 8, w * (e.hp / e.maxHp), 4);
+        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w * (e.hp / e.maxHp), 4);
       }
 
       for (const b of s.bullets) {
@@ -1251,8 +1287,41 @@ function Game() {
       }
 
       const p = s.player;
-      ctx.fillStyle = "#ffe066";
-      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r, 0, Math.PI * 2); ctx.fill();
+      const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
+      // Person: shadow on ground, legs, torso, arms, head
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y + p.r + 2, p.r * 0.9, p.r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+      // legs
+      ctx.strokeStyle = "#3a5a8a"; ctx.lineWidth = 4; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(p.pos.x - 3, p.pos.y + 2); ctx.lineTo(p.pos.x - 3, p.pos.y + p.r + 2);
+      ctx.moveTo(p.pos.x + 3, p.pos.y + 2); ctx.lineTo(p.pos.x + 3, p.pos.y + p.r + 2);
+      ctx.stroke();
+      // torso (shirt)
+      ctx.fillStyle = "#2e7dd9";
+      ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.fill();
+      // arms toward aim
+      ctx.strokeStyle = "#f1c27d"; ctx.lineWidth = 3.5;
+      const ax = p.pos.x + Math.cos(pang) * 6, ay = p.pos.y + Math.sin(pang) * 6;
+      ctx.beginPath();
+      ctx.moveTo(p.pos.x - Math.sin(pang) * 6, p.pos.y + Math.cos(pang) * 6);
+      ctx.lineTo(ax + Math.cos(pang) * 8, ay + Math.sin(pang) * 8);
+      ctx.stroke();
+      // head (skin)
+      ctx.fillStyle = "#f1c27d";
+      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.75, p.r * 0.55, 0, Math.PI * 2); ctx.fill();
+      // hair
+      ctx.fillStyle = "#2a1d10";
+      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.95, p.r * 0.55, Math.PI, 0); ctx.fill();
+      // eyes
+      ctx.fillStyle = "#1a1a1a";
+      ctx.beginPath(); ctx.arc(p.pos.x - 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.pos.x + 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
+      // gun / aim line
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
+      ctx.lineTo(p.pos.x + Math.cos(pang) * 22, p.pos.y + Math.sin(pang) * 22); ctx.stroke();
+
       // Shield ring (bronze defence)
       if (s.shieldTime > 0) {
         ctx.strokeStyle = "rgba(205,127,50,0.9)"; ctx.lineWidth = 3;
@@ -1260,10 +1329,6 @@ function Game() {
         ctx.strokeStyle = "rgba(255,200,120,0.4)"; ctx.lineWidth = 6;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 9, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-      const ang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
-      ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
-      ctx.lineTo(p.pos.x + Math.cos(ang) * 22, p.pos.y + Math.sin(ang) * 22); ctx.stroke();
 
       const boss = s.enemies.find(e => e.kind === "boss");
       if (boss) {
