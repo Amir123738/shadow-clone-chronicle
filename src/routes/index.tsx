@@ -515,8 +515,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const setLifetimeAbs = useCallback((patch: Partial<LifetimeStats>) => {
     setLifetime((lt) => ({ ...lt, ...patch }));
   }, []);
+  const [rerollState, setRerollState] = useState(() => loadReroll());
   const rerollTasks = useCallback(() => {
+    const cur = loadReroll();
+    if (cur.count >= REROLL_LIMIT) {
+      toast.error(`Daily reroll limit reached (${REROLL_LIMIT}/day). Try again tomorrow.`);
+      return;
+    }
+    const next = { date: cur.date, count: cur.count + 1 };
+    saveReroll(next);
+    setRerollState(next);
     setTasks(rollTasks(lifetimeRef.current));
+    toast.success(`Tasks rerolled (${next.count}/${REROLL_LIMIT} today)`);
   }, []);
   const claimTask = useCallback((taskId: string) => {
     const t = tasks.find(x => x.id === taskId);
