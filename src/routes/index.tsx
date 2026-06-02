@@ -652,7 +652,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     player: { pos: { x: W / 2, y: H / 2 } as Vec, r: 14, hp: 100, maxHp: 100 },
     stats: {
       moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520,
-      doubleBullets: false, cloneDmgMult: 1,
+      doubleBullets: false, tripleBullets: false, cloneDmgMult: 1,
     },
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
