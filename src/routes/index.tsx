@@ -730,7 +730,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
-    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
+    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.poisonArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
     s.shadowAttackCd = 0; s.specialClones = [];
     s.dragonBreathTime = 0; s.dragonBreathCd = 0; s.radiationWaves = [];
