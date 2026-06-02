@@ -564,20 +564,34 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   function spawnGrunt() {
     const s = stateRef.current;
     const waveBoost = 1 + s.wave * 0.15;
+    // Wave 50+ surge: enemies get +500% HP and +250% damage
+    const hardHp = s.wave >= 50 ? 6 : 1;
+    const hardDmg = s.wave >= 50 ? 3.5 : 1;
+    // Wave 50+ also spawns occasional "mega" enemies that are 5x stronger
+    const isMega = s.wave >= 50 && Math.random() < 0.18;
+    const megaHp = isMega ? 5 : 1;
+    const megaDmg = isMega ? 5 : 1;
+    const megaR = isMega ? 1.7 : 1;
     const r = Math.random();
     let e: Enemy;
     if (r < 0.55) {
+      const hp = 55 * waveBoost * hardHp * megaHp;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 55 * waveBoost, maxHp: 55 * waveBoost, r: 14, speed: 110 + s.wave * 1.2, baseSpeed: 110 + s.wave * 1.2,
-        dmg: 16 + s.wave * 0.4, baseDmg: 16 + s.wave * 0.4, color: "#7cf24a", xp: 1, coin: 1, kind: "grunt" };
+        hp, maxHp: hp, r: 14 * megaR, speed: 110 + s.wave * 1.2, baseSpeed: 110 + s.wave * 1.2,
+        dmg: (16 + s.wave * 0.4) * hardDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * megaDmg,
+        color: isMega ? "#ff3df0" : "#7cf24a", xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
     } else if (r < 0.85) {
+      const hp = 32 * waveBoost * hardHp * megaHp;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 32 * waveBoost, maxHp: 32 * waveBoost, r: 10, speed: 195 + s.wave * 1.5, baseSpeed: 195 + s.wave * 1.5,
-        dmg: 13 + s.wave * 0.3, baseDmg: 13 + s.wave * 0.3, color: "#4ad6ff", xp: 2, coin: 1, kind: "fast" };
+        hp, maxHp: hp, r: 10 * megaR, speed: 195 + s.wave * 1.5, baseSpeed: 195 + s.wave * 1.5,
+        dmg: (13 + s.wave * 0.3) * hardDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * megaDmg,
+        color: isMega ? "#ff3df0" : "#4ad6ff", xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
     } else {
+      const hp = 170 * waveBoost * hardHp * megaHp;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 170 * waveBoost, maxHp: 170 * waveBoost, r: 20, speed: 75 + s.wave * 0.6, baseSpeed: 75 + s.wave * 0.6,
-        dmg: 28 + s.wave * 0.6, baseDmg: 28 + s.wave * 0.6, color: "#ff8a3d", xp: 3, coin: 3, kind: "tank" };
+        hp, maxHp: hp, r: 20 * megaR, speed: 75 + s.wave * 0.6, baseSpeed: 75 + s.wave * 0.6,
+        dmg: (28 + s.wave * 0.6) * hardDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * megaDmg,
+        color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
     s.enemies.push(e);
   }
@@ -591,6 +605,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (id === "plantium") { hp = 85000; dmg = 130; sp = 175; r = 68; color = "#7cf24a"; guards = 20; }
     if (id === "final") { hp = 160000; dmg = 170; sp = 195; r = 80; color = "#ff0040"; guards = 26; }
     if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
+    // Wave 50+ bosses: +50% HP, +100% damage
+    if (s.wave >= 50) { hp = Math.round(hp * 1.5); dmg = Math.round(dmg * 2); }
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -598,11 +614,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       abilityCds: { pull: 5, freeze: 8, steal: 12, revive: 10, blur: 15, hasten: 20, empower: 25 },
       abilityFlags: {},
     });
+    const guardHp = s.wave >= 50 ? 280 * 6 : 280;
+    const guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp: 280, maxHp: 280, r: 14, speed: 230, baseSpeed: 230,
-        dmg: 24, baseDmg: 24, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+        hp: guardHp, maxHp: guardHp, r: 14, speed: 230, baseSpeed: 230,
+        dmg: guardDmg, baseDmg: guardDmg, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
       });
     }
     s.bossSpawned = true;
