@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      player_profiles: {
+        Row: {
+          accessories: Json
+          created_at: string
+          equipped_accessory: string | null
+          id: string
+          nickname: string
+          owned: Json
+          selected: string
+          shadow_coins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accessories?: Json
+          created_at?: string
+          equipped_accessory?: string | null
+          id?: string
+          nickname: string
+          owned?: Json
+          selected?: string
+          shadow_coins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accessories?: Json
+          created_at?: string
+          equipped_accessory?: string | null
+          id?: string
+          nickname?: string
+          owned?: Json
+          selected?: string
+          shadow_coins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
