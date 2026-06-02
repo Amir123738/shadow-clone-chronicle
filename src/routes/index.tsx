@@ -1159,6 +1159,7 @@ function Game() {
             if (s.stolenUpgrade) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
             s.betweenWaves = true;
             s.pendingUpgrades = rollUpgrades();
+            s.bgColor = randomColor();
           }
         }
       }
@@ -1166,7 +1167,7 @@ function Game() {
 
     const draw = () => {
       const s = stateRef.current;
-      ctx.fillStyle = "#0b0d1a";
+      ctx.fillStyle = s.bgColor;
       ctx.fillRect(0, 0, W, H);
       ctx.strokeStyle = "rgba(255,255,255,0.04)";
       ctx.lineWidth = 1;
