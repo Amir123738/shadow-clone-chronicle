@@ -1346,39 +1346,110 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       for (const e of s.enemies) {
         const er = e.r;
-        // Evil shadow: dark wispy aura + black body + glowing red eyes
-        ctx.fillStyle = "rgba(120,0,0,0.35)";
-        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.2, er + 4, er + 6, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(10,5,15,0.95)";
-        ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.15, er, er + 2, 0, 0, Math.PI * 2); ctx.fill();
-        // head
-        ctx.fillStyle = "rgba(5,0,10,1)";
-        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y - er * 0.55, er * 0.55, 0, Math.PI * 2); ctx.fill();
-        // jagged crown
-        ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = -2; i <= 2; i++) {
-          const sx = e.pos.x + i * (er * 0.22);
-          ctx.moveTo(sx, e.pos.y - er * 0.9);
-          ctx.lineTo(sx + er * 0.1, e.pos.y - er * 1.15);
+        const isBossE = e.kind === "boss";
+        if (isBossE) {
+          // BOSS: huge pulsing aura, demonic body, horns, glowing crown, rune ring
+          const t = performance.now() / 1000;
+          const pulse = 1 + Math.sin(t * 3) * 0.08;
+          // rotating rune ring
+          ctx.save();
+          ctx.translate(e.pos.x, e.pos.y);
+          ctx.rotate(t * 0.6);
+          ctx.strokeStyle = e.color + "cc"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, (er + 14) * pulse, 0, Math.PI * 2); ctx.stroke();
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const rx = Math.cos(a) * (er + 14) * pulse;
+            const ry = Math.sin(a) * (er + 14) * pulse;
+            ctx.fillStyle = e.color;
+            ctx.beginPath(); ctx.arc(rx, ry, 3, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
+          // outer glow aura
+          const grad = ctx.createRadialGradient(e.pos.x, e.pos.y, er * 0.4, e.pos.x, e.pos.y, er * 2.2);
+          grad.addColorStop(0, e.color + "88");
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er * 2.2, 0, Math.PI * 2); ctx.fill();
+          // body — dark with colored core
+          ctx.fillStyle = "rgba(5,0,10,1)";
+          ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.1, er * 1.15, er * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = e.color + "66";
+          ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.1, er * 1.1, er * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+          // spiked shoulders
+          ctx.fillStyle = "rgba(0,0,0,0.95)";
+          for (let i = -1; i <= 1; i += 2) {
+            ctx.beginPath();
+            ctx.moveTo(e.pos.x + i * er * 0.9, e.pos.y - er * 0.2);
+            ctx.lineTo(e.pos.x + i * er * 1.4, e.pos.y - er * 0.8);
+            ctx.lineTo(e.pos.x + i * er * 0.6, e.pos.y - er * 0.3);
+            ctx.closePath(); ctx.fill();
+          }
+          // head
+          ctx.fillStyle = "rgba(5,0,10,1)";
+          ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y - er * 0.7, er * 0.65, 0, Math.PI * 2); ctx.fill();
+          // horns
+          ctx.fillStyle = e.color;
+          ctx.beginPath();
+          ctx.moveTo(e.pos.x - er * 0.45, e.pos.y - er * 1.0);
+          ctx.lineTo(e.pos.x - er * 0.85, e.pos.y - er * 1.6);
+          ctx.lineTo(e.pos.x - er * 0.25, e.pos.y - er * 1.1);
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(e.pos.x + er * 0.45, e.pos.y - er * 1.0);
+          ctx.lineTo(e.pos.x + er * 0.85, e.pos.y - er * 1.6);
+          ctx.lineTo(e.pos.x + er * 0.25, e.pos.y - er * 1.1);
+          ctx.closePath(); ctx.fill();
+          // crown gems
+          ctx.fillStyle = "#ffd84a";
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath(); ctx.arc(e.pos.x + i * er * 0.25, e.pos.y - er * 1.05, er * 0.1, 0, Math.PI * 2); ctx.fill();
+          }
+          // glowing eyes
+          const eyeYb = e.pos.y - er * 0.75;
+          ctx.shadowColor = e.color; ctx.shadowBlur = 12;
+          ctx.fillStyle = "#fff200";
+          ctx.beginPath(); ctx.arc(e.pos.x - er * 0.22, eyeYb, er * 0.14, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(e.pos.x + er * 0.22, eyeYb, er * 0.14, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = 0;
+          // fanged mouth
+          ctx.strokeStyle = "#ff2a2a"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(e.pos.x - er * 0.25, e.pos.y - er * 0.45); ctx.lineTo(e.pos.x + er * 0.25, e.pos.y - er * 0.45); ctx.stroke();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath(); ctx.moveTo(e.pos.x - er * 0.12, e.pos.y - er * 0.45); ctx.lineTo(e.pos.x - er * 0.05, e.pos.y - er * 0.3); ctx.lineTo(e.pos.x - er * 0.2, e.pos.y - er * 0.4); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(e.pos.x + er * 0.12, e.pos.y - er * 0.45); ctx.lineTo(e.pos.x + er * 0.05, e.pos.y - er * 0.3); ctx.lineTo(e.pos.x + er * 0.2, e.pos.y - er * 0.4); ctx.closePath(); ctx.fill();
+        } else {
+          // Evil shadow: dark wispy aura + black body + glowing red eyes
+          ctx.fillStyle = "rgba(120,0,0,0.35)";
+          ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.2, er + 4, er + 6, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(10,5,15,0.95)";
+          ctx.beginPath(); ctx.ellipse(e.pos.x, e.pos.y + er * 0.15, er, er + 2, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(5,0,10,1)";
+          ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y - er * 0.55, er * 0.55, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = -2; i <= 2; i++) {
+            const sx = e.pos.x + i * (er * 0.22);
+            ctx.moveTo(sx, e.pos.y - er * 0.9);
+            ctx.lineTo(sx + er * 0.1, e.pos.y - er * 1.15);
+          }
+          ctx.stroke();
+          const eyeY = e.pos.y - er * 0.6;
+          ctx.fillStyle = "#ff2a2a";
+          ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(255,120,120,0.45)";
+          ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = e.color + "33";
+          ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
         }
-        ctx.stroke();
-        // red eyes
-        const eyeY = e.pos.y - er * 0.6;
-        ctx.fillStyle = "#ff2a2a";
-        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, Math.max(1.4, er * 0.11), 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(255,120,120,0.45)";
-        ctx.beginPath(); ctx.arc(e.pos.x - er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
-        // tint by original color (boss/elite)
-        ctx.fillStyle = e.color + "33";
-        ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
         const w = er * 2;
+        const barY = e.pos.y - er - (isBossE ? 18 : 8);
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w, 4);
-        ctx.fillStyle = "#ff5d5d";
-        ctx.fillRect(e.pos.x - w / 2, e.pos.y - er - 8, w * (e.hp / e.maxHp), 4);
+        ctx.fillRect(e.pos.x - w / 2, barY, w, 4);
+        ctx.fillStyle = isBossE ? "#ffd84a" : "#ff5d5d";
+        ctx.fillRect(e.pos.x - w / 2, barY, w * (e.hp / e.maxHp), 4);
       }
 
       for (const b of s.bullets) {
