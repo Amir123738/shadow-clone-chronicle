@@ -725,6 +725,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.lastWaveEnemyCount = 0;
     s.bgColor = "#0b0d1a";
     s.waveWarningTimer = 0;
+    s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
   }, []);
 
   function edgeSpawn(): Vec {
