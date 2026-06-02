@@ -1074,21 +1074,107 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     startWave();
   };
 
+  const SUPER_UPGRADES: { id: string; name: string; color: string; desc: string; apply: () => void }[] = [
+    {
+      id: "shadowchaos", name: "Shadow Chaos", color: "#ff5d3a",
+      desc: "3 fire clones shooting fire arrows + 45% move speed",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.moveSpeed *= 1.45;
+        s.fireArrowTime = Math.max(s.fireArrowTime, 9999);
+        for (let k = 0; k < 3; k++) {
+          s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+        }
+      },
+    },
+    {
+      id: "altoultrazero", name: "AltoUltraZero", color: "#7cdcff",
+      desc: "Freeze all enemies 25s + 50% damage + clones 25% faster & stronger",
+      apply: () => {
+        const s = stateRef.current;
+        s.freezeTime = Math.max(s.freezeTime, 25);
+        s.stats.bulletDmg *= 1.5;
+        s.stats.cloneDmgMult *= 1.25;
+        for (const sc of s.specialClones) sc.orbitSpeed *= 1.25;
+      },
+    },
+    {
+      id: "hpwave", name: "HP Wave", color: "#7cffb2",
+      desc: "3 healer clones (30s) + poison arrows that deal extra damage",
+      apply: () => {
+        const s = stateRef.current;
+        for (let k = 0; k < 3; k++) {
+          s.clones.push({ frames: [], idx: 0, trail: [], healer: true, life: 30 });
+          s.cloneFireCd.push(0);
+        }
+        s.poisonArrowTime = Math.max(s.poisonArrowTime, 9999);
+      },
+    },
+    {
+      id: "firegod", name: "Fire God", color: "#ff7a18",
+      desc: "Dragon breath + 3 fire clones (damage -25%)",
+      apply: () => {
+        const s = stateRef.current;
+        s.dragonBreathTime = Math.max(s.dragonBreathTime, 9999);
+        s.dragonBreathCd = 0;
+        s.fireArrowTime = Math.max(s.fireArrowTime, 9999);
+        s.stats.bulletDmg *= 0.75;
+        for (let k = 0; k < 3; k++) {
+          s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+        }
+      },
+    },
+    {
+      id: "ultrafast", name: "Ultra Fast Bullets", color: "#ffe066",
+      desc: "Shoot 50% faster + damage x2",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.fireRate *= 1.5;
+        s.stats.bulletDmg *= 2;
+      },
+    },
+    {
+      id: "quadshooter", name: "Quadriple Shooter", color: "#b388ff",
+      desc: "Shoot 2x faster + triple shot",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.fireRate *= 2;
+        s.stats.tripleBullets = true;
+      },
+    },
+  ];
+
   const startLevel = (levelId: number) => {
     const level = LEVELS.find(l => l.id === levelId);
     if (!level) return;
+    setPendingSuperLevelId(levelId);
+    setSuperPickOpen(true);
+    setLevelsOpen(false);
+    toast(`${level.name} — Pick your Super Upgrade!`, { duration: 2500 });
+  };
+
+  const pickSuperUpgrade = (superId: string) => {
+    const levelId = pendingSuperLevelId;
+    if (levelId == null) return;
+    const level = LEVELS.find(l => l.id === levelId);
+    const su = SUPER_UPGRADES.find(s => s.id === superId);
+    if (!level || !su) return;
     resetGame();
     const s = stateRef.current;
     s.gameMode = "level";
     s.levelId = levelId;
     s.levelMult = level.gruntMult;
     s.levelTotalWaves = LEVEL_WAVES;
-    setLevelsOpen(false);
+    su.apply();
+    setSuperPickOpen(false);
+    setPendingSuperLevelId(null);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
-    toast(`${level.name} — Defeat ${level.bossName}!`, { duration: 4000 });
+    toast(`${su.name} activated! Defeat ${level.bossName}!`, { duration: 4000 });
   };
+
+
 
   const spinShady = () => {
     if (shadySpinning) return;
