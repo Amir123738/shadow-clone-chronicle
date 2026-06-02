@@ -418,6 +418,67 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [shopOpen, setShopOpen] = useState(false);
   const [accShopOpen, setAccShopOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [lifetime, setLifetime] = useState<LifetimeStats>(() => loadLifetime());
+  const lifetimeRef = useRef(lifetime);
+  const [tasks, setTasks] = useState<ActiveTask[]>(() => {
+    const lt = typeof window !== "undefined" ? loadLifetime() : DEFAULT_LIFETIME;
+    const existing = loadTasks();
+    if (existing && existing.length === 3) return existing;
+    const fresh = rollTasks(lt);
+    if (typeof window !== "undefined") saveTasks(fresh);
+    return fresh;
+  });
+  useEffect(() => { lifetimeRef.current = lifetime; saveLifetime(lifetime); }, [lifetime]);
+  useEffect(() => { saveTasks(tasks); }, [tasks]);
+  const bumpLifetime = useCallback((patch: Partial<LifetimeStats>) => {
+    setLifetime((lt) => {
+      const next = { ...lt };
+      (Object.keys(patch) as (keyof LifetimeStats)[]).forEach((k) => {
+        next[k] = (lt[k] ?? 0) + (patch[k] ?? 0);
+      });
+      return next;
+    });
+  }, []);
+  const setLifetimeAbs = useCallback((patch: Partial<LifetimeStats>) => {
+    setLifetime((lt) => ({ ...lt, ...patch }));
+  }, []);
+  const rerollTasks = useCallback(() => {
+    setTasks(rollTasks(lifetimeRef.current));
+  }, []);
+  const claimTask = useCallback((taskId: string) => {
+    const t = tasks.find(x => x.id === taskId);
+    const def = TASK_TEMPLATES.find(d => d.id === taskId);
+    if (!t || !def || t.claimed) return;
+    const progress = (lifetimeRef.current[def.metric] ?? 0) - t.baseline;
+    if (progress < def.target) return;
+    const cur = shopRef.current;
+    const next = { ...cur, shadowCoins: cur.shadowCoins + def.reward };
+    shopRef.current = next; setShop(next);
+    setTasks(ts => ts.map(x => x.id === taskId ? { ...x, claimed: true } : x));
+    toast.success(`Task complete! +${def.reward} Shadow Coins`);
+  }, [tasks]);
+  const claimElite = useCallback(() => {
+    if (lifetimeRef.current.wins100Streak < ELITE_TARGET) return;
+    const cur = shopRef.current;
+    const ownsSkin = cur.owned.includes("admin");
+    const hasHat = cur.accessories.includes("admin_hat");
+    const hasJacket = cur.accessories.includes("admin_jacket");
+    if (ownsSkin && hasHat && hasJacket) return;
+    const accessories = [...cur.accessories];
+    if (!hasHat) accessories.push("admin_hat");
+    if (!hasJacket) accessories.push("admin_jacket");
+    const next: ShopSave = {
+      ...cur,
+      owned: ownsSkin ? cur.owned : [...cur.owned, "admin"],
+      accessories,
+      selected: "admin",
+      equippedAccessory: "admin_hat",
+    };
+    shopRef.current = next; setShop(next);
+    toast.success("THE Elite Shadow Gamer! Admin skin, Admin Hat & Admin Jacket unlocked!", { duration: 8000 });
+  }, []);
+
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelMsg, setWheelMsg] = useState<string | null>(null);
