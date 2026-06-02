@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { startMusic, stopMusic } from "@/lib/gameMusic";
 import upgFire from "@/assets/upgrades/fire.png";
 import upgDmg from "@/assets/upgrades/dmg.png";
 import upgSpd from "@/assets/upgrades/spd.png";
@@ -697,9 +698,23 @@ function Game() {
     startWave();
   };
 
+  const [musicOn, setMusicOn] = useState(true);
+  const musicOnRef = useRef(true);
+  useEffect(() => { musicOnRef.current = musicOn; }, [musicOn]);
+  useEffect(() => () => { stopMusic(); }, []);
+
+  const toggleMusic = () => {
+    setMusicOn((on) => {
+      const next = !on;
+      if (next) startMusic(); else stopMusic();
+      return next;
+    });
+  };
+
   const startGame = () => {
     resetGame();
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    if (musicOnRef.current) startMusic();
     startWave();
   };
 
@@ -1434,6 +1449,13 @@ function Game() {
                 </button>
                 <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
                   Inventory
+                </button>
+                <button
+                  onClick={toggleMusic}
+                  className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
+                  title="Toggle background music"
+                >
+                  {musicOn ? "♪ Music: On" : "♪ Music: Off"}
                 </button>
               </div>
             </Overlay>
