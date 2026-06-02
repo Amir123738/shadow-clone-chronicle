@@ -1524,10 +1524,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
+      <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
+        <span className="text-white/70">
+          Player: <span className="font-bold text-white">{nickname || "…"}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
+        >
+          Log out
+        </button>
+      </div>
       <header className="text-center">
         <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-[#ffe066] via-[#ff2e88] to-[#b388ff] bg-clip-text text-transparent">
           Shadow Clone Survivor
         </h1>
+
         <p className="text-sm text-white/60">WASD · Mouse aim · Click to shoot · Survive 100 waves</p>
       </header>
 
