@@ -43,8 +43,19 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Survive 100 waves with the help of your past selves." },
     ],
   }),
-  component: Game,
+  component: GameRoute,
 });
+
+function GameRoute() {
+  return (
+    <AuthGate>
+      {({ user, signOut, nickname }) => (
+        <Game userId={user.id} nickname={nickname} signOut={signOut} />
+      )}
+    </AuthGate>
+  );
+}
+
 
 // ---------- Types ----------
 type Vec = { x: number; y: number };
