@@ -1241,6 +1241,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
       if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      if (s.poisonArrowTime > 0) s.poisonArrowTime = Math.max(0, s.poisonArrowTime - dt);
       if (s.kingShadowTime > 0) s.kingShadowTime = Math.max(0, s.kingShadowTime - dt);
       if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
