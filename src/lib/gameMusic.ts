@@ -147,3 +147,44 @@ export function setMusicVolume(v: number) {
 export function isMusicRunning() {
   return running;
 }
+
+export function playWave50Alarm() {
+  try {
+    if (!ctx) {
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      ctx = new AC();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.35;
+      masterGain.connect(ctx.destination);
+    }
+    if (!ctx || !masterGain) return;
+    const now = ctx.currentTime;
+    const alarmGain = ctx.createGain();
+    alarmGain.gain.setValueAtTime(0.25, now);
+    alarmGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+    alarmGain.connect(masterGain);
+    for (let i = 0; i < 6; i++) {
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(880, now + i * 0.25);
+      osc.frequency.exponentialRampToValueAtTime(440, now + i * 0.25 + 0.12);
+      osc.connect(alarmGain);
+      osc.start(now + i * 0.25);
+      osc.stop(now + i * 0.25 + 0.2);
+    }
+    // deep rumble underneath
+    const rumble = ctx.createOscillator();
+    rumble.type = "sine";
+    rumble.frequency.setValueAtTime(60, now);
+    rumble.frequency.exponentialRampToValueAtTime(30, now + 2.5);
+    const rumbleGain = ctx.createGain();
+    rumbleGain.gain.setValueAtTime(0.15, now);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+    rumbleGain.connect(masterGain);
+    rumble.connect(rumbleGain);
+    rumble.start(now);
+    rumble.stop(now + 2.6);
+  } catch {}
+}
