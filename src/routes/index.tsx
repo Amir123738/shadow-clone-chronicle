@@ -69,6 +69,7 @@ type Enemy = {
   kind: "grunt" | "fast" | "tank" | "boss"; bossId?: BossId;
   abilityCds?: Record<string, number>; abilityFlags?: Record<string, boolean>;
   randomDir?: Vec; randomTimer?: number;
+  customBossName?: string;
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
@@ -326,6 +327,56 @@ function rollWheel(): WheelReward {
   for (const w of WHEEL_REWARDS) { if ((r -= w.weight) <= 0) return w; }
   return WHEEL_REWARDS[0];
 }
+
+// ---------- Levels / Bosses Mode ----------
+type LevelDef = {
+  id: number; name: string; bossName: string; bossColor: string;
+  bossHp: number; bossDmg: number; bossSpd: number; bossR: number;
+  gruntMult: number; guards: number; spinReward: number;
+};
+const LEVELS: LevelDef[] = [
+  { id: 1,  name: "Level 1 — Shade Hollow",    bossName: "SHADE WHELP",         bossColor: "#7cf24a", bossHp: 28000,   bossDmg: 55,  bossSpd: 130, bossR: 46, gruntMult: 1.3,  guards: 6,  spinReward: 1 },
+  { id: 2,  name: "Level 2 — Ember Wastes",    bossName: "ASH REAVER",          bossColor: "#ff8a3d", bossHp: 55000,   bossDmg: 75,  bossSpd: 140, bossR: 50, gruntMult: 1.8,  guards: 8,  spinReward: 2 },
+  { id: 3,  name: "Level 3 — Crimson Forge",   bossName: "CRIMSON HOUND",       bossColor: "#ff2e88", bossHp: 95000,   bossDmg: 100, bossSpd: 155, bossR: 54, gruntMult: 2.5,  guards: 10, spinReward: 3 },
+  { id: 4,  name: "Level 4 — Glacier Vault",   bossName: "GLACIER MAW",         bossColor: "#7dd3fc", bossHp: 160000,  bossDmg: 130, bossSpd: 165, bossR: 58, gruntMult: 3.4,  guards: 12, spinReward: 4 },
+  { id: 5,  name: "Level 5 — Void Abyss",      bossName: "VOIDFANG",            bossColor: "#a000ff", bossHp: 260000,  bossDmg: 170, bossSpd: 175, bossR: 62, gruntMult: 4.6,  guards: 14, spinReward: 5 },
+  { id: 6,  name: "Level 6 — Storm Spire",     bossName: "STORMCALLER THRAX",   bossColor: "#00e5ff", bossHp: 420000,  bossDmg: 220, bossSpd: 185, bossR: 66, gruntMult: 6.2,  guards: 16, spinReward: 6 },
+  { id: 7,  name: "Level 7 — Plague Marsh",    bossName: "PLAGUE SOVEREIGN",    bossColor: "#a3e635", bossHp: 680000,  bossDmg: 280, bossSpd: 195, bossR: 70, gruntMult: 8.4,  guards: 18, spinReward: 7 },
+  { id: 8,  name: "Level 8 — Obsidian Throne", bossName: "OBSIDIAN TYRANT",     bossColor: "#fde047", bossHp: 1100000, bossDmg: 360, bossSpd: 205, bossR: 76, gruntMult: 11.0, guards: 22, spinReward: 8 },
+  { id: 9,  name: "Level 9 — Null King's Hall",bossName: "NULLKING VORATH",     bossColor: "#c084fc", bossHp: 1800000, bossDmg: 460, bossSpd: 215, bossR: 84, gruntMult: 14.5, guards: 26, spinReward: 9 },
+  { id: 10, name: "Level 10 — Eternal Eclipse",bossName: "THE ETERNAL SHADOWLORD", bossColor: "#ff0033", bossHp: 3200000, bossDmg: 620, bossSpd: 230, bossR: 96, gruntMult: 20.0, guards: 32, spinReward: 10 },
+];
+const LEVEL_WAVES = 5;
+
+type ShadyReward = { coins: number; weight: number; color: string };
+const SHADY_REWARDS: ShadyReward[] = [
+  { coins: 100,    weight: 25, color: "#9ca3af" },
+  { coins: 250,    weight: 25, color: "#60a5fa" },
+  { coins: 500,    weight: 25, color: "#a855f7" },
+  { coins: 1000,   weight: 25, color: "#ec4899" },
+  { coins: 2500,   weight: 5,  color: "#fde68a" },
+  { coins: 5000,   weight: 4,  color: "#ff7a18" },
+  { coins: 100000, weight: 1,  color: "#ffe066" },
+];
+const SHADY_TOTAL_WEIGHT = SHADY_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollShady(): ShadyReward {
+  let r = Math.random() * SHADY_TOTAL_WEIGHT;
+  for (const w of SHADY_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return SHADY_REWARDS[0];
+}
+
+const SHADY_SPINS_KEY = "scs_shady_spins_v1";
+const LEVELS_CLEARED_KEY = "scs_levels_cleared_v1";
+function loadShadySpins(): number {
+  if (typeof window === "undefined") return 0;
+  try { return Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0; } catch { return 0; }
+}
+function saveShadySpins(n: number) { try { localStorage.setItem(SHADY_SPINS_KEY, String(n)); } catch {} }
+function loadLevelsCleared(): number[] {
+  if (typeof window === "undefined") return [];
+  try { const raw = localStorage.getItem(LEVELS_CLEARED_KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v.filter(x => typeof x === "number") : []; } catch { return []; }
+}
+function saveLevelsCleared(v: number[]) { try { localStorage.setItem(LEVELS_CLEARED_KEY, JSON.stringify(v)); } catch {} }
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
@@ -403,6 +454,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     bossName: string | null;
     shadowCoins: number;
     waveWarning: number;
+    totalWaves: number;
+    gameMode: "normal" | "level";
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -412,6 +465,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     blur: 0, frozen: false, stolen: null, bossName: null,
     shadowCoins: 0,
     waveWarning: 0,
+    totalWaves: TOTAL_WAVES,
+    gameMode: "normal",
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
@@ -419,6 +474,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [accShopOpen, setAccShopOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [levelsOpen, setLevelsOpen] = useState(false);
+  const [shadySpins, setShadySpins] = useState<number>(() => loadShadySpins());
+  const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
+  const [shadyMsg, setShadyMsg] = useState<string | null>(null);
+  const [shadyAngle, setShadyAngle] = useState(0);
+  const [shadySpinning, setShadySpinning] = useState(false);
   const [lifetime, setLifetime] = useState<LifetimeStats>(() => loadLifetime());
   const lifetimeRef = useRef(lifetime);
   const [tasks, setTasks] = useState<ActiveTask[]>(() => {
@@ -647,6 +708,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     lastWaveEnemyCount: 0,
     bgColor: "#0b0d1a" as string,
     waveWarningTimer: 0,
+    // levels/bosses mode
+    gameMode: "normal" as "normal" | "level",
+    levelId: 0,
+    levelMult: 1,
+    levelTotalWaves: TOTAL_WAVES,
   });
 
   const resetGame = useCallback(() => {
@@ -670,6 +736,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.lastWaveEnemyCount = 0;
     s.bgColor = "#0b0d1a";
     s.waveWarningTimer = 0;
+    s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -719,7 +786,36 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
+    // Levels/Bosses mode: enemies scaled by level multiplier
+    const lvlMult = s.levelMult || 1;
+    e.hp *= lvlMult; e.maxHp *= lvlMult;
+    e.dmg *= lvlMult; e.baseDmg *= lvlMult;
+    e.speed *= Math.min(1.6, 1 + (lvlMult - 1) * 0.05);
+    e.baseSpeed = e.speed;
     s.enemies.push(e);
+  }
+
+  function spawnLevelBossFor(level: LevelDef) {
+    const s = stateRef.current;
+    s.enemies.push({
+      pos: edgeSpawn(), vel: { x: 0, y: 0 },
+      hp: level.bossHp, maxHp: level.bossHp, r: level.bossR,
+      speed: level.bossSpd, baseSpeed: level.bossSpd,
+      dmg: level.bossDmg, baseDmg: level.bossDmg,
+      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: "super", customBossName: level.bossName,
+      abilityCds: { pull: 4, freeze: 6, steal: 10, revive: 8, blur: 12, hasten: 16, empower: 20 },
+      abilityFlags: {},
+    });
+    const guardHp = Math.round(280 * level.gruntMult);
+    const guardDmg = Math.round(24 * level.gruntMult);
+    for (let k = 0; k < level.guards; k++) {
+      s.enemies.push({
+        pos: edgeSpawn(), vel: { x: 0, y: 0 },
+        hp: guardHp, maxHp: guardHp, r: 14, speed: 230, baseSpeed: 230,
+        dmg: guardDmg, baseDmg: guardDmg, color: "#ff7ab8", xp: 4, coin: 2, kind: "fast",
+      });
+    }
+    s.bossSpawned = true;
   }
 
   function spawnBossFor(id: BossId) {
@@ -762,6 +858,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.betweenWaves = false;
     s.waveCleared = false;
     s.bossSpawned = false;
+    if (s.gameMode === "level") {
+      const level = LEVELS.find(l => l.id === s.levelId);
+      const isFinal = s.wave >= LEVEL_WAVES;
+      if (isFinal && level) {
+        s.spawnQueue = 0;
+        spawnLevelBossFor(level);
+        s.lastWaveEnemyCount = 1;
+      } else {
+        const mult = level ? level.gruntMult : 1;
+        const count = 6 + Math.floor(s.wave * (2 + mult * 0.4));
+        s.spawnQueue = count;
+        s.lastWaveEnemyCount = count;
+      }
+      return;
+    }
     if (s.wave === 50) {
       s.waveWarningTimer = 4;
       playWave50Alarm();
@@ -959,6 +1070,52 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (musicOnRef.current) startMusic();
     startWave();
   };
+
+  const startLevel = (levelId: number) => {
+    const level = LEVELS.find(l => l.id === levelId);
+    if (!level) return;
+    resetGame();
+    const s = stateRef.current;
+    s.gameMode = "level";
+    s.levelId = levelId;
+    s.levelMult = level.gruntMult;
+    s.levelTotalWaves = LEVEL_WAVES;
+    setLevelsOpen(false);
+    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    if (musicOnRef.current) startMusic();
+    startWave();
+    toast(`${level.name} — Defeat ${level.bossName}!`, { duration: 4000 });
+  };
+
+  const spinShady = () => {
+    if (shadySpinning) return;
+    if (shadySpins <= 0) { setShadyMsg("No Shady Spins! Beat a level to earn one."); return; }
+    const reward = rollShady();
+    const idx = SHADY_REWARDS.indexOf(reward);
+    const slice = 360 / SHADY_REWARDS.length;
+    const mid = idx * slice + slice / 2;
+    setShadySpinning(true);
+    setShadyMsg(null);
+    const newSpins = shadySpins - 1;
+    setShadySpins(newSpins);
+    saveShadySpins(newSpins);
+    setShadyAngle((prev) => {
+      const prevMod = ((prev % 360) + 360) % 360;
+      const desiredMod = ((360 - mid) % 360 + 360) % 360;
+      let delta = desiredMod - prevMod;
+      if (delta < 0) delta += 360;
+      return prev + 360 * 6 + delta;
+    });
+    window.setTimeout(() => {
+      const cur = shopRef.current;
+      const next = { ...cur, shadowCoins: cur.shadowCoins + reward.coins };
+      shopRef.current = next; setShop(next);
+      setShadyMsg(`+${reward.coins.toLocaleString()} Shadow Coins!`);
+      toast.success(`Shady Spin: +${reward.coins.toLocaleString()} ◆`, { duration: 4000 });
+      setShadySpinning(false);
+    }, 4200);
+  };
+
 
   useEffect(() => {
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
@@ -1296,7 +1453,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       }
 
       // Spawn waves
-      const isBossWave = !!BOSS_WAVES[s.wave];
+      const isBossWave = s.gameMode === "level"
+        ? s.wave >= LEVEL_WAVES
+        : !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
         spawnGrunt(); s.spawnQueue--;
       }
@@ -1387,8 +1546,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.player.hp = 0;
         if (!s.over) {
           s.over = true;
-          // Streak resets on death before 100
-          if (s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
+          // Streak resets on death before 100 (normal mode only)
+          if (s.gameMode === "normal" && s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
         }
       }
 
@@ -1400,23 +1559,43 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           // Wave clear bonus: 10 Shadow Coins
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           bumpLifetime({ wavesCleared: 1, shadowEarned: 10 });
-          if (s.wave >= TOTAL_WAVES) {
+          const reachedEnd = s.gameMode === "level"
+            ? s.wave >= LEVEL_WAVES
+            : s.wave >= TOTAL_WAVES;
+          if (reachedEnd) {
             s.won = true;
             if (!s.wonRewardGiven) {
               s.wonRewardGiven = true;
-              const cur = shopRef.current;
-              const hadHat = cur.accessories.includes("bronze_hat");
-              const next: ShopSave = {
-                ...cur,
-                shadowCoins: cur.shadowCoins + 500,
-                accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
-              };
-              shopRef.current = next;
-              setShop(next);
-              bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
-              toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
-              if (!hadHat) {
-                toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+              if (s.gameMode === "level") {
+                const level = LEVELS.find(l => l.id === s.levelId);
+                if (level) {
+                  const spinsBefore = loadShadySpins();
+                  const newSpins = spinsBefore + level.spinReward;
+                  saveShadySpins(newSpins);
+                  setShadySpins(newSpins);
+                  const cleared = loadLevelsCleared();
+                  if (!cleared.includes(level.id)) {
+                    const nextCleared = [...cleared, level.id];
+                    saveLevelsCleared(nextCleared);
+                    setLevelsCleared(nextCleared);
+                  }
+                  toast.success(`${level.bossName} defeated! +${level.spinReward} Shady Spin${level.spinReward > 1 ? "s" : ""}`, { duration: 6000 });
+                }
+              } else {
+                const cur = shopRef.current;
+                const hadHat = cur.accessories.includes("bronze_hat");
+                const next: ShopSave = {
+                  ...cur,
+                  shadowCoins: cur.shadowCoins + 500,
+                  accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
+                };
+                shopRef.current = next;
+                setShop(next);
+                bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
+                toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
+                if (!hadHat) {
+                  toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                }
               }
             }
           } else {
@@ -1428,6 +1607,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           }
         }
       }
+
 
     };
 
@@ -1735,7 +1915,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         ctx.fillStyle = boss.color;
         ctx.fillRect((W - bw) / 2, 14, bw * (boss.hp / boss.maxHp), 14);
         ctx.fillStyle = "#fff"; ctx.font = "bold 12px system-ui"; ctx.textAlign = "center";
-        ctx.fillText(BOSS_NAMES[boss.bossId ?? "super"] ?? "BOSS", W / 2, 24);
+        ctx.fillText(boss.customBossName ?? BOSS_NAMES[boss.bossId ?? "super"] ?? "BOSS", W / 2, 24);
       }
 
       if (s.freezeTime > 0) {
@@ -1845,9 +2025,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           over: s.over, won: s.won,
           blur: s.blurTime, frozen: s.freezeTime > 0,
           stolen: s.stolenUpgrade ? { name: s.stolenUpgrade.name, time: s.stolenTimer } : null,
-          bossName: boss ? (BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
+          bossName: boss ? (boss.customBossName ?? BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
           shadowCoins: shopRef.current.shadowCoins,
           waveWarning: s.waveWarningTimer,
+          totalWaves: s.gameMode === "level" ? LEVEL_WAVES : TOTAL_WAVES,
+          gameMode: s.gameMode,
         };
       });
       raf = requestAnimationFrame(loop);
@@ -1891,7 +2073,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       <div className="relative" style={{ width: "min(96vw, 960px)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm font-mono">
-          <Stat label="Wave" value={`${uiState.wave}/${TOTAL_WAVES}`} />
+          <Stat label="Wave" value={`${uiState.wave}/${uiState.totalWaves}`} />
           <Stat label="Score" value={uiState.score.toString()} />
           <Stat label="Coins" value={uiState.coins.toString()} />
           <Stat label="Shadow ◆" value={uiState.shadowCoins.toString()} />
@@ -1943,6 +2125,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
                   Tasks
                 </button>
+                <button onClick={() => setLevelsOpen(true)} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
+                  LVL's/Bosses
+                </button>
                 <button
                   onClick={toggleMusic}
                   className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
@@ -1952,6 +2137,105 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </button>
               </div>
 
+            </Overlay>
+          )}
+
+          {levelsOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">LVL's / Bosses</h2>
+                  <div className="flex items-center gap-3 text-xs text-white/70">
+                    <span>◆ {shop.shadowCoins.toLocaleString()}</span>
+                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 Shady Spins: {shadySpins}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-white/60 mb-3">Beat 5 waves per level. Each level ends with a unique boss. Win = free Shady Spin(s). Bosses get brutally harder each level.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+                  {LEVELS.map(lv => {
+                    const done = levelsCleared.includes(lv.id);
+                    return (
+                      <div key={lv.id} className={`p-3 rounded-lg ring-1 ${done ? "ring-[#34d399]/60 bg-[#34d399]/10" : "ring-white/10 bg-white/5"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="font-bold text-sm">{lv.name}</div>
+                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">CLEARED</span>}
+                        </div>
+                        <div className="text-xs text-white/70 mb-1">Boss: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
+                        <div className="text-[11px] text-white/50 mb-2">Reward: +{lv.spinReward} Shady Spin{lv.spinReward > 1 ? "s" : ""}</div>
+                        <button
+                          onClick={() => startLevel(lv.id)}
+                          className="w-full px-3 py-1.5 rounded bg-[#ff7a18] text-black font-bold text-xs hover:scale-[1.02] transition"
+                        >
+                          Start Level
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-4 rounded-lg ring-1 ring-[#ffe066]/40 bg-gradient-to-br from-[#ff7a18]/20 to-[#ffe066]/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-black text-[#ffe066]">🎰 Shady Spin</h3>
+                    <span className="text-xs text-white/70">Spins available: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
+                  </div>
+                  <p className="text-[11px] text-white/60 mb-3">Earn spins by clearing levels. Each spin awards Shadow Coins.</p>
+
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="relative w-56 h-56 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[16px] border-l-transparent border-r-transparent border-b-[#ffe066] z-10" />
+                      <div
+                        className="w-full h-full rounded-full ring-4 ring-[#ffe066]/60 transition-transform"
+                        style={{
+                          transform: `rotate(${shadyAngle}deg)`,
+                          transitionDuration: shadySpinning ? "4s" : "0s",
+                          transitionTimingFunction: "cubic-bezier(.18,.89,.32,1)",
+                          background: `conic-gradient(${SHADY_REWARDS.map((r, i) => {
+                            const slice = 360 / SHADY_REWARDS.length;
+                            return `${r.color} ${i * slice}deg ${(i + 1) * slice}deg`;
+                          }).join(",")})`,
+                        }}
+                      >
+                        {SHADY_REWARDS.map((r, i) => {
+                          const slice = 360 / SHADY_REWARDS.length;
+                          const a = i * slice + slice / 2;
+                          const rad = (a - 90) * Math.PI / 180;
+                          const cx = 50 + 32 * Math.cos(rad);
+                          const cy = 50 + 32 * Math.sin(rad);
+                          return (
+                            <div key={r.coins} className="absolute text-[10px] font-black text-black"
+                              style={{ left: `${cx}%`, top: `${cy}%`, transform: `translate(-50%, -50%) rotate(${a}deg)` }}>
+                              {r.coins >= 1000 ? `${r.coins / 1000}k` : r.coins}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex-1 w-full">
+                      <button
+                        onClick={spinShady}
+                        disabled={shadySpinning || shadySpins <= 0}
+                        className="w-full px-4 py-3 rounded-lg bg-[#ffe066] text-black font-black text-lg hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                      >
+                        {shadySpinning ? "Spinning…" : shadySpins > 0 ? "SPIN" : "No Spins"}
+                      </button>
+                      {shadyMsg && <div className="text-center text-sm text-[#ffe066] font-bold mb-2">{shadyMsg}</div>}
+                      <div className="text-[11px] text-white/60 space-y-0.5">
+                        {SHADY_REWARDS.map(r => (
+                          <div key={r.coins} className="flex items-center justify-between">
+                            <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: r.color }} />◆ {r.coins.toLocaleString()}</span>
+                            <span className="font-mono">{((r.weight / SHADY_TOTAL_WEIGHT) * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">Close</button>
+                </div>
+              </div>
             </Overlay>
           )}
 
