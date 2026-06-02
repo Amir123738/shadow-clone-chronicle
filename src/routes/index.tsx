@@ -343,14 +343,14 @@ function Game() {
   const pendingRewardRef = useRef<WheelReward | null>(null);
 
   const finishSpin = useCallback((reward: WheelReward) => {
-    setShop((cur) => {
-      const { next, msg } = reward.apply({ ...cur, shadowCoins: cur.shadowCoins });
-      setWheelMsg(msg);
-      setWheelRevealReward(reward);
-      setWheelRevealOpen(true);
-      toast.success(msg, { duration: 4000 });
-      return next;
-    });
+    const cur = shopRef.current;
+    const { next, msg } = reward.apply({ ...cur });
+    shopRef.current = next;
+    setShop(next);
+    setWheelMsg(msg);
+    setWheelRevealReward(reward);
+    setWheelRevealOpen(true);
+    toast.success(msg, { duration: 4000 });
     setWheelSpinning(false);
   }, []);
 
