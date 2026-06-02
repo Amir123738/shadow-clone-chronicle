@@ -1262,6 +1262,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
+            if (!s.wonRewardGiven) {
+              s.wonRewardGiven = true;
+              const cur = shopRef.current;
+              const hadHat = cur.accessories.includes("bronze_hat");
+              const next: ShopSave = {
+                ...cur,
+                shadowCoins: cur.shadowCoins + 500,
+                accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
+              };
+              shopRef.current = next;
+              setShop(next);
+              toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
+              if (!hadHat) {
+                toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+              }
+            }
           } else {
             // restore stolen on wave clear
             if (s.stolenUpgrade) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
