@@ -411,6 +411,15 @@ function loadTasks(): ActiveTask[] | null {
   return null;
 }
 function saveTasks(v: ActiveTask[]) { try { localStorage.setItem(TASKS_KEY, JSON.stringify(v)); } catch {} }
+const REROLL_KEY = "scs_reroll_v1";
+const REROLL_LIMIT = 3;
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function loadReroll(): { date: string; count: number } {
+  if (typeof window === "undefined") return { date: todayStr(), count: 0 };
+  try { const raw = localStorage.getItem(REROLL_KEY); if (raw) { const v = JSON.parse(raw); if (v?.date === todayStr()) return v; } } catch {}
+  return { date: todayStr(), count: 0 };
+}
+function saveReroll(v: { date: string; count: number }) { try { localStorage.setItem(REROLL_KEY, JSON.stringify(v)); } catch {} }
 function rollTasks(lt: LifetimeStats): ActiveTask[] {
   const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
   return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
