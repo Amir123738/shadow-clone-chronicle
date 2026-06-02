@@ -356,23 +356,24 @@ function Game() {
 
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
-    setShop((sv) => {
-      if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return sv; }
-      const reward = rollWheel();
-      const idx = WHEEL_REWARDS.indexOf(reward);
-      const slice = 360 / WHEEL_REWARDS.length;
-      const target = 360 * 6 + (360 - (idx * slice + slice / 2));
-      setWheelSpinning(true);
-      setWheelMsg(null);
-      setWheelRevealOpen(false);
-      setWheelAngle((prev) => prev + target);
-      pendingRewardRef.current = reward;
-      wheelTimeoutRef.current = window.setTimeout(() => {
-        pendingRewardRef.current = null;
-        finishSpin(reward);
-      }, 4200);
-      return { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
-    });
+    const sv = shopRef.current;
+    if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return; }
+    const reward = rollWheel();
+    const idx = WHEEL_REWARDS.indexOf(reward);
+    const slice = 360 / WHEEL_REWARDS.length;
+    const target = 360 * 6 + (360 - (idx * slice + slice / 2));
+    setWheelSpinning(true);
+    setWheelMsg(null);
+    setWheelRevealOpen(false);
+    setWheelAngle((prev) => prev + target);
+    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
+    shopRef.current = afterCost;
+    setShop(afterCost);
+    pendingRewardRef.current = reward;
+    wheelTimeoutRef.current = window.setTimeout(() => {
+      pendingRewardRef.current = null;
+      finishSpin(reward);
+    }, 4200);
   }, [wheelSpinning, finishSpin]);
 
   const skipWheel = useCallback(() => {
