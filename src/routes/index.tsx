@@ -323,8 +323,9 @@ function randomColor() {
   return `hsl(${h} ${s}% ${l}%)`;
 }
 
-function Game() {
+function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const [uiState, setUiState] = useState<{
     started: boolean; over: boolean; won: boolean;
     wave: number; score: number; hp: number; maxHp: number;
