@@ -74,10 +74,10 @@ type Enemy = {
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
 type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number };
-type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"admin";
+type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
-const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","admin"];
+const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","galactic","quantum","quasaric","admin"];
 const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   common:       { label: "Common",        color: "#9ca3af" },
   rare:         { label: "Rare",          color: "#38bdf8" },
@@ -95,6 +95,9 @@ const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   plantiumplus: { label: "Plantium Plus", color: "#a3e635" },
   cosmetic:     { label: "Cosmetic",      color: "#f0abfc" },
   ultranova:    { label: "Ultra Nova",    color: "#fff" },
+  galactic:     { label: "Galactic",      color: "#60a5fa" },
+  quantum:      { label: "Quantum",       color: "#22d3ee" },
+  quasaric:     { label: "Quasaric",      color: "#fb7185" },
   admin:        { label: "Admin",         color: "#ff0033" },
 };
 
