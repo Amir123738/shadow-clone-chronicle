@@ -2125,6 +2125,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
                   Tasks
                 </button>
+                <button onClick={() => setLevelsOpen(true)} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
+                  LVL's/Bosses
+                </button>
                 <button
                   onClick={toggleMusic}
                   className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
