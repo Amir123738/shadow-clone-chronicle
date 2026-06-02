@@ -74,10 +74,10 @@ type Enemy = {
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
 type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number };
-type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"admin";
+type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
-const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","admin"];
+const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","galactic","quantum","quasaric","admin"];
 const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   common:       { label: "Common",        color: "#9ca3af" },
   rare:         { label: "Rare",          color: "#38bdf8" },
@@ -95,6 +95,9 @@ const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   plantiumplus: { label: "Plantium Plus", color: "#a3e635" },
   cosmetic:     { label: "Cosmetic",      color: "#f0abfc" },
   ultranova:    { label: "Ultra Nova",    color: "#fff" },
+  galactic:     { label: "Galactic",      color: "#60a5fa" },
+  quantum:      { label: "Quantum",       color: "#22d3ee" },
+  quasaric:     { label: "Quasaric",      color: "#fb7185" },
   admin:        { label: "Admin",         color: "#ff0033" },
 };
 
@@ -222,6 +225,19 @@ const SKINS: Skin[] = [
   // Ultra Nova (1)
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 
+  // Galactic (3)
+  { id: "gal_nebulastorm", name: "Galactic Tempest",  rarity: "galactic", price: 70000000,  color: "#60a5fa", glow: "rgba(96,165,250,1)", rainbow: true },
+  { id: "gal_supernova",   name: "Galactic Supernova",rarity: "galactic", price: 90000000,  color: "#facc15", glow: "rgba(250,204,21,1)", rainbow: true },
+  { id: "gal_eclipse",     name: "Galactic Eclipse",  rarity: "galactic", price: 120000000, color: "#1e1b4b", glow: "rgba(139,92,246,1)", rainbow: true },
+
+  // Quantum (3)
+  { id: "qnt_flux",        name: "Quantum Flux",         rarity: "quantum", price: 160000000, color: "#22d3ee", glow: "rgba(34,211,238,1)", rainbow: true },
+  { id: "qnt_entangle",    name: "Quantum Entanglement", rarity: "quantum", price: 220000000, color: "#a78bfa", glow: "rgba(167,139,250,1)", rainbow: true },
+  { id: "qnt_singularity", name: "Quantum Singularity",  rarity: "quantum", price: 300000000, color: "#0f172a", glow: "rgba(56,189,248,1)", rainbow: true },
+
+  // Quasaric (1)
+  { id: "qsr_radiance",    name: "Quasaric Radiance",    rarity: "quasaric", price: 500000000, color: "#fb7185", glow: "rgba(251,113,133,1)", rainbow: true },
+
   // Admin (1) — exclusive
   { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
@@ -243,6 +259,11 @@ const ACCESSORIES: Accessory[] = [
   { id: "diamond_jacket", name: "Diamond Jacket", color: "#22d3ee", glow: "rgba(34,211,238,1)",     rarity: "secret",     price: 10000000 },
   { id: "crystal_hat",    name: "Crystal Hat",    color: "#e0e7ff", glow: "rgba(224,231,255,1)",    rarity: "ultra",      price: 25000000 },
   { id: "vip_jacket",     name: "VIP Jacket",     color: "#ff5dff", glow: "rgba(255,93,255,1)",     rarity: "diamond",    price: 100000000 },
+
+  // Divine Fortune exclusives (no rarity → only obtainable via Divine Fortune)
+  { id: "silver_hat",     name: "Silver Hat",     color: "#d1d5db", glow: "rgba(209,213,219,0.9)" },
+  { id: "black_jacket",   name: "Black Jacket",   color: "#0a0a0a", glow: "rgba(139,92,246,0.9)" },
+  { id: "crimson_jacket", name: "Crimson Jacket", color: "#dc2626", glow: "rgba(220,38,38,1)" },
 ];
 const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond"];
 const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }> = {
@@ -328,7 +349,45 @@ function rollWheel(): WheelReward {
   return WHEEL_REWARDS[0];
 }
 
-// ---------- Levels / Bosses Mode ----------
+// ---------- Divine Fortune (premium wheel) ----------
+const DIVINE_SPIN_COST = 5000;
+const DIVINE_REWARDS: WheelReward[] = [
+  { id: "d_c1000",  label: "1000 ◆",       color: "#9ca3af", weight: 75,  apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 1000 },  msg: "+1000 Shadow Coins" }) },
+  { id: "d_silver", label: "Silver Hat",   color: "#d1d5db", weight: 10,  apply: (s) => {
+      if (s.accessories.includes("silver_hat")) return { next: { ...s, shadowCoins: s.shadowCoins + 2500 }, msg: "Silver Hat (duplicate) → +2500 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "silver_hat"] }, msg: "Unlocked accessory: Silver Hat!" };
+    } },
+  { id: "d_c5000",  label: "5000 ◆",       color: "#60a5fa", weight: 5,   apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 5000 },  msg: "+5000 Shadow Coins" }) },
+  { id: "d_black",  label: "Black Jacket", color: "#0a0a0a", weight: 5,   apply: (s) => {
+      if (s.accessories.includes("black_jacket")) return { next: { ...s, shadowCoins: s.shadowCoins + 5000 }, msg: "Black Jacket (duplicate) → +5000 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "black_jacket"] }, msg: "Unlocked accessory: Black Jacket!" };
+    } },
+  { id: "d_myth",   label: "Mythical Skin",color: "#f472b6", weight: 3,   apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "mythical" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 15000 }, msg: "All Mythicals owned → +15000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `MYTHICAL Skin: ${sk.name}!` };
+    } },
+  { id: "d_c10000", label: "10000 ◆",      color: "#ffe066", weight: 1,   apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 10000 }, msg: "+10000 Shadow Coins" }) },
+  { id: "d_shady",  label: "10 Shady Spins", color: "#ff7a18", weight: 0.8, apply: (s) => {
+      try {
+        const cur = Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0;
+        localStorage.setItem(SHADY_SPINS_KEY, String(cur + 10));
+      } catch {}
+      return { next: s, msg: "+10 Shady Spins!" };
+    } },
+  { id: "d_crimson",label: "Crimson Jacket", color: "#dc2626", weight: 0.2, apply: (s) => {
+      if (s.accessories.includes("crimson_jacket")) return { next: { ...s, shadowCoins: s.shadowCoins + 25000 }, msg: "Crimson Jacket (duplicate) → +25000 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "crimson_jacket"] }, msg: "LEGENDARY! Unlocked Crimson Jacket!" };
+    } },
+];
+const DIVINE_TOTAL_WEIGHT = DIVINE_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollDivine(): WheelReward {
+  let r = Math.random() * DIVINE_TOTAL_WEIGHT;
+  for (const w of DIVINE_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return DIVINE_REWARDS[0];
+}
+
 type LevelDef = {
   id: number; name: string; bossName: string; bossColor: string;
   bossHp: number; bossDmg: number; bossSpd: number; bossR: number;
@@ -618,6 +677,70 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     pendingRewardRef.current = null;
     if (reward) finishSpin(reward);
   }, [finishSpin]);
+
+  // ---- Divine Fortune wheel ----
+  const [divineAngle, setDivineAngle] = useState(0);
+  const [divineSpinning, setDivineSpinning] = useState(false);
+  const [divineMsg, setDivineMsg] = useState<string | null>(null);
+  const [divineRevealOpen, setDivineRevealOpen] = useState(false);
+  const [divineRevealReward, setDivineRevealReward] = useState<WheelReward | null>(null);
+  const divineTimeoutRef = useRef<number | null>(null);
+  const divinePendingRef = useRef<WheelReward | null>(null);
+
+  const finishDivine = useCallback((reward: WheelReward) => {
+    const cur = shopRef.current;
+    const { next, msg } = reward.apply({ ...cur });
+    shopRef.current = next;
+    setShop(next);
+    if (reward.id === "d_shady") {
+      setShadySpins((n) => n + 10);
+    }
+    setDivineMsg(msg);
+    setDivineRevealReward(reward);
+    setDivineRevealOpen(true);
+    toast.success(msg, { duration: 4000 });
+    setDivineSpinning(false);
+  }, []);
+
+  const spinDivine = useCallback(() => {
+    if (divineSpinning) return;
+    const sv = shopRef.current;
+    if (sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
+    const reward = rollDivine();
+    const idx = DIVINE_REWARDS.indexOf(reward);
+    const slice = 360 / DIVINE_REWARDS.length;
+    const mid = idx * slice + slice / 2;
+    setDivineSpinning(true);
+    setDivineMsg(null);
+    setDivineRevealOpen(false);
+    setDivineAngle((prev) => {
+      const prevMod = ((prev % 360) + 360) % 360;
+      const desiredMod = ((360 - mid) % 360 + 360) % 360;
+      let delta = desiredMod - prevMod;
+      if (delta < 0) delta += 360;
+      return prev + 360 * 6 + delta;
+    });
+    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
+    shopRef.current = afterCost;
+    setShop(afterCost);
+    divinePendingRef.current = reward;
+    divineTimeoutRef.current = window.setTimeout(() => {
+      divinePendingRef.current = null;
+      finishDivine(reward);
+    }, 4200);
+  }, [divineSpinning, finishDivine]);
+
+  const skipDivine = useCallback(() => {
+    if (divineTimeoutRef.current) {
+      window.clearTimeout(divineTimeoutRef.current);
+      divineTimeoutRef.current = null;
+    }
+    const reward = divinePendingRef.current;
+    divinePendingRef.current = null;
+    if (reward) finishDivine(reward);
+  }, [finishDivine]);
+
+
 
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
@@ -2692,6 +2815,77 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   </div>
                 </div>
 
+                {/* Divine Fortune */}
+                <div className="mt-6 p-4 rounded-xl ring-1 ring-[#fb7185]/40 bg-gradient-to-br from-[#2a0a1a] via-[#1a0f2e] to-[#0b0d1a]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">✨ Divine Fortune</h3>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes</p>
+                    </div>
+                    <button
+                      onClick={spinDivine}
+                      disabled={divineSpinning || shop.shadowCoins < DIVINE_SPIN_COST}
+                      className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fb7185] to-[#f0abfc] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100 disabled:from-white/10 disabled:to-white/10"
+                    >
+                      {divineSpinning ? "Spinning…" : `SPIN (◆${DIVINE_SPIN_COST})`}
+                    </button>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="relative flex flex-col items-center" style={{ width: 220 }}>
+                      <div className="relative" style={{ width: 220, height: 220 }}>
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10" style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "16px solid #fb7185" }} />
+                        <div
+                          className="rounded-full ring-2 ring-[#fb7185]/60 shadow-2xl"
+                          style={{
+                            width: 220, height: 220,
+                            background: `conic-gradient(${DIVINE_REWARDS.map((r, i) => {
+                              const slice = 360 / DIVINE_REWARDS.length;
+                              return `${r.color} ${i*slice}deg ${(i+1)*slice}deg`;
+                            }).join(",")})`,
+                            transform: `rotate(${divineAngle}deg)`,
+                            transition: divineSpinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.21, 1)" : undefined,
+                          }}
+                        >
+                          {DIVINE_REWARDS.map((r, i) => {
+                            const slice = 360 / DIVINE_REWARDS.length;
+                            const angle = i * slice + slice / 2;
+                            return (
+                              <div key={r.id} className="absolute left-1/2 top-1/2 origin-left text-[9px] font-black text-white whitespace-nowrap pointer-events-none" style={{ transform: `rotate(${angle - 90}deg) translateX(20px)`, textShadow: "0 0 4px rgba(0,0,0,0.9)" }}>
+                                {r.label}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#0b0d1a] ring-2 ring-[#fb7185]" />
+                      </div>
+                      {divineSpinning && (
+                        <button onClick={skipDivine} className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition">
+                          Skip ▶▶
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <ul className="text-xs space-y-1">
+                        {DIVINE_REWARDS.map(r => (
+                          <li key={r.id} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded" style={{ background: r.color }} />
+                            <span className="flex-1">{r.label}</span>
+                            <span className="text-white/50">{((r.weight / DIVINE_TOTAL_WEIGHT) * 100).toFixed(r.weight < 1 ? 1 : 0)}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {divineMsg && (
+                        <div className="mt-3 p-2 rounded bg-[#fb7185]/10 ring-1 ring-[#fb7185]/40 text-[#fb7185] text-sm font-bold text-center">
+                          {divineMsg}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+
+
                 <div className="flex justify-between items-center mt-4 gap-2">
                   <button
                     onClick={() => { setShopOpen(false); setAccShopOpen(true); }}
@@ -2866,6 +3060,33 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setWheelRevealOpen(false); }}
+                  className="relative z-10 px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer"
+                >
+                  Claim Reward
+                </button>
+              </div>
+            </div>
+          )}
+
+          {divineRevealOpen && divineRevealReward && (
+            <div
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-[fade-in_0.3s_ease-out]"
+              onClick={() => setDivineRevealOpen(false)}
+            >
+              <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse pointer-events-none" style={{ background: `radial-gradient(circle, ${divineRevealReward.color} 0%, transparent 70%)` }} />
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-[#fb7185]">Divine Fortune</div>
+                <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: divineRevealReward.color, textShadow: `0 0 30px ${divineRevealReward.color}88, 0 0 60px ${divineRevealReward.color}44` }}>
+                  {divineRevealReward.label}
+                </div>
+                <div className="flex gap-2 mb-8 pointer-events-none">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: divineRevealReward.color, animationDelay: `${i * 0.15}s`, animationDuration: '1.2s' }} />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setDivineRevealOpen(false); }}
                   className="relative z-10 px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer"
                 >
                   Claim Reward
