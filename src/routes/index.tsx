@@ -239,7 +239,7 @@ const SKINS: Skin[] = [
   { id: "qsr_radiance",    name: "Quasaric Radiance",    rarity: "quasaric", price: 500000000, color: "#fb7185", glow: "rgba(251,113,133,1)", rainbow: true },
 
   // Admin (1) — exclusive
-  { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
+  { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
 
 type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
