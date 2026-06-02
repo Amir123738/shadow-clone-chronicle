@@ -72,8 +72,9 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
   }, []);
+
 
   return { user, loading, signUp, signIn, signOut };
 }
