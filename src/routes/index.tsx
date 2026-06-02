@@ -1273,6 +1273,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         skinColor = `hsl(${hue},90%,65%)`;
         skinGlow = `hsla(${hue},90%,65%,0.55)`;
       }
+      const equippedAcc = shopRef.current.equippedAccessory
+        ? ACCESSORIES.find(a => a.id === shopRef.current.equippedAccessory) ?? null
+        : null;
+      const isHat = equippedAcc && /hat/.test(equippedAcc.id);
+      const isJacket = equippedAcc && /jacket/.test(equippedAcc.id);
+
+      // mix skin color into a darker silhouette body tone
+      const hexToRgb = (h: string) => {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+        if (!m) return { r: 60, g: 80, b: 140 };
+        return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+      };
+      const sc = skinColor.startsWith("#") ? hexToRgb(skinColor) : { r: 80, g: 120, b: 200 };
+      const bodyFill = `rgba(${Math.floor(sc.r*0.45)},${Math.floor(sc.g*0.45)},${Math.floor(sc.b*0.55)},0.92)`;
+      const headFill = `rgba(${Math.floor(sc.r*0.3)},${Math.floor(sc.g*0.3)},${Math.floor(sc.b*0.4)},0.95)`;
+
       for (const cl of s.clones) {
         if (cl.healer) {
           const px = s.player.pos.x, py = s.player.pos.y - 26;
@@ -1283,18 +1299,30 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         } else {
           const f = cl.frames[cl.idx]; if (!f) continue;
           const cang = Math.atan2(f.aim.y - f.pos.y, f.aim.x - f.pos.x);
-          // Kind shadow: soft blue aura + translucent silhouette + friendly glowing eyes
-          ctx.fillStyle = "rgba(125,211,252,0.35)";
+          // Kind shadow tinted with the equipped skin color
+          ctx.fillStyle = skinGlow;
           ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 4, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "rgba(40,80,140,0.85)";
+          ctx.fillStyle = bodyFill;
           ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "rgba(20,40,80,0.9)";
+          ctx.fillStyle = headFill;
           ctx.beginPath(); ctx.arc(f.pos.x, f.pos.y - 8, 6, 0, Math.PI * 2); ctx.fill();
-          // friendly cyan eyes
-          ctx.fillStyle = "#bff5ff";
-          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.2, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = "#7df9ff"; ctx.lineWidth = 2;
+          // friendly eyes glow with skin color
+          ctx.fillStyle = skinColor;
+          ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+          // accessory mini-render
+          if (isHat && equippedAcc) {
+            ctx.fillStyle = equippedAcc.color;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y - 13.5, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(f.pos.x - 4, f.pos.y - 17, 8, 4);
+          }
+          if (isJacket && equippedAcc) {
+            ctx.fillStyle = equippedAcc.color;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+          ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
           ctx.lineTo(f.pos.x + Math.cos(cang) * 18, f.pos.y + Math.sin(cang) * 18); ctx.stroke();
         }
@@ -1376,9 +1404,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       ctx.moveTo(p.pos.x - 3, p.pos.y + 2); ctx.lineTo(p.pos.x - 3, p.pos.y + p.r + 2);
       ctx.moveTo(p.pos.x + 3, p.pos.y + 2); ctx.lineTo(p.pos.x + 3, p.pos.y + p.r + 2);
       ctx.stroke();
-      // torso (shirt)
-      ctx.fillStyle = "#2e7dd9";
+      // torso (shirt) — replaced by jacket color if equipped
+      ctx.fillStyle = isJacket && equippedAcc ? equippedAcc.color : "#2e7dd9";
       ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.fill();
+      if (isJacket && equippedAcc) {
+        // collar / lapel highlights
+        ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.pos.x - p.r * 0.55, p.pos.y - p.r * 0.5);
+        ctx.lineTo(p.pos.x, p.pos.y - p.r * 0.1);
+        ctx.lineTo(p.pos.x + p.r * 0.55, p.pos.y - p.r * 0.5);
+        ctx.stroke();
+        // soft glow
+        ctx.shadowColor = equippedAcc.glow; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
       // arms toward aim
       ctx.strokeStyle = "#f1c27d"; ctx.lineWidth = 3.5;
       const ax = p.pos.x + Math.cos(pang) * 6, ay = p.pos.y + Math.sin(pang) * 6;
@@ -1389,13 +1430,31 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       // head (skin)
       ctx.fillStyle = "#f1c27d";
       ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.75, p.r * 0.55, 0, Math.PI * 2); ctx.fill();
-      // hair
-      ctx.fillStyle = "#2a1d10";
-      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.95, p.r * 0.55, Math.PI, 0); ctx.fill();
+      // hair (hidden under hat)
+      if (!isHat) {
+        ctx.fillStyle = "#2a1d10";
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.95, p.r * 0.55, Math.PI, 0); ctx.fill();
+      }
       // eyes
       ctx.fillStyle = "#1a1a1a";
       ctx.beginPath(); ctx.arc(p.pos.x - 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(p.pos.x + 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
+      // hat on top of head
+      if (isHat && equippedAcc) {
+        const hx = p.pos.x, hy = p.pos.y - p.r * 0.95;
+        ctx.shadowColor = equippedAcc.glow; ctx.shadowBlur = 12;
+        // brim
+        ctx.fillStyle = equippedAcc.color;
+        ctx.beginPath(); ctx.ellipse(hx, hy + 1, p.r * 0.85, p.r * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+        // crown
+        ctx.fillRect(hx - p.r * 0.45, hy - p.r * 0.55, p.r * 0.9, p.r * 0.55);
+        // top dome
+        ctx.beginPath(); ctx.ellipse(hx, hy - p.r * 0.55, p.r * 0.45, p.r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        // shine
+        ctx.fillStyle = "rgba(255,255,255,0.45)";
+        ctx.fillRect(hx - p.r * 0.35, hy - p.r * 0.45, p.r * 0.18, p.r * 0.4);
+      }
       // gun / aim line
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
