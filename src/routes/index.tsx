@@ -2770,7 +2770,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           )}
 
 
-          {uiState.won && (
+          {uiState.won && uiState.gameMode === "level" && (
+            <Overlay>
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">Boss Defeated!</h2>
+              <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
+              <p className="text-white/70 mb-4">Level cleared — Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""} awarded.</p>
+              <div className="flex flex-col items-center gap-1 mb-5">
+                <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setUiState(u => ({ ...u, started: false, won: false })); setLevelsOpen(true); }} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
+                  Back to Levels
+                </button>
+              </div>
+            </Overlay>
+          )}
+
+          {uiState.won && uiState.gameMode === "normal" && (
             <Overlay>
               <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">Omega Slain!</h2>
               <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
@@ -2784,6 +2800,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </button>
             </Overlay>
           )}
+
 
           {uiState.waveWarning > 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
