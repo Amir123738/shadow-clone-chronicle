@@ -259,6 +259,11 @@ const ACCESSORIES: Accessory[] = [
   { id: "diamond_jacket", name: "Diamond Jacket", color: "#22d3ee", glow: "rgba(34,211,238,1)",     rarity: "secret",     price: 10000000 },
   { id: "crystal_hat",    name: "Crystal Hat",    color: "#e0e7ff", glow: "rgba(224,231,255,1)",    rarity: "ultra",      price: 25000000 },
   { id: "vip_jacket",     name: "VIP Jacket",     color: "#ff5dff", glow: "rgba(255,93,255,1)",     rarity: "diamond",    price: 100000000 },
+
+  // Divine Fortune exclusives (no rarity → only obtainable via Divine Fortune)
+  { id: "silver_hat",     name: "Silver Hat",     color: "#d1d5db", glow: "rgba(209,213,219,0.9)" },
+  { id: "black_jacket",   name: "Black Jacket",   color: "#0a0a0a", glow: "rgba(139,92,246,0.9)" },
+  { id: "crimson_jacket", name: "Crimson Jacket", color: "#dc2626", glow: "rgba(220,38,38,1)" },
 ];
 const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond"];
 const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }> = {
