@@ -224,6 +224,7 @@ type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secre
 type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
   { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "bronze_hat",     name: "Bronze Hat",     color: "#cd7f32", glow: "rgba(205,127,50,0.85)" },
   { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
   { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
   { id: "gold_hat",       name: "Gold Hat",       color: "#fbbf24", glow: "rgba(251,191,36,0.9)",   rarity: "epic",       price: 100000 },
@@ -498,6 +499,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     level: 1,
     over: false,
     won: false,
+    wonRewardGiven: false,
     betweenWaves: false,
     pendingUpgrades: null as Upgrade[] | null,
     waveCleared: false,
@@ -541,7 +543,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
-    s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false;
+    s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false; s.wonRewardGiven = false;
     s.betweenWaves = false; s.pendingUpgrades = null; s.waveCleared = false;
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
@@ -1260,6 +1262,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
+            if (!s.wonRewardGiven) {
+              s.wonRewardGiven = true;
+              const cur = shopRef.current;
+              const hadHat = cur.accessories.includes("bronze_hat");
+              const next: ShopSave = {
+                ...cur,
+                shadowCoins: cur.shadowCoins + 500,
+                accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
+              };
+              shopRef.current = next;
+              setShop(next);
+              toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
+              if (!hadHat) {
+                toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+              }
+            }
           } else {
             // restore stolen on wave clear
             if (s.stolenUpgrade) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
@@ -2103,6 +2121,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">Omega Slain!</h2>
               <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
               <p className="text-white/70 mb-4">All 100 waves survived.</p>
+              <div className="flex flex-col items-center gap-1 mb-5">
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
+              </div>
               <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 Play Again
               </button>
