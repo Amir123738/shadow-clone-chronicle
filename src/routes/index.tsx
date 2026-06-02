@@ -760,6 +760,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       s.waveWarningTimer = 4;
       playWave50Alarm();
     }
+    if (s.wave === 75) {
+      s.waveWarningTimer = 5;
+      playWave75Alarm();
+    }
     const bossId = BOSS_WAVES[s.wave] ?? null;
     if (bossId) {
       s.spawnQueue = 0;
