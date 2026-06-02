@@ -678,6 +678,70 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (reward) finishSpin(reward);
   }, [finishSpin]);
 
+  // ---- Divine Fortune wheel ----
+  const [divineAngle, setDivineAngle] = useState(0);
+  const [divineSpinning, setDivineSpinning] = useState(false);
+  const [divineMsg, setDivineMsg] = useState<string | null>(null);
+  const [divineRevealOpen, setDivineRevealOpen] = useState(false);
+  const [divineRevealReward, setDivineRevealReward] = useState<WheelReward | null>(null);
+  const divineTimeoutRef = useRef<number | null>(null);
+  const divinePendingRef = useRef<WheelReward | null>(null);
+
+  const finishDivine = useCallback((reward: WheelReward) => {
+    const cur = shopRef.current;
+    const { next, msg } = reward.apply({ ...cur });
+    shopRef.current = next;
+    setShop(next);
+    if (reward.id === "d_shady") {
+      setShadySpins((n) => n + 10);
+    }
+    setDivineMsg(msg);
+    setDivineRevealReward(reward);
+    setDivineRevealOpen(true);
+    toast.success(msg, { duration: 4000 });
+    setDivineSpinning(false);
+  }, []);
+
+  const spinDivine = useCallback(() => {
+    if (divineSpinning) return;
+    const sv = shopRef.current;
+    if (sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
+    const reward = rollDivine();
+    const idx = DIVINE_REWARDS.indexOf(reward);
+    const slice = 360 / DIVINE_REWARDS.length;
+    const mid = idx * slice + slice / 2;
+    setDivineSpinning(true);
+    setDivineMsg(null);
+    setDivineRevealOpen(false);
+    setDivineAngle((prev) => {
+      const prevMod = ((prev % 360) + 360) % 360;
+      const desiredMod = ((360 - mid) % 360 + 360) % 360;
+      let delta = desiredMod - prevMod;
+      if (delta < 0) delta += 360;
+      return prev + 360 * 6 + delta;
+    });
+    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
+    shopRef.current = afterCost;
+    setShop(afterCost);
+    divinePendingRef.current = reward;
+    divineTimeoutRef.current = window.setTimeout(() => {
+      divinePendingRef.current = null;
+      finishDivine(reward);
+    }, 4200);
+  }, [divineSpinning, finishDivine]);
+
+  const skipDivine = useCallback(() => {
+    if (divineTimeoutRef.current) {
+      window.clearTimeout(divineTimeoutRef.current);
+      divineTimeoutRef.current = null;
+    }
+    const reward = divinePendingRef.current;
+    divinePendingRef.current = null;
+    if (reward) finishDivine(reward);
+  }, [finishDivine]);
+
+
+
   const [hydrated, setHydrated] = useState(false);
   const shopRef = useRef(shop);
   const saveTimerRef = useRef<number | null>(null);
