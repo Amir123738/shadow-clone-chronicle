@@ -470,6 +470,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [accShopOpen, setAccShopOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [levelsOpen, setLevelsOpen] = useState(false);
+  const [shadySpins, setShadySpins] = useState<number>(() => loadShadySpins());
+  const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
+  const [shadyMsg, setShadyMsg] = useState<string | null>(null);
+  const [shadyAngle, setShadyAngle] = useState(0);
+  const [shadySpinning, setShadySpinning] = useState(false);
   const [lifetime, setLifetime] = useState<LifetimeStats>(() => loadLifetime());
   const lifetimeRef = useRef(lifetime);
   const [tasks, setTasks] = useState<ActiveTask[]>(() => {
