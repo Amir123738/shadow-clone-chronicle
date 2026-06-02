@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { startMusic, stopMusic, playWave50Alarm } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -680,6 +680,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     // Wave 50+ surge: enemies get +500% HP and +250% damage
     const hardHp = s.wave >= 50 ? 6 : 1;
     const hardDmg = s.wave >= 50 ? 3.5 : 1;
+    // Wave 75+ elite surge: +250% HP, +150% damage, +50% speed
+    const eliteHp = s.wave >= 75 ? 3.5 : 1;
+    const eliteDmg = s.wave >= 75 ? 2.5 : 1;
+    const eliteSpd = s.wave >= 75 ? 1.5 : 1;
     // Wave 50+ also spawns occasional "mega" enemies that are 5x stronger
     const isMega = s.wave >= 50 && Math.random() < 0.18;
     const megaHp = isMega ? 5 : 1;
@@ -688,22 +692,25 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const r = Math.random();
     let e: Enemy;
     if (r < 0.55) {
-      const hp = 55 * waveBoost * hardHp * megaHp;
+      const hp = 55 * waveBoost * hardHp * eliteHp * megaHp;
+      const spd = (110 + s.wave * 1.2) * eliteSpd;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp, maxHp: hp, r: 14 * megaR, speed: 110 + s.wave * 1.2, baseSpeed: 110 + s.wave * 1.2,
-        dmg: (16 + s.wave * 0.4) * hardDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * megaDmg,
+        hp, maxHp: hp, r: 14 * megaR, speed: spd, baseSpeed: spd,
+        dmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#7cf24a", xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
     } else if (r < 0.85) {
-      const hp = 32 * waveBoost * hardHp * megaHp;
+      const hp = 32 * waveBoost * hardHp * eliteHp * megaHp;
+      const spd = (195 + s.wave * 1.5) * eliteSpd;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp, maxHp: hp, r: 10 * megaR, speed: 195 + s.wave * 1.5, baseSpeed: 195 + s.wave * 1.5,
-        dmg: (13 + s.wave * 0.3) * hardDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * megaDmg,
+        hp, maxHp: hp, r: 10 * megaR, speed: spd, baseSpeed: spd,
+        dmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#4ad6ff", xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
     } else {
-      const hp = 170 * waveBoost * hardHp * megaHp;
+      const hp = 170 * waveBoost * hardHp * eliteHp * megaHp;
+      const spd = (75 + s.wave * 0.6) * eliteSpd;
       e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
-        hp, maxHp: hp, r: 20 * megaR, speed: 75 + s.wave * 0.6, baseSpeed: 75 + s.wave * 0.6,
-        dmg: (28 + s.wave * 0.6) * hardDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * megaDmg,
+        hp, maxHp: hp, r: 20 * megaR, speed: spd, baseSpeed: spd,
+        dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
     s.enemies.push(e);
@@ -720,6 +727,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
     // Wave 50+ bosses: +50% HP, +100% damage
     if (s.wave >= 50) { hp = Math.round(hp * 1.5); dmg = Math.round(dmg * 2); }
+    // Wave 75+ bosses: additional +250% HP, +150% damage, +50% speed
+    if (s.wave >= 75) { hp = Math.round(hp * 3.5); dmg = Math.round(dmg * 2.5); sp = Math.round(sp * 1.5); }
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -727,8 +736,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       abilityCds: { pull: 5, freeze: 8, steal: 12, revive: 10, blur: 15, hasten: 20, empower: 25 },
       abilityFlags: {},
     });
-    const guardHp = s.wave >= 50 ? 280 * 6 : 280;
-    const guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
+    let guardHp = s.wave >= 50 ? 280 * 6 : 280;
+    let guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
+    if (s.wave >= 75) { guardHp = Math.round(guardHp * 3.5); guardDmg = Math.round(guardDmg * 2.5); }
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
@@ -749,6 +759,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (s.wave === 50) {
       s.waveWarningTimer = 4;
       playWave50Alarm();
+    }
+    if (s.wave === 75) {
+      s.waveWarningTimer = 5;
+      playWave75Alarm();
     }
     const bossId = BOSS_WAVES[s.wave] ?? null;
     if (bossId) {
@@ -1615,7 +1629,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         const barY = e.pos.y - er - (isBossE ? 18 : 8);
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(e.pos.x - w / 2, barY, w, 4);
-        ctx.fillStyle = isBossE ? "#ffd84a" : "#ff5d5d";
+        const isGolden = s.wave >= 75;
+        ctx.fillStyle = isBossE ? "#ffd84a" : (isGolden ? "#ffd84a" : "#ff5d5d");
         ctx.fillRect(e.pos.x - w / 2, barY, w * (e.hp / e.maxHp), 4);
       }
 
@@ -2349,13 +2364,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
               <div className="text-center animate-pulse">
                 <div className="text-5xl md:text-7xl font-black text-[#ff2e2e] drop-shadow-[0_0_30px_rgba(255,46,46,0.8)] mb-2">
-                  WAVE 50
+                  WAVE {uiState.wave}
                 </div>
                 <div className="text-xl md:text-3xl font-black text-[#ff5d5d] drop-shadow-[0_0_20px_rgba(255,93,93,0.7)] mb-1">
                   WARNING
                 </div>
                 <div className="text-sm md:text-lg font-bold text-white/90 tracking-widest uppercase">
-                  Enemies Powered Up
+                  {uiState.wave === 75 ? "Elite Surge Incoming" : "Enemies Powered Up"}
                 </div>
               </div>
             </div>

@@ -188,3 +188,43 @@ export function playWave50Alarm() {
     rumble.stop(now + 2.6);
   } catch {}
 }
+
+export function playWave75Alarm() {
+  try {
+    if (!ctx) {
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      ctx = new AC();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.35;
+      masterGain.connect(ctx.destination);
+    }
+    if (!ctx || !masterGain) return;
+    const now = ctx.currentTime;
+    const alarmGain = ctx.createGain();
+    alarmGain.gain.setValueAtTime(0.3, now);
+    alarmGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
+    alarmGain.connect(masterGain);
+    for (let i = 0; i < 10; i++) {
+      const osc = ctx.createOscillator();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(1200, now + i * 0.2);
+      osc.frequency.exponentialRampToValueAtTime(600, now + i * 0.2 + 0.1);
+      osc.connect(alarmGain);
+      osc.start(now + i * 0.2);
+      osc.stop(now + i * 0.2 + 0.15);
+    }
+    const rumble = ctx.createOscillator();
+    rumble.type = "sawtooth";
+    rumble.frequency.setValueAtTime(80, now);
+    rumble.frequency.exponentialRampToValueAtTime(40, now + 3.5);
+    const rumbleGain = ctx.createGain();
+    rumbleGain.gain.setValueAtTime(0.2, now);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
+    rumbleGain.connect(masterGain);
+    rumble.connect(rumbleGain);
+    rumble.start(now);
+    rumble.stop(now + 3.6);
+  } catch {}
+}
