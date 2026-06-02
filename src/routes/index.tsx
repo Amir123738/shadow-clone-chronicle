@@ -1324,6 +1324,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       // tick effect timers
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
       if (s.freezeTime > 0) s.freezeTime = Math.max(0, s.freezeTime - dt);
+      if (s.enemyFreezeTime > 0) s.enemyFreezeTime = Math.max(0, s.enemyFreezeTime - dt);
       if (s.pullTime > 0) s.pullTime = Math.max(0, s.pullTime - dt);
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
