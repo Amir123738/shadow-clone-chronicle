@@ -792,7 +792,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       hp: level.bossHp, maxHp: level.bossHp, r: level.bossR,
       speed: level.bossSpd, baseSpeed: level.bossSpd,
       dmg: level.bossDmg, baseDmg: level.bossDmg,
-      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: "super",
+      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: "super", customBossName: level.bossName,
       abilityCds: { pull: 4, freeze: 6, steal: 10, revive: 8, blur: 12, hasten: 16, empower: 20 },
       abilityFlags: {},
     });
