@@ -2815,6 +2815,77 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   </div>
                 </div>
 
+                {/* Divine Fortune */}
+                <div className="mt-6 p-4 rounded-xl ring-1 ring-[#fb7185]/40 bg-gradient-to-br from-[#2a0a1a] via-[#1a0f2e] to-[#0b0d1a]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">✨ Divine Fortune</h3>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes</p>
+                    </div>
+                    <button
+                      onClick={spinDivine}
+                      disabled={divineSpinning || shop.shadowCoins < DIVINE_SPIN_COST}
+                      className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fb7185] to-[#f0abfc] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100 disabled:from-white/10 disabled:to-white/10"
+                    >
+                      {divineSpinning ? "Spinning…" : `SPIN (◆${DIVINE_SPIN_COST})`}
+                    </button>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="relative flex flex-col items-center" style={{ width: 220 }}>
+                      <div className="relative" style={{ width: 220, height: 220 }}>
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10" style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "16px solid #fb7185" }} />
+                        <div
+                          className="rounded-full ring-2 ring-[#fb7185]/60 shadow-2xl"
+                          style={{
+                            width: 220, height: 220,
+                            background: `conic-gradient(${DIVINE_REWARDS.map((r, i) => {
+                              const slice = 360 / DIVINE_REWARDS.length;
+                              return `${r.color} ${i*slice}deg ${(i+1)*slice}deg`;
+                            }).join(",")})`,
+                            transform: `rotate(${divineAngle}deg)`,
+                            transition: divineSpinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.21, 1)" : undefined,
+                          }}
+                        >
+                          {DIVINE_REWARDS.map((r, i) => {
+                            const slice = 360 / DIVINE_REWARDS.length;
+                            const angle = i * slice + slice / 2;
+                            return (
+                              <div key={r.id} className="absolute left-1/2 top-1/2 origin-left text-[9px] font-black text-white whitespace-nowrap pointer-events-none" style={{ transform: `rotate(${angle - 90}deg) translateX(20px)`, textShadow: "0 0 4px rgba(0,0,0,0.9)" }}>
+                                {r.label}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#0b0d1a] ring-2 ring-[#fb7185]" />
+                      </div>
+                      {divineSpinning && (
+                        <button onClick={skipDivine} className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition">
+                          Skip ▶▶
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <ul className="text-xs space-y-1">
+                        {DIVINE_REWARDS.map(r => (
+                          <li key={r.id} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded" style={{ background: r.color }} />
+                            <span className="flex-1">{r.label}</span>
+                            <span className="text-white/50">{((r.weight / DIVINE_TOTAL_WEIGHT) * 100).toFixed(r.weight < 1 ? 1 : 0)}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {divineMsg && (
+                        <div className="mt-3 p-2 rounded bg-[#fb7185]/10 ring-1 ring-[#fb7185]/40 text-[#fb7185] text-sm font-bold text-center">
+                          {divineMsg}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+
+
                 <div className="flex justify-between items-center mt-4 gap-2">
                   <button
                     onClick={() => { setShopOpen(false); setAccShopOpen(true); }}
