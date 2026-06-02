@@ -411,6 +411,15 @@ function loadTasks(): ActiveTask[] | null {
   return null;
 }
 function saveTasks(v: ActiveTask[]) { try { localStorage.setItem(TASKS_KEY, JSON.stringify(v)); } catch {} }
+const REROLL_KEY = "scs_reroll_v1";
+const REROLL_LIMIT = 3;
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function loadReroll(): { date: string; count: number } {
+  if (typeof window === "undefined") return { date: todayStr(), count: 0 };
+  try { const raw = localStorage.getItem(REROLL_KEY); if (raw) { const v = JSON.parse(raw); if (v?.date === todayStr()) return v; } } catch {}
+  return { date: todayStr(), count: 0 };
+}
+function saveReroll(v: { date: string; count: number }) { try { localStorage.setItem(REROLL_KEY, JSON.stringify(v)); } catch {} }
 function rollTasks(lt: LifetimeStats): ActiveTask[] {
   const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
   return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
@@ -506,8 +515,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const setLifetimeAbs = useCallback((patch: Partial<LifetimeStats>) => {
     setLifetime((lt) => ({ ...lt, ...patch }));
   }, []);
+  const [rerollState, setRerollState] = useState(() => loadReroll());
   const rerollTasks = useCallback(() => {
+    const cur = loadReroll();
+    if (cur.count >= REROLL_LIMIT) {
+      toast.error(`Daily reroll limit reached (${REROLL_LIMIT}/day). Try again tomorrow.`);
+      return;
+    }
+    const next = { date: cur.date, count: cur.count + 1 };
+    saveReroll(next);
+    setRerollState(next);
     setTasks(rollTasks(lifetimeRef.current));
+    toast.success(`Tasks rerolled (${next.count}/${REROLL_LIMIT} today)`);
   }, []);
   const claimTask = useCallback((taskId: string) => {
     const t = tasks.find(x => x.id === taskId);
@@ -2464,7 +2483,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 })()}
 
                 <div className="flex gap-3 justify-end">
-                  <button onClick={rerollTasks} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Reroll Tasks</button>
+                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title="You can reroll 3 times each day." className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">Reroll Tasks ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
                   <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">Close</button>
                 </div>
               </div>
