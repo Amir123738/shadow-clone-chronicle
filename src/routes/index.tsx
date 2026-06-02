@@ -475,6 +475,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
+  const [superPickOpen, setSuperPickOpen] = useState(false);
+  const [pendingSuperLevelId, setPendingSuperLevelId] = useState<number | null>(null);
   const [shadySpins, setShadySpins] = useState<number>(() => loadShadySpins());
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
@@ -650,7 +652,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     player: { pos: { x: W / 2, y: H / 2 } as Vec, r: 14, hp: 100, maxHp: 100 },
     stats: {
       moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520,
-      doubleBullets: false, cloneDmgMult: 1,
+      doubleBullets: false, tripleBullets: false, cloneDmgMult: 1,
     },
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
@@ -688,6 +690,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     shieldTime: 0,
     speedBoostTime: 0,
     fireArrowTime: 0,
+    poisonArrowTime: 0,
     fireTrail: [] as { x: number; y: number; life: number }[],
     // new abilities
     kingShadowTime: 0,
@@ -718,7 +721,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const resetGame = useCallback(() => {
     const s = stateRef.current;
     s.player = { pos: { x: W / 2, y: H / 2 }, r: 14, hp: 100, maxHp: 100 };
-    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, cloneDmgMult: 1 };
+    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1 };
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
@@ -727,7 +730,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
-    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.fireTrail = [];
+    s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.poisonArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
     s.shadowAttackCd = 0; s.specialClones = [];
     s.dragonBreathTime = 0; s.dragonBreathCd = 0; s.radiationWaves = [];
@@ -1071,21 +1074,107 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     startWave();
   };
 
+  const SUPER_UPGRADES: { id: string; name: string; color: string; desc: string; apply: () => void }[] = [
+    {
+      id: "shadowchaos", name: "Shadow Chaos", color: "#ff5d3a",
+      desc: "3 fire clones shooting fire arrows + 45% move speed",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.moveSpeed *= 1.45;
+        s.fireArrowTime = Math.max(s.fireArrowTime, 9999);
+        for (let k = 0; k < 3; k++) {
+          s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+        }
+      },
+    },
+    {
+      id: "altoultrazero", name: "AltoUltraZero", color: "#7cdcff",
+      desc: "Freeze all enemies 25s + 50% damage + clones 25% faster & stronger",
+      apply: () => {
+        const s = stateRef.current;
+        s.freezeTime = Math.max(s.freezeTime, 25);
+        s.stats.bulletDmg *= 1.5;
+        s.stats.cloneDmgMult *= 1.25;
+        for (const sc of s.specialClones) sc.orbitSpeed *= 1.25;
+      },
+    },
+    {
+      id: "hpwave", name: "HP Wave", color: "#7cffb2",
+      desc: "3 healer clones (30s) + poison arrows that deal extra damage",
+      apply: () => {
+        const s = stateRef.current;
+        for (let k = 0; k < 3; k++) {
+          s.clones.push({ frames: [], idx: 0, trail: [], healer: true, life: 30 });
+          s.cloneFireCd.push(0);
+        }
+        s.poisonArrowTime = Math.max(s.poisonArrowTime, 9999);
+      },
+    },
+    {
+      id: "firegod", name: "Fire God", color: "#ff7a18",
+      desc: "Dragon breath + 3 fire clones (damage -25%)",
+      apply: () => {
+        const s = stateRef.current;
+        s.dragonBreathTime = Math.max(s.dragonBreathTime, 9999);
+        s.dragonBreathCd = 0;
+        s.fireArrowTime = Math.max(s.fireArrowTime, 9999);
+        s.stats.bulletDmg *= 0.75;
+        for (let k = 0; k < 3; k++) {
+          s.specialClones.push({ kind: "big", angle: (k * Math.PI * 2) / 3, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+        }
+      },
+    },
+    {
+      id: "ultrafast", name: "Ultra Fast Bullets", color: "#ffe066",
+      desc: "Shoot 50% faster + damage x2",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.fireRate *= 1.5;
+        s.stats.bulletDmg *= 2;
+      },
+    },
+    {
+      id: "quadshooter", name: "Quadriple Shooter", color: "#b388ff",
+      desc: "Shoot 2x faster + triple shot",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.fireRate *= 2;
+        s.stats.tripleBullets = true;
+      },
+    },
+  ];
+
   const startLevel = (levelId: number) => {
     const level = LEVELS.find(l => l.id === levelId);
     if (!level) return;
+    setPendingSuperLevelId(levelId);
+    setSuperPickOpen(true);
+    setLevelsOpen(false);
+    toast(`${level.name} — Pick your Super Upgrade!`, { duration: 2500 });
+  };
+
+  const pickSuperUpgrade = (superId: string) => {
+    const levelId = pendingSuperLevelId;
+    if (levelId == null) return;
+    const level = LEVELS.find(l => l.id === levelId);
+    const su = SUPER_UPGRADES.find(s => s.id === superId);
+    if (!level || !su) return;
     resetGame();
     const s = stateRef.current;
     s.gameMode = "level";
     s.levelId = levelId;
     s.levelMult = level.gruntMult;
     s.levelTotalWaves = LEVEL_WAVES;
-    setLevelsOpen(false);
+    su.apply();
+    setSuperPickOpen(false);
+    setPendingSuperLevelId(null);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
-    toast(`${level.name} — Defeat ${level.bossName}!`, { duration: 4000 });
+    toast(`${su.name} activated! Defeat ${level.bossName}!`, { duration: 4000 });
   };
+
+
 
   const spinShady = () => {
     if (shadySpinning) return;
@@ -1155,15 +1244,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const s = stateRef.current;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
-      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1);
+      const poisonMul = s.poisonArrowTime > 0 ? 1.5 : 1;
+      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1) * poisonMul;
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
-      const color = s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff"));
+      const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff")));
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => s.bullets.push({
         pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
         life: 1.2, dmg, from, color,
       });
-      if (s.stats.doubleBullets) {
+      if (s.stats.tripleBullets) {
+        const ang = Math.atan2(dir.y, dir.x);
+        const spread = 0.18;
+        make(Math.cos(ang - spread), Math.sin(ang - spread));
+        make(dir.x, dir.y);
+        make(Math.cos(ang + spread), Math.sin(ang + spread));
+      } else if (s.stats.doubleBullets) {
         const ang = Math.atan2(dir.y, dir.x);
         const spread = 0.12;
         make(Math.cos(ang - spread), Math.sin(ang - spread));
@@ -1231,6 +1327,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.shieldTime > 0) s.shieldTime = Math.max(0, s.shieldTime - dt);
       if (s.speedBoostTime > 0) s.speedBoostTime = Math.max(0, s.speedBoostTime - dt);
       if (s.fireArrowTime > 0) s.fireArrowTime = Math.max(0, s.fireArrowTime - dt);
+      if (s.poisonArrowTime > 0) s.poisonArrowTime = Math.max(0, s.poisonArrowTime - dt);
       if (s.kingShadowTime > 0) s.kingShadowTime = Math.max(0, s.kingShadowTime - dt);
       if (s.hyperTime > 0) s.hyperTime = Math.max(0, s.hyperTime - dt);
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
@@ -2238,6 +2335,44 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </div>
             </Overlay>
           )}
+
+          {superPickOpen && pendingSuperLevelId != null && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="text-center mb-4">
+                  <h2 className="text-3xl font-black bg-gradient-to-r from-[#ff2e88] via-[#ffe066] to-[#7cdcff] bg-clip-text text-transparent">
+                    Choose Your Super Upgrade
+                  </h2>
+                  <p className="text-xs text-white/60 mt-1">
+                    Level {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — one pick only
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SUPER_UPGRADES.map(su => (
+                    <button
+                      key={su.id}
+                      onClick={() => pickSuperUpgrade(su.id)}
+                      className="text-left p-4 rounded-lg ring-2 bg-white/5 hover:bg-white/10 hover:scale-[1.02] transition"
+                      style={{ borderColor: su.color, boxShadow: `0 0 18px -6px ${su.color}` }}
+                    >
+                      <div className="font-black text-lg mb-1" style={{ color: su.color }}>{su.name}</div>
+                      <div className="text-xs text-white/80">{su.desc}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => { setSuperPickOpen(false); setPendingSuperLevelId(null); setLevelsOpen(true); }}
+                    className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+
 
           {tasksOpen && (
             <Overlay>
