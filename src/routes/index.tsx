@@ -1287,8 +1287,41 @@ function Game() {
       }
 
       const p = s.player;
-      ctx.fillStyle = "#ffe066";
-      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r, 0, Math.PI * 2); ctx.fill();
+      const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
+      // Person: shadow on ground, legs, torso, arms, head
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y + p.r + 2, p.r * 0.9, p.r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+      // legs
+      ctx.strokeStyle = "#3a5a8a"; ctx.lineWidth = 4; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(p.pos.x - 3, p.pos.y + 2); ctx.lineTo(p.pos.x - 3, p.pos.y + p.r + 2);
+      ctx.moveTo(p.pos.x + 3, p.pos.y + 2); ctx.lineTo(p.pos.x + 3, p.pos.y + p.r + 2);
+      ctx.stroke();
+      // torso (shirt)
+      ctx.fillStyle = "#2e7dd9";
+      ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.fill();
+      // arms toward aim
+      ctx.strokeStyle = "#f1c27d"; ctx.lineWidth = 3.5;
+      const ax = p.pos.x + Math.cos(pang) * 6, ay = p.pos.y + Math.sin(pang) * 6;
+      ctx.beginPath();
+      ctx.moveTo(p.pos.x - Math.sin(pang) * 6, p.pos.y + Math.cos(pang) * 6);
+      ctx.lineTo(ax + Math.cos(pang) * 8, ay + Math.sin(pang) * 8);
+      ctx.stroke();
+      // head (skin)
+      ctx.fillStyle = "#f1c27d";
+      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.75, p.r * 0.55, 0, Math.PI * 2); ctx.fill();
+      // hair
+      ctx.fillStyle = "#2a1d10";
+      ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.95, p.r * 0.55, Math.PI, 0); ctx.fill();
+      // eyes
+      ctx.fillStyle = "#1a1a1a";
+      ctx.beginPath(); ctx.arc(p.pos.x - 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.pos.x + 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
+      // gun / aim line
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
+      ctx.lineTo(p.pos.x + Math.cos(pang) * 22, p.pos.y + Math.sin(pang) * 22); ctx.stroke();
+
       // Shield ring (bronze defence)
       if (s.shieldTime > 0) {
         ctx.strokeStyle = "rgba(205,127,50,0.9)"; ctx.lineWidth = 3;
@@ -1296,10 +1329,6 @@ function Game() {
         ctx.strokeStyle = "rgba(255,200,120,0.4)"; ctx.lineWidth = 6;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 9, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-      const ang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
-      ctx.beginPath(); ctx.moveTo(p.pos.x, p.pos.y);
-      ctx.lineTo(p.pos.x + Math.cos(ang) * 22, p.pos.y + Math.sin(ang) * 22); ctx.stroke();
 
       const boss = s.enemies.find(e => e.kind === "boss");
       if (boss) {
