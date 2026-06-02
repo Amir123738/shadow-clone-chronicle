@@ -73,10 +73,10 @@ type Enemy = {
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
 type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number };
-type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova";
+type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
-const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova"];
+const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","admin"];
 const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   common:       { label: "Common",        color: "#9ca3af" },
   rare:         { label: "Rare",          color: "#38bdf8" },
@@ -94,7 +94,9 @@ const RARITY_META: Record<Rarity, { label: string; color: string }> = {
   plantiumplus: { label: "Plantium Plus", color: "#a3e635" },
   cosmetic:     { label: "Cosmetic",      color: "#f0abfc" },
   ultranova:    { label: "Ultra Nova",    color: "#fff" },
+  admin:        { label: "Admin",         color: "#ff0033" },
 };
+
 
 const SKINS: Skin[] = [
   // Common (15) — starter + cheap variants
@@ -218,12 +220,18 @@ const SKINS: Skin[] = [
 
   // Ultra Nova (1)
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
+
+  // Admin (1) — exclusive
+  { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
 
 type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
 type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
   { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "admin_hat",      name: "Admin Hat",      color: "#ff0033", glow: "rgba(255,0,51,1)" },
+  { id: "admin_jacket",   name: "Admin Jacket",   color: "#ff0033", glow: "rgba(255,0,51,1)" },
+
   { id: "bronze_hat",     name: "Bronze Hat",     color: "#cd7f32", glow: "rgba(205,127,50,0.85)" },
   { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
   { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
@@ -321,6 +329,44 @@ function rollWheel(): WheelReward {
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
+// ---------- Tasks ----------
+type TaskMetric = "kills" | "wavesCleared" | "shadowEarned";
+type TaskTemplate = { id: string; metric: TaskMetric; target: number; reward: number; label: string };
+const TASK_TEMPLATES: TaskTemplate[] = [
+  { id: "kill_50",   metric: "kills",        target: 50,   reward: 150,  label: "Kill 50 enemies" },
+  { id: "kill_200",  metric: "kills",        target: 200,  reward: 400,  label: "Kill 200 enemies" },
+  { id: "kill_500",  metric: "kills",        target: 500,  reward: 900,  label: "Kill 500 enemies" },
+  { id: "clear_5",   metric: "wavesCleared", target: 5,    reward: 200,  label: "Clear 5 waves" },
+  { id: "clear_20",  metric: "wavesCleared", target: 20,   reward: 600,  label: "Clear 20 waves" },
+  { id: "clear_50",  metric: "wavesCleared", target: 50,   reward: 1500, label: "Clear 50 waves" },
+  { id: "shadow_500",  metric: "shadowEarned", target: 500,  reward: 300,  label: "Earn 500 Shadow Coins" },
+  { id: "shadow_2000", metric: "shadowEarned", target: 2000, reward: 1000, label: "Earn 2,000 Shadow Coins" },
+];
+type ActiveTask = { id: string; baseline: number; claimed: boolean };
+type LifetimeStats = { kills: number; wavesCleared: number; shadowEarned: number; wins100Streak: number };
+const DEFAULT_LIFETIME: LifetimeStats = { kills: 0, wavesCleared: 0, shadowEarned: 0, wins100Streak: 0 };
+const LIFETIME_KEY = "scs_lifetime_v1";
+const TASKS_KEY = "scs_tasks_v1";
+const ELITE_TARGET = 10;
+function loadLifetime(): LifetimeStats {
+  if (typeof window === "undefined") return { ...DEFAULT_LIFETIME };
+  try { const raw = localStorage.getItem(LIFETIME_KEY); if (raw) return { ...DEFAULT_LIFETIME, ...JSON.parse(raw) }; } catch {}
+  return { ...DEFAULT_LIFETIME };
+}
+function saveLifetime(v: LifetimeStats) { try { localStorage.setItem(LIFETIME_KEY, JSON.stringify(v)); } catch {} }
+function loadTasks(): ActiveTask[] | null {
+  if (typeof window === "undefined") return null;
+  try { const raw = localStorage.getItem(TASKS_KEY); if (raw) return JSON.parse(raw); } catch {}
+  return null;
+}
+function saveTasks(v: ActiveTask[]) { try { localStorage.setItem(TASKS_KEY, JSON.stringify(v)); } catch {} }
+function rollTasks(lt: LifetimeStats): ActiveTask[] {
+  const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
+  return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
+}
+
+
+
 // ---------- Constants ----------
 const W = 960;
 const H = 600;
@@ -372,6 +418,67 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [shopOpen, setShopOpen] = useState(false);
   const [accShopOpen, setAccShopOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [lifetime, setLifetime] = useState<LifetimeStats>(() => loadLifetime());
+  const lifetimeRef = useRef(lifetime);
+  const [tasks, setTasks] = useState<ActiveTask[]>(() => {
+    const lt = typeof window !== "undefined" ? loadLifetime() : DEFAULT_LIFETIME;
+    const existing = loadTasks();
+    if (existing && existing.length === 3) return existing;
+    const fresh = rollTasks(lt);
+    if (typeof window !== "undefined") saveTasks(fresh);
+    return fresh;
+  });
+  useEffect(() => { lifetimeRef.current = lifetime; saveLifetime(lifetime); }, [lifetime]);
+  useEffect(() => { saveTasks(tasks); }, [tasks]);
+  const bumpLifetime = useCallback((patch: Partial<LifetimeStats>) => {
+    setLifetime((lt) => {
+      const next = { ...lt };
+      (Object.keys(patch) as (keyof LifetimeStats)[]).forEach((k) => {
+        next[k] = (lt[k] ?? 0) + (patch[k] ?? 0);
+      });
+      return next;
+    });
+  }, []);
+  const setLifetimeAbs = useCallback((patch: Partial<LifetimeStats>) => {
+    setLifetime((lt) => ({ ...lt, ...patch }));
+  }, []);
+  const rerollTasks = useCallback(() => {
+    setTasks(rollTasks(lifetimeRef.current));
+  }, []);
+  const claimTask = useCallback((taskId: string) => {
+    const t = tasks.find(x => x.id === taskId);
+    const def = TASK_TEMPLATES.find(d => d.id === taskId);
+    if (!t || !def || t.claimed) return;
+    const progress = (lifetimeRef.current[def.metric] ?? 0) - t.baseline;
+    if (progress < def.target) return;
+    const cur = shopRef.current;
+    const next = { ...cur, shadowCoins: cur.shadowCoins + def.reward };
+    shopRef.current = next; setShop(next);
+    setTasks(ts => ts.map(x => x.id === taskId ? { ...x, claimed: true } : x));
+    toast.success(`Task complete! +${def.reward} Shadow Coins`);
+  }, [tasks]);
+  const claimElite = useCallback(() => {
+    if (lifetimeRef.current.wins100Streak < ELITE_TARGET) return;
+    const cur = shopRef.current;
+    const ownsSkin = cur.owned.includes("admin");
+    const hasHat = cur.accessories.includes("admin_hat");
+    const hasJacket = cur.accessories.includes("admin_jacket");
+    if (ownsSkin && hasHat && hasJacket) return;
+    const accessories = [...cur.accessories];
+    if (!hasHat) accessories.push("admin_hat");
+    if (!hasJacket) accessories.push("admin_jacket");
+    const next: ShopSave = {
+      ...cur,
+      owned: ownsSkin ? cur.owned : [...cur.owned, "admin"],
+      accessories,
+      selected: "admin",
+      equippedAccessory: "admin_hat",
+    };
+    shopRef.current = next; setShop(next);
+    toast.success("THE Elite Shadow Gamer! Admin skin, Admin Hat & Admin Jacket unlocked!", { duration: 8000 });
+  }, []);
+
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelMsg, setWheelMsg] = useState<string | null>(null);
@@ -1220,8 +1327,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       // Dead => drops
       const survivors: Enemy[] = [];
+      let killsThisFrame = 0;
       for (const e of s.enemies) {
         if (e.hp <= 0) {
+          killsThisFrame++;
           s.score += Math.round(e.maxHp);
           for (let k = 0; k < e.xp; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "xp", value: 1 });
           for (let k = 0; k < e.coin; k++) s.pickups.push({ pos: { x: e.pos.x + rand(-6, 6), y: e.pos.y + rand(-6, 6) }, kind: "coin", value: 1 });
@@ -1231,6 +1340,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         } else survivors.push(e);
       }
       s.enemies = survivors;
+      if (killsThisFrame > 0) bumpLifetime({ kills: killsThisFrame });
+
 
       // Pickups
       const remPick: Pickup[] = [];
@@ -1246,12 +1357,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             while (s.xp >= s.xpNext) { s.xp -= s.xpNext; s.level++; s.xpNext = Math.round(s.xpNext * 1.4 + 2); }
           } else if (p.kind === "shadow") {
             setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + p.value }));
+            bumpLifetime({ shadowEarned: p.value });
           } else { s.coins += p.value; }
         } else remPick.push(p);
       }
       s.pickups = remPick;
 
-      if (s.player.hp <= 0) { s.player.hp = 0; s.over = true; }
+      if (s.player.hp <= 0) {
+        s.player.hp = 0;
+        if (!s.over) {
+          s.over = true;
+          // Streak resets on death before 100
+          if (s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
+        }
+      }
 
       // Wave clear
       if (s.waveActive && !s.waveCleared) {
@@ -1260,6 +1379,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           s.waveActive = false; s.waveCleared = true;
           // Wave clear bonus: 10 Shadow Coins
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
+          bumpLifetime({ wavesCleared: 1, shadowEarned: 10 });
           if (s.wave >= TOTAL_WAVES) {
             s.won = true;
             if (!s.wonRewardGiven) {
@@ -1273,6 +1393,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               };
               shopRef.current = next;
               setShop(next);
+              bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
               toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
               if (!hadHat) {
                 toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
@@ -1287,6 +1408,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           }
         }
       }
+
     };
 
     const draw = () => {
@@ -1787,7 +1909,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap justify-center">
                 <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                   Start Game
                 </button>
@@ -1797,6 +1919,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
                   Inventory
                 </button>
+                <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
+                  Tasks
+                </button>
                 <button
                   onClick={toggleMusic}
                   className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
@@ -1805,10 +1930,99 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   {musicOn ? "♪ Music: On" : "♪ Music: Off"}
                 </button>
               </div>
+
+            </Overlay>
+          )}
+
+          {tasksOpen && (
+            <Overlay>
+              <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#34d399] to-[#ffe066] bg-clip-text text-transparent">Tasks</h2>
+                  <div className="text-xs text-white/60">◆ {shop.shadowCoins}</div>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  {tasks.map(t => {
+                    const def = TASK_TEMPLATES.find(d => d.id === t.id);
+                    if (!def) return null;
+                    const current = Math.max(0, (lifetime[def.metric] ?? 0) - t.baseline);
+                    const pct = Math.min(100, (current / def.target) * 100);
+                    const done = current >= def.target;
+                    return (
+                      <div key={t.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-bold">{def.label}</div>
+                          <div className="text-xs text-[#ffe066]">+{def.reward} ◆</div>
+                        </div>
+                        <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
+                          <div className="h-full bg-gradient-to-r from-[#34d399] to-[#ffe066]" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/60">{Math.min(current, def.target)} / {def.target}</span>
+                          {t.claimed ? (
+                            <span className="text-white/40">Claimed</span>
+                          ) : (
+                            <button
+                              disabled={!done}
+                              onClick={() => claimTask(t.id)}
+                              className="px-3 py-1 rounded bg-[#34d399] text-black font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              {done ? "Claim" : "In Progress"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Elite task */}
+                {(() => {
+                  const streak = lifetime.wins100Streak;
+                  const pct = Math.min(100, (streak / ELITE_TARGET) * 100);
+                  const done = streak >= ELITE_TARGET;
+                  const cur = shop;
+                  const claimed = cur.owned.includes("admin") && cur.accessories.includes("admin_hat") && cur.accessories.includes("admin_jacket");
+                  return (
+                    <div className="p-4 rounded-lg ring-2 ring-[#ff0033] bg-gradient-to-br from-[#330011] to-[#1a0008] mb-4 shadow-[0_0_30px_rgba(255,0,51,0.5)]">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="font-black text-[#ff5577] tracking-wider">THE ELITE SHADOW GAMER</div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#ff0033]">Impossible</div>
+                      </div>
+                      <div className="text-xs text-white/70 mb-2">Complete 100 waves 10 times in a row. Dying before wave 100 resets your streak.</div>
+                      <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
+                        <div className="h-full bg-[#ff0033]" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Streak: {streak} / {ELITE_TARGET}</span>
+                        {claimed ? (
+                          <span className="text-[#ff5577] font-bold">CLAIMED · Admin Unlocked</span>
+                        ) : (
+                          <button
+                            disabled={!done}
+                            onClick={claimElite}
+                            className="px-3 py-1 rounded bg-[#ff0033] text-white font-black text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {done ? "Claim Admin Skin" : "Locked"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-2 text-[10px] text-white/50">Reward: Admin skin, Admin Hat & Admin Jacket</div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex gap-3 justify-end">
+                  <button onClick={rerollTasks} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Reroll Tasks</button>
+                  <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">Close</button>
+                </div>
+              </div>
             </Overlay>
           )}
 
           {inventoryOpen && (
+
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
