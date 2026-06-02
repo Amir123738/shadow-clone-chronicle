@@ -220,10 +220,30 @@ const SKINS: Skin[] = [
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 ];
 
-type Accessory = { id: string; name: string; color: string; glow: string };
+type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
+type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
-  { id: "white_hat", name: "White Hat", color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
+  { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
+  { id: "gold_hat",       name: "Gold Hat",       color: "#fbbf24", glow: "rgba(251,191,36,0.9)",   rarity: "epic",       price: 100000 },
+  { id: "diamond_hat",    name: "Diamond Hat",    color: "#67e8f9", glow: "rgba(103,232,249,0.95)", rarity: "mythical",   price: 500000 },
+  { id: "jacket",         name: "Jacket",         color: "#a78bfa", glow: "rgba(167,139,250,0.85)", rarity: "legendary",  price: 1000000 },
+  { id: "gold_jacket",    name: "Gold Jacket",    color: "#f59e0b", glow: "rgba(245,158,11,0.95)",  rarity: "legendary",  price: 2500000 },
+  { id: "diamond_jacket", name: "Diamond Jacket", color: "#22d3ee", glow: "rgba(34,211,238,1)",     rarity: "secret",     price: 10000000 },
+  { id: "crystal_hat",    name: "Crystal Hat",    color: "#e0e7ff", glow: "rgba(224,231,255,1)",    rarity: "ultra",      price: 25000000 },
+  { id: "vip_jacket",     name: "VIP Jacket",     color: "#ff5dff", glow: "rgba(255,93,255,1)",     rarity: "diamond",    price: 100000000 },
 ];
+const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond"];
+const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }> = {
+  super_rare: { label: "Super Rare", color: "#60a5fa" },
+  epic:       { label: "Epic",       color: "#a855f7" },
+  mythical:   { label: "Mythical",   color: "#ec4899" },
+  legendary:  { label: "Legendary",  color: "#fde68a" },
+  secret:     { label: "Secret",     color: "#22d3ee" },
+  ultra:      { label: "Ultra",      color: "#ffffff" },
+  diamond:    { label: "Diamond",    color: "#ff5dff" },
+};
 
 const SHOP_KEY = "scs_shop_v2";
 type ShopSave = { shadowCoins: number; owned: string[]; selected: string; accessories: string[]; equippedAccessory: string | null };
