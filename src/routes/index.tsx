@@ -2364,13 +2364,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
               <div className="text-center animate-pulse">
                 <div className="text-5xl md:text-7xl font-black text-[#ff2e2e] drop-shadow-[0_0_30px_rgba(255,46,46,0.8)] mb-2">
-                  WAVE 50
+                  WAVE {uiState.wave}
                 </div>
                 <div className="text-xl md:text-3xl font-black text-[#ff5d5d] drop-shadow-[0_0_20px_rgba(255,93,93,0.7)] mb-1">
                   WARNING
                 </div>
                 <div className="text-sm md:text-lg font-bold text-white/90 tracking-widest uppercase">
-                  Enemies Powered Up
+                  {uiState.wave === 75 ? "Elite Surge Incoming" : "Enemies Powered Up"}
                 </div>
               </div>
             </div>
