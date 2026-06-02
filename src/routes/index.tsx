@@ -349,7 +349,45 @@ function rollWheel(): WheelReward {
   return WHEEL_REWARDS[0];
 }
 
-// ---------- Levels / Bosses Mode ----------
+// ---------- Divine Fortune (premium wheel) ----------
+const DIVINE_SPIN_COST = 5000;
+const DIVINE_REWARDS: WheelReward[] = [
+  { id: "d_c1000",  label: "1000 ◆",       color: "#9ca3af", weight: 75,  apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 1000 },  msg: "+1000 Shadow Coins" }) },
+  { id: "d_silver", label: "Silver Hat",   color: "#d1d5db", weight: 10,  apply: (s) => {
+      if (s.accessories.includes("silver_hat")) return { next: { ...s, shadowCoins: s.shadowCoins + 2500 }, msg: "Silver Hat (duplicate) → +2500 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "silver_hat"] }, msg: "Unlocked accessory: Silver Hat!" };
+    } },
+  { id: "d_c5000",  label: "5000 ◆",       color: "#60a5fa", weight: 5,   apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 5000 },  msg: "+5000 Shadow Coins" }) },
+  { id: "d_black",  label: "Black Jacket", color: "#0a0a0a", weight: 5,   apply: (s) => {
+      if (s.accessories.includes("black_jacket")) return { next: { ...s, shadowCoins: s.shadowCoins + 5000 }, msg: "Black Jacket (duplicate) → +5000 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "black_jacket"] }, msg: "Unlocked accessory: Black Jacket!" };
+    } },
+  { id: "d_myth",   label: "Mythical Skin",color: "#f472b6", weight: 3,   apply: (s) => {
+      const pool = SKINS.filter(sk => sk.rarity === "mythical" && !s.owned.includes(sk.id));
+      if (pool.length === 0) return { next: { ...s, shadowCoins: s.shadowCoins + 15000 }, msg: "All Mythicals owned → +15000 ◆" };
+      const sk = pickRandom(pool);
+      return { next: { ...s, owned: [...s.owned, sk.id] }, msg: `MYTHICAL Skin: ${sk.name}!` };
+    } },
+  { id: "d_c10000", label: "10000 ◆",      color: "#ffe066", weight: 1,   apply: (s) => ({ next: { ...s, shadowCoins: s.shadowCoins + 10000 }, msg: "+10000 Shadow Coins" }) },
+  { id: "d_shady",  label: "10 Shady Spins", color: "#ff7a18", weight: 0.8, apply: (s) => {
+      try {
+        const cur = Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0;
+        localStorage.setItem(SHADY_SPINS_KEY, String(cur + 10));
+      } catch {}
+      return { next: s, msg: "+10 Shady Spins!" };
+    } },
+  { id: "d_crimson",label: "Crimson Jacket", color: "#dc2626", weight: 0.2, apply: (s) => {
+      if (s.accessories.includes("crimson_jacket")) return { next: { ...s, shadowCoins: s.shadowCoins + 25000 }, msg: "Crimson Jacket (duplicate) → +25000 ◆" };
+      return { next: { ...s, accessories: [...s.accessories, "crimson_jacket"] }, msg: "LEGENDARY! Unlocked Crimson Jacket!" };
+    } },
+];
+const DIVINE_TOTAL_WEIGHT = DIVINE_REWARDS.reduce((a, r) => a + r.weight, 0);
+function rollDivine(): WheelReward {
+  let r = Math.random() * DIVINE_TOTAL_WEIGHT;
+  for (const w of DIVINE_REWARDS) { if ((r -= w.weight) <= 0) return w; }
+  return DIVINE_REWARDS[0];
+}
+
 type LevelDef = {
   id: number; name: string; bossName: string; bossColor: string;
   bossHp: number; bossDmg: number; bossSpd: number; bossR: number;
