@@ -225,6 +225,19 @@ const SKINS: Skin[] = [
   // Ultra Nova (1)
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 
+  // Galactic (3)
+  { id: "gal_nebulastorm", name: "Galactic Tempest",  rarity: "galactic", price: 70000000,  color: "#60a5fa", glow: "rgba(96,165,250,1)", rainbow: true },
+  { id: "gal_supernova",   name: "Galactic Supernova",rarity: "galactic", price: 90000000,  color: "#facc15", glow: "rgba(250,204,21,1)", rainbow: true },
+  { id: "gal_eclipse",     name: "Galactic Eclipse",  rarity: "galactic", price: 120000000, color: "#1e1b4b", glow: "rgba(139,92,246,1)", rainbow: true },
+
+  // Quantum (3)
+  { id: "qnt_flux",        name: "Quantum Flux",         rarity: "quantum", price: 160000000, color: "#22d3ee", glow: "rgba(34,211,238,1)", rainbow: true },
+  { id: "qnt_entangle",    name: "Quantum Entanglement", rarity: "quantum", price: 220000000, color: "#a78bfa", glow: "rgba(167,139,250,1)", rainbow: true },
+  { id: "qnt_singularity", name: "Quantum Singularity",  rarity: "quantum", price: 300000000, color: "#0f172a", glow: "rgba(56,189,248,1)", rainbow: true },
+
+  // Quasaric (1)
+  { id: "qsr_radiance",    name: "Quasaric Radiance",    rarity: "quasaric", price: 500000000, color: "#fb7185", glow: "rgba(251,113,133,1)", rainbow: true },
+
   // Admin (1) — exclusive
   { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
