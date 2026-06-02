@@ -1563,7 +1563,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const darkActive = s.darknessTime > 0;
       const slowMul = s.slowTime > 0 ? 0.55 : 1;
       for (const e of s.enemies) {
-        if (!frozen || e.kind === "boss") {
+        if ((!frozen && s.enemyFreezeTime <= 0) || e.kind === "boss") {
           if (darkActive && e.kind !== "boss") {
             e.randomTimer = (e.randomTimer ?? 0) - dt;
             if (!e.randomDir || (e.randomTimer ?? 0) <= 0) {
