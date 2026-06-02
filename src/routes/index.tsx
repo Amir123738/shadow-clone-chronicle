@@ -543,7 +543,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
-    s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false;
+    s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false; s.wonRewardGiven = false;
     s.betweenWaves = false; s.pendingUpgrades = null; s.waveCleared = false;
     s.appliedUpgrades = [];
     s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
