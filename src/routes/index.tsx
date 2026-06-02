@@ -1397,7 +1397,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       }
 
       // Spawn waves
-      const isBossWave = !!BOSS_WAVES[s.wave];
+      const isBossWave = s.gameMode === "level"
+        ? s.wave >= LEVEL_WAVES
+        : !!BOSS_WAVES[s.wave];
       if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
         spawnGrunt(); s.spawnQueue--;
       }
