@@ -303,6 +303,12 @@ const BOSS_NAMES: Record<string, string> = {
 function rand(a: number, b: number) { return a + Math.random() * (b - a); }
 function dist(a: Vec, b: Vec) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function norm(v: Vec): Vec { const m = Math.hypot(v.x, v.y) || 1; return { x: v.x / m, y: v.y / m }; }
+function randomColor() {
+  const h = Math.floor(Math.random() * 360);
+  const s = 30 + Math.floor(Math.random() * 40);
+  const l = 12 + Math.floor(Math.random() * 16);
+  return `hsl(${h} ${s}% ${l}%)`;
+}
 
 function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -443,6 +449,7 @@ function Game() {
     explosionFx: [] as { x: number; y: number; r: number; maxR: number; life: number }[],
     // wave history for revive
     lastWaveEnemyCount: 0,
+    bgColor: "#0b0d1a" as string,
   });
 
   const resetGame = useCallback(() => {
@@ -464,6 +471,7 @@ function Game() {
     s.blackholeTime = 0; s.blackholePos = { x: W / 2, y: H / 2 }; s.slowTime = 0;
     s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
+    s.bgColor = "#0b0d1a";
   }, []);
 
   function edgeSpawn(): Vec {
@@ -1151,6 +1159,7 @@ function Game() {
             if (s.stolenUpgrade) { s.stolenUpgrade.redo(); s.stolenUpgrade = null; }
             s.betweenWaves = true;
             s.pendingUpgrades = rollUpgrades();
+            s.bgColor = randomColor();
           }
         }
       }
@@ -1158,7 +1167,7 @@ function Game() {
 
     const draw = () => {
       const s = stateRef.current;
-      ctx.fillStyle = "#0b0d1a";
+      ctx.fillStyle = s.bgColor;
       ctx.fillRect(0, 0, W, H);
       ctx.strokeStyle = "rgba(255,255,255,0.04)";
       ctx.lineWidth = 1;
