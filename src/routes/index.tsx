@@ -1490,8 +1490,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.player.hp = 0;
         if (!s.over) {
           s.over = true;
-          // Streak resets on death before 100
-          if (s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
+          // Streak resets on death before 100 (normal mode only)
+          if (s.gameMode === "normal" && s.wave < TOTAL_WAVES) setLifetimeAbs({ wins100Streak: 0 });
         }
       }
 
@@ -1503,23 +1503,43 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           // Wave clear bonus: 10 Shadow Coins
           setShop((sv) => ({ ...sv, shadowCoins: sv.shadowCoins + 10 }));
           bumpLifetime({ wavesCleared: 1, shadowEarned: 10 });
-          if (s.wave >= TOTAL_WAVES) {
+          const reachedEnd = s.gameMode === "level"
+            ? s.wave >= LEVEL_WAVES
+            : s.wave >= TOTAL_WAVES;
+          if (reachedEnd) {
             s.won = true;
             if (!s.wonRewardGiven) {
               s.wonRewardGiven = true;
-              const cur = shopRef.current;
-              const hadHat = cur.accessories.includes("bronze_hat");
-              const next: ShopSave = {
-                ...cur,
-                shadowCoins: cur.shadowCoins + 500,
-                accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
-              };
-              shopRef.current = next;
-              setShop(next);
-              bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
-              toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
-              if (!hadHat) {
-                toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+              if (s.gameMode === "level") {
+                const level = LEVELS.find(l => l.id === s.levelId);
+                if (level) {
+                  const spinsBefore = loadShadySpins();
+                  const newSpins = spinsBefore + level.spinReward;
+                  saveShadySpins(newSpins);
+                  setShadySpins(newSpins);
+                  const cleared = loadLevelsCleared();
+                  if (!cleared.includes(level.id)) {
+                    const nextCleared = [...cleared, level.id];
+                    saveLevelsCleared(nextCleared);
+                    setLevelsCleared(nextCleared);
+                  }
+                  toast.success(`${level.bossName} defeated! +${level.spinReward} Shady Spin${level.spinReward > 1 ? "s" : ""}`, { duration: 6000 });
+                }
+              } else {
+                const cur = shopRef.current;
+                const hadHat = cur.accessories.includes("bronze_hat");
+                const next: ShopSave = {
+                  ...cur,
+                  shadowCoins: cur.shadowCoins + 500,
+                  accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
+                };
+                shopRef.current = next;
+                setShop(next);
+                bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
+                toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
+                if (!hadHat) {
+                  toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                }
               }
             }
           } else {
@@ -1531,6 +1551,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           }
         }
       }
+
 
     };
 
