@@ -2121,6 +2121,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">Omega Slain!</h2>
               <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
               <p className="text-white/70 mb-4">All 100 waves survived.</p>
+              <div className="flex flex-col items-center gap-1 mb-5">
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
+              </div>
               <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 Play Again
               </button>
