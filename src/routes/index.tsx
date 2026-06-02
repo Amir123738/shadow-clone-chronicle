@@ -950,6 +950,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
       if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
       if (s.dragonBreathTime > 0) s.dragonBreathTime = Math.max(0, s.dragonBreathTime - dt);
+      if (s.waveWarningTimer > 0) s.waveWarningTimer = Math.max(0, s.waveWarningTimer - dt);
       if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
       if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
       // age fire trail
@@ -1685,6 +1686,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           stolen: s.stolenUpgrade ? { name: s.stolenUpgrade.name, time: s.stolenTimer } : null,
           bossName: boss ? (BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
           shadowCoins: shopRef.current.shadowCoins,
+          waveWarning: s.waveWarningTimer,
         };
       });
       raf = requestAnimationFrame(loop);
