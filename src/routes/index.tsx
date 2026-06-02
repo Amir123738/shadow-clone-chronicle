@@ -2140,6 +2140,105 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {levelsOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">LVL's / Bosses</h2>
+                  <div className="flex items-center gap-3 text-xs text-white/70">
+                    <span>◆ {shop.shadowCoins.toLocaleString()}</span>
+                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 Shady Spins: {shadySpins}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-white/60 mb-3">Beat 5 waves per level. Each level ends with a unique boss. Win = free Shady Spin(s). Bosses get brutally harder each level.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+                  {LEVELS.map(lv => {
+                    const done = levelsCleared.includes(lv.id);
+                    return (
+                      <div key={lv.id} className={`p-3 rounded-lg ring-1 ${done ? "ring-[#34d399]/60 bg-[#34d399]/10" : "ring-white/10 bg-white/5"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="font-bold text-sm">{lv.name}</div>
+                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">CLEARED</span>}
+                        </div>
+                        <div className="text-xs text-white/70 mb-1">Boss: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
+                        <div className="text-[11px] text-white/50 mb-2">Reward: +{lv.spinReward} Shady Spin{lv.spinReward > 1 ? "s" : ""}</div>
+                        <button
+                          onClick={() => startLevel(lv.id)}
+                          className="w-full px-3 py-1.5 rounded bg-[#ff7a18] text-black font-bold text-xs hover:scale-[1.02] transition"
+                        >
+                          Start Level
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-4 rounded-lg ring-1 ring-[#ffe066]/40 bg-gradient-to-br from-[#ff7a18]/20 to-[#ffe066]/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-black text-[#ffe066]">🎰 Shady Spin</h3>
+                    <span className="text-xs text-white/70">Spins available: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
+                  </div>
+                  <p className="text-[11px] text-white/60 mb-3">Earn spins by clearing levels. Each spin awards Shadow Coins.</p>
+
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="relative w-56 h-56 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[16px] border-l-transparent border-r-transparent border-b-[#ffe066] z-10" />
+                      <div
+                        className="w-full h-full rounded-full ring-4 ring-[#ffe066]/60 transition-transform"
+                        style={{
+                          transform: `rotate(${shadyAngle}deg)`,
+                          transitionDuration: shadySpinning ? "4s" : "0s",
+                          transitionTimingFunction: "cubic-bezier(.18,.89,.32,1)",
+                          background: `conic-gradient(${SHADY_REWARDS.map((r, i) => {
+                            const slice = 360 / SHADY_REWARDS.length;
+                            return `${r.color} ${i * slice}deg ${(i + 1) * slice}deg`;
+                          }).join(",")})`,
+                        }}
+                      >
+                        {SHADY_REWARDS.map((r, i) => {
+                          const slice = 360 / SHADY_REWARDS.length;
+                          const a = i * slice + slice / 2;
+                          const rad = (a - 90) * Math.PI / 180;
+                          const cx = 50 + 32 * Math.cos(rad);
+                          const cy = 50 + 32 * Math.sin(rad);
+                          return (
+                            <div key={r.coins} className="absolute text-[10px] font-black text-black"
+                              style={{ left: `${cx}%`, top: `${cy}%`, transform: `translate(-50%, -50%) rotate(${a}deg)` }}>
+                              {r.coins >= 1000 ? `${r.coins / 1000}k` : r.coins}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex-1 w-full">
+                      <button
+                        onClick={spinShady}
+                        disabled={shadySpinning || shadySpins <= 0}
+                        className="w-full px-4 py-3 rounded-lg bg-[#ffe066] text-black font-black text-lg hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                      >
+                        {shadySpinning ? "Spinning…" : shadySpins > 0 ? "SPIN" : "No Spins"}
+                      </button>
+                      {shadyMsg && <div className="text-center text-sm text-[#ffe066] font-bold mb-2">{shadyMsg}</div>}
+                      <div className="text-[11px] text-white/60 space-y-0.5">
+                        {SHADY_REWARDS.map(r => (
+                          <div key={r.coins} className="flex items-center justify-between">
+                            <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: r.color }} />◆ {r.coins.toLocaleString()}</span>
+                            <span className="font-mono">{((r.weight / SHADY_TOTAL_WEIGHT) * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">Close</button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
           {tasksOpen && (
             <Overlay>
               <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
