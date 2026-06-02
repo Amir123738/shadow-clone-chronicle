@@ -1530,11 +1530,16 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         </span>
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={() => {
+            if (window.confirm("Log out? Your progress is saved to your account.")) {
+              signOut();
+            }
+          }}
           className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
         >
           Log out
         </button>
+
       </div>
       <header className="text-center">
         <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-[#ffe066] via-[#ff2e88] to-[#b388ff] bg-clip-text text-transparent">
