@@ -1559,8 +1559,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const isBossWave = s.gameMode === "level"
         ? s.wave >= LEVEL_WAVES
         : !!BOSS_WAVES[s.wave];
-      if (s.waveActive && !isBossWave && s.spawnQueue > 0 && Math.random() < 0.04 + s.wave * 0.003) {
-        spawnGrunt(); s.spawnQueue--;
+      if (s.waveActive && !isBossWave && s.spawnQueue > 0) {
+        const spawnsThisFrame = s.enemyFreezeTime > 0 ? s.spawnQueue : (Math.random() < 0.04 + s.wave * 0.003 ? 1 : 0);
+        for (let k = 0; k < spawnsThisFrame; k++) {
+          spawnGrunt();
+          s.spawnQueue--;
+        }
       }
 
       // Enemies
