@@ -698,9 +698,23 @@ function Game() {
     startWave();
   };
 
+  const [musicOn, setMusicOn] = useState(true);
+  const musicOnRef = useRef(true);
+  useEffect(() => { musicOnRef.current = musicOn; }, [musicOn]);
+  useEffect(() => () => { stopMusic(); }, []);
+
+  const toggleMusic = () => {
+    setMusicOn((on) => {
+      const next = !on;
+      if (next) startMusic(); else stopMusic();
+      return next;
+    });
+  };
+
   const startGame = () => {
     resetGame();
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    if (musicOnRef.current) startMusic();
     startWave();
   };
 
