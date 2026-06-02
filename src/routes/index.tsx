@@ -1067,6 +1067,52 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     startWave();
   };
 
+  const startLevel = (levelId: number) => {
+    const level = LEVELS.find(l => l.id === levelId);
+    if (!level) return;
+    resetGame();
+    const s = stateRef.current;
+    s.gameMode = "level";
+    s.levelId = levelId;
+    s.levelMult = level.gruntMult;
+    s.levelTotalWaves = LEVEL_WAVES;
+    setLevelsOpen(false);
+    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    if (musicOnRef.current) startMusic();
+    startWave();
+    toast(`${level.name} — Defeat ${level.bossName}!`, { duration: 4000 });
+  };
+
+  const spinShady = () => {
+    if (shadySpinning) return;
+    if (shadySpins <= 0) { setShadyMsg("No Shady Spins! Beat a level to earn one."); return; }
+    const reward = rollShady();
+    const idx = SHADY_REWARDS.indexOf(reward);
+    const slice = 360 / SHADY_REWARDS.length;
+    const mid = idx * slice + slice / 2;
+    setShadySpinning(true);
+    setShadyMsg(null);
+    const newSpins = shadySpins - 1;
+    setShadySpins(newSpins);
+    saveShadySpins(newSpins);
+    setShadyAngle((prev) => {
+      const prevMod = ((prev % 360) + 360) % 360;
+      const desiredMod = ((360 - mid) % 360 + 360) % 360;
+      let delta = desiredMod - prevMod;
+      if (delta < 0) delta += 360;
+      return prev + 360 * 6 + delta;
+    });
+    window.setTimeout(() => {
+      const cur = shopRef.current;
+      const next = { ...cur, shadowCoins: cur.shadowCoins + reward.coins };
+      shopRef.current = next; setShop(next);
+      setShadyMsg(`+${reward.coins.toLocaleString()} Shadow Coins!`);
+      toast.success(`Shady Spin: +${reward.coins.toLocaleString()} ◆`, { duration: 4000 });
+      setShadySpinning(false);
+    }, 4200);
+  };
+
+
   useEffect(() => {
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
       const i = stateRef.current.input;
