@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { startMusic, stopMusic } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -355,6 +355,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     blur: number; frozen: boolean; stolen: { name: string; time: number } | null;
     bossName: string | null;
     shadowCoins: number;
+    waveWarning: number;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -363,6 +364,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     enemiesLeft: 0, betweenWaves: false, upgrades: [],
     blur: 0, frozen: false, stolen: null, bossName: null,
     shadowCoins: 0,
+    waveWarning: 0,
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
@@ -529,6 +531,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     // wave history for revive
     lastWaveEnemyCount: 0,
     bgColor: "#0b0d1a" as string,
+    waveWarningTimer: 0,
   });
 
   const resetGame = useCallback(() => {
@@ -551,6 +554,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
     s.bgColor = "#0b0d1a";
+    s.waveWarningTimer = 0;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -633,6 +637,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.betweenWaves = false;
     s.waveCleared = false;
     s.bossSpawned = false;
+    if (s.wave === 50) {
+      s.waveWarningTimer = 4;
+      playWave50Alarm();
+    }
     const bossId = BOSS_WAVES[s.wave] ?? null;
     if (bossId) {
       s.spawnQueue = 0;
@@ -942,6 +950,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.tornadoTime > 0) s.tornadoTime = Math.max(0, s.tornadoTime - dt);
       if (s.darknessTime > 0) s.darknessTime = Math.max(0, s.darknessTime - dt);
       if (s.dragonBreathTime > 0) s.dragonBreathTime = Math.max(0, s.dragonBreathTime - dt);
+      if (s.waveWarningTimer > 0) s.waveWarningTimer = Math.max(0, s.waveWarningTimer - dt);
       if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
       if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
       // age fire trail
@@ -1677,6 +1686,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           stolen: s.stolenUpgrade ? { name: s.stolenUpgrade.name, time: s.stolenTimer } : null,
           bossName: boss ? (BOSS_NAMES[boss.bossId ?? "super"] ?? null) : null,
           shadowCoins: shopRef.current.shadowCoins,
+          waveWarning: s.waveWarningTimer,
         };
       });
       raf = requestAnimationFrame(loop);
@@ -2097,6 +2107,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 Play Again
               </button>
             </Overlay>
+          )}
+
+          {uiState.waveWarning > 0 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
+              <div className="text-center animate-pulse">
+                <div className="text-5xl md:text-7xl font-black text-[#ff2e2e] drop-shadow-[0_0_30px_rgba(255,46,46,0.8)] mb-2">
+                  WAVE 50
+                </div>
+                <div className="text-xl md:text-3xl font-black text-[#ff5d5d] drop-shadow-[0_0_20px_rgba(255,93,93,0.7)] mb-1">
+                  WARNING
+                </div>
+                <div className="text-sm md:text-lg font-bold text-white/90 tracking-widest uppercase">
+                  Enemies Powered Up
+                </div>
+              </div>
+            </div>
           )}
 
           {wheelRevealOpen && wheelRevealReward && (
