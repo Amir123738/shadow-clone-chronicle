@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { startMusic, stopMusic } from "@/lib/gameMusic";
+import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
+
 import upgFire from "@/assets/upgrades/fire.png";
 import upgDmg from "@/assets/upgrades/dmg.png";
 import upgSpd from "@/assets/upgrades/spd.png";
