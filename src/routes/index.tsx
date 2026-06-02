@@ -690,6 +690,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     shieldTime: 0,
     speedBoostTime: 0,
     fireArrowTime: 0,
+    poisonArrowTime: 0,
     fireTrail: [] as { x: number; y: number; life: number }[],
     // new abilities
     kingShadowTime: 0,
