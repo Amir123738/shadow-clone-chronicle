@@ -2781,7 +2781,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setUiState(u => ({ ...u, started: false, won: false })); setLevelsOpen(true); }} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
+                <button onClick={() => { stateRef.current.won = false; stateRef.current.over = true; setUiState(u => ({ ...u, started: false, won: false })); setLevelsOpen(true); }} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
                   Back to Levels
                 </button>
               </div>
