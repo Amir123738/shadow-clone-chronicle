@@ -2336,6 +2336,44 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {superPickOpen && pendingSuperLevelId != null && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="text-center mb-4">
+                  <h2 className="text-3xl font-black bg-gradient-to-r from-[#ff2e88] via-[#ffe066] to-[#7cdcff] bg-clip-text text-transparent">
+                    Choose Your Super Upgrade
+                  </h2>
+                  <p className="text-xs text-white/60 mt-1">
+                    Level {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — one pick only
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SUPER_UPGRADES.map(su => (
+                    <button
+                      key={su.id}
+                      onClick={() => pickSuperUpgrade(su.id)}
+                      className="text-left p-4 rounded-lg ring-2 bg-white/5 hover:bg-white/10 hover:scale-[1.02] transition"
+                      style={{ borderColor: su.color, boxShadow: `0 0 18px -6px ${su.color}` }}
+                    >
+                      <div className="font-black text-lg mb-1" style={{ color: su.color }}>{su.name}</div>
+                      <div className="text-xs text-white/80">{su.desc}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => { setSuperPickOpen(false); setPendingSuperLevelId(null); setLevelsOpen(true); }}
+                    className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+
+
           {tasksOpen && (
             <Overlay>
               <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
