@@ -7,22 +7,105 @@ let schedulerId: number | null = null;
 let nextNoteTime = 0;
 let step = 0;
 let running = false;
+let musicStartTime = 0;
 
-// Epic minor progression (Am - F - C - G), arpeggio + bass + lead.
-// Notes in MIDI numbers.
-const BASS: number[] = [33, 33, 29, 31]; // A1, A1, F1, G1 per bar
-const CHORDS: number[][] = [
-  [57, 60, 64], // Am
-  [53, 57, 60], // F
-  [48, 52, 55], // C
-  [55, 59, 62], // G
-];
-const LEAD: number[] = [
-  69, 72, 76, 72, 69, 72, 76, 79,
-  65, 69, 72, 69, 65, 69, 72, 76,
-  60, 64, 67, 64, 60, 64, 67, 72,
-  62, 67, 71, 67, 62, 67, 71, 74,
-];
+const SWITCH_INTERVAL = 180; // seconds — change track every 3 minutes
+
+interface Track {
+  bass: number[];
+  chords: number[][];
+  lead: number[];
+  leadType: OscillatorType;
+  padType: OscillatorType;
+  leadGain: number;
+  padGain: number;
+}
+
+// Track 0 — Epic Minor (Am – F – C – G)
+const TRACK0: Track = {
+  bass: [33, 33, 29, 31],
+  chords: [
+    [57, 60, 64],
+    [53, 57, 60],
+    [48, 52, 55],
+    [55, 59, 62],
+  ],
+  lead: [
+    69, 72, 76, 72, 69, 72, 76, 79,
+    65, 69, 72, 69, 65, 69, 72, 76,
+    60, 64, 67, 64, 60, 64, 67, 72,
+    62, 67, 71, 67, 62, 67, 71, 74,
+  ],
+  leadType: "square",
+  padType: "sawtooth",
+  leadGain: 0.07,
+  padGain: 0.05,
+};
+
+// Track 1 — Dark Tension (Dm – Bb – F – C)
+const TRACK1: Track = {
+  bass: [26, 26, 29, 24],
+  chords: [
+    [50, 53, 57],
+    [46, 50, 53],
+    [41, 45, 48],
+    [48, 52, 55],
+  ],
+  lead: [
+    62, 65, 69, 65, 62, 65, 69, 72,
+    58, 62, 65, 62, 58, 62, 65, 69,
+    53, 57, 60, 57, 53, 57, 60, 65,
+    55, 60, 64, 60, 55, 60, 64, 67,
+  ],
+  leadType: "sawtooth",
+  padType: "triangle",
+  leadGain: 0.08,
+  padGain: 0.06,
+};
+
+// Track 2 — Heroic Major (Em – C – G – D)
+const TRACK2: Track = {
+  bass: [28, 28, 31, 26],
+  chords: [
+    [52, 55, 59],
+    [48, 52, 55],
+    [55, 59, 62],
+    [50, 54, 57],
+  ],
+  lead: [
+    64, 67, 71, 67, 64, 67, 71, 74,
+    60, 64, 67, 64, 60, 64, 67, 71,
+    55, 59, 62, 59, 55, 59, 62, 67,
+    57, 62, 66, 62, 57, 62, 66, 69,
+  ],
+  leadType: "square",
+  padType: "sawtooth",
+  leadGain: 0.08,
+  padGain: 0.05,
+};
+
+// Track 3 — Mystic March (Fm – Db – Ab – Eb)
+const TRACK3: Track = {
+  bass: [29, 29, 32, 27],
+  chords: [
+    [53, 56, 60],
+    [49, 53, 56],
+    [44, 48, 51],
+    [51, 55, 58],
+  ],
+  lead: [
+    65, 68, 72, 68, 65, 68, 72, 75,
+    61, 65, 68, 65, 61, 65, 68, 72,
+    56, 60, 63, 60, 56, 60, 63, 68,
+    58, 63, 67, 63, 58, 63, 67, 70,
+  ],
+  leadType: "triangle",
+  padType: "sawtooth",
+  leadGain: 0.09,
+  padGain: 0.055,
+};
+
+const TRACKS: Track[] = [TRACK0, TRACK1, TRACK2, TRACK3];
 
 const BPM = 110;
 const SIXTEENTH = 60 / BPM / 4; // seconds per 16th note
@@ -53,23 +136,30 @@ function playNote(
   osc.stop(start + dur + 0.02);
 }
 
+function getTrackAtTime(time: number): Track {
+  const elapsed = Math.max(0, time - musicStartTime);
+  const idx = Math.floor(elapsed / SWITCH_INTERVAL) % TRACKS.length;
+  return TRACKS[idx];
+}
+
 function scheduleStep(s: number, time: number) {
+  const track = getTrackAtTime(time);
   const bar = Math.floor(s / 16) % 4;
   const beatIn16 = s % 16;
 
   // Bass on every quarter note
   if (beatIn16 % 4 === 0) {
-    playNote(midiToFreq(BASS[bar]), time, SIXTEENTH * 3.8, "triangle", 0.32);
+    playNote(midiToFreq(track.bass[bar]), time, SIXTEENTH * 3.8, "triangle", 0.32);
   }
   // Chord pad on downbeat of each bar
   if (beatIn16 === 0) {
-    for (const n of CHORDS[bar]) {
-      playNote(midiToFreq(n), time, SIXTEENTH * 14, "sawtooth", 0.05);
+    for (const n of track.chords[bar]) {
+      playNote(midiToFreq(n), time, SIXTEENTH * 14, track.padType, track.padGain);
     }
   }
   // Lead arpeggio every 16th
-  const leadNote = LEAD[(bar * 8 + (beatIn16 % 8)) % LEAD.length];
-  playNote(midiToFreq(leadNote), time, SIXTEENTH * 0.9, "square", 0.07);
+  const leadNote = track.lead[(bar * 8 + (beatIn16 % 8)) % track.lead.length];
+  playNote(midiToFreq(leadNote), time, SIXTEENTH * 0.9, track.leadType, track.leadGain);
 
   // Kick on 1 and 3
   if (beatIn16 === 0 || beatIn16 === 8) {
@@ -115,6 +205,7 @@ export function startMusic(volume = 0.35) {
     }
     running = true;
     step = 0;
+    musicStartTime = ctx.currentTime;
     nextNoteTime = ctx.currentTime + 0.05;
     tick();
   } catch {
