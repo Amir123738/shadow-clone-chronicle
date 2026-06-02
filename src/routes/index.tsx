@@ -729,7 +729,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.xp = 0; s.xpNext = 5; s.level = 1; s.over = false; s.won = false; s.wonRewardGiven = false;
     s.betweenWaves = false; s.pendingUpgrades = null; s.waveCleared = false;
     s.appliedUpgrades = [];
-    s.blurTime = 0; s.freezeTime = 0; s.pullTime = 0;
+    s.blurTime = 0; s.freezeTime = 0; s.enemyFreezeTime = 0; s.pullTime = 0;
     s.stolenUpgrade = null; s.stolenTimer = 0;
     s.shieldTime = 0; s.speedBoostTime = 0; s.fireArrowTime = 0; s.poisonArrowTime = 0; s.fireTrail = [];
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
