@@ -220,10 +220,30 @@ const SKINS: Skin[] = [
   { id: "ultranova",    name: "Ultra Nova",         rarity: "ultranova", price: 50000000, color: "#ffffff", glow: "rgba(255,255,255,1)", rainbow: true },
 ];
 
-type Accessory = { id: string; name: string; color: string; glow: string };
+type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
+type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
-  { id: "white_hat", name: "White Hat", color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
+  { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
+  { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
+  { id: "gold_hat",       name: "Gold Hat",       color: "#fbbf24", glow: "rgba(251,191,36,0.9)",   rarity: "epic",       price: 100000 },
+  { id: "diamond_hat",    name: "Diamond Hat",    color: "#67e8f9", glow: "rgba(103,232,249,0.95)", rarity: "mythical",   price: 500000 },
+  { id: "jacket",         name: "Jacket",         color: "#a78bfa", glow: "rgba(167,139,250,0.85)", rarity: "legendary",  price: 1000000 },
+  { id: "gold_jacket",    name: "Gold Jacket",    color: "#f59e0b", glow: "rgba(245,158,11,0.95)",  rarity: "legendary",  price: 2500000 },
+  { id: "diamond_jacket", name: "Diamond Jacket", color: "#22d3ee", glow: "rgba(34,211,238,1)",     rarity: "secret",     price: 10000000 },
+  { id: "crystal_hat",    name: "Crystal Hat",    color: "#e0e7ff", glow: "rgba(224,231,255,1)",    rarity: "ultra",      price: 25000000 },
+  { id: "vip_jacket",     name: "VIP Jacket",     color: "#ff5dff", glow: "rgba(255,93,255,1)",     rarity: "diamond",    price: 100000000 },
 ];
+const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond"];
+const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }> = {
+  super_rare: { label: "Super Rare", color: "#60a5fa" },
+  epic:       { label: "Epic",       color: "#a855f7" },
+  mythical:   { label: "Mythical",   color: "#ec4899" },
+  legendary:  { label: "Legendary",  color: "#fde68a" },
+  secret:     { label: "Secret",     color: "#22d3ee" },
+  ultra:      { label: "Ultra",      color: "#ffffff" },
+  diamond:    { label: "Diamond",    color: "#ff5dff" },
+};
 
 const SHOP_KEY = "scs_shop_v2";
 type ShopSave = { shadowCoins: number; owned: string[]; selected: string; accessories: string[]; equippedAccessory: string | null };
@@ -347,6 +367,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
   const [shopOpen, setShopOpen] = useState(false);
+  const [accShopOpen, setAccShopOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
@@ -1812,8 +1833,83 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-between items-center mt-4 gap-2">
+                  <button
+                    onClick={() => { setShopOpen(false); setAccShopOpen(true); }}
+                    className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] text-black font-black text-sm hover:scale-105 transition"
+                  >
+                    🎩 Accessories
+                  </button>
                   <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+          {accShopOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">Accessory Shop</h2>
+                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                </div>
+                <p className="text-white/60 text-xs mb-3">Equip accessories on top of your skins. Only one accessory can be equipped at a time.</p>
+                {ACC_RARITY_ORDER.map((rar) => {
+                  const items = ACCESSORIES.filter(a => a.rarity === rar);
+                  if (items.length === 0) return null;
+                  const meta = ACC_RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {items.map((a) => {
+                          const owned = shop.accessories.includes(a.id);
+                          const equipped = shop.equippedAccessory === a.id;
+                          const price = a.price ?? 0;
+                          const canBuy = !owned && shop.shadowCoins >= price;
+                          return (
+                            <div key={a.id} className={`p-3 rounded-lg ring-1 ${equipped ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`} style={{ boxShadow: `inset 0 0 0 1px ${meta.color}22` }}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-8 h-8 rounded-full" style={{ background: a.color, boxShadow: `0 0 14px ${a.glow}` }} />
+                                <div className="font-bold text-sm leading-tight">{a.name}</div>
+                              </div>
+                              <div className="text-xs text-white/60 mb-2">◆ {price.toLocaleString()}</div>
+                              {owned ? (
+                                <button
+                                  onClick={() => setShop((v) => ({ ...v, equippedAccessory: equipped ? null : a.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
+                                >
+                                  {equipped ? "Unequip" : "Equip"}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={!canBuy}
+                                  onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - price, accessories: [...v.accessories, a.id], equippedAccessory: a.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
+                                >
+                                  {canBuy ? "Buy & Equip" : `Need ◆${(price - shop.shadowCoins).toLocaleString()}`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between items-center mt-4 gap-2">
+                  <button
+                    onClick={() => { setAccShopOpen(false); setShopOpen(true); }}
+                    className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm"
+                  >
+                    ← Back to Shop
+                  </button>
+                  <button onClick={() => setAccShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
                 </div>
               </div>
             </Overlay>
