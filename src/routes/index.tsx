@@ -751,6 +751,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     return { x: W + 20, y: rand(0, H) };
   }
 
+  function visibleSpawn(): Vec {
+    return { x: rand(60, W - 60), y: rand(60, H - 60) };
+  }
+
   function spawnGrunt() {
     const s = stateRef.current;
     const waveBoost = 1 + s.wave * 0.15;
@@ -771,21 +775,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (r < 0.55) {
       const hp = 55 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (110 + s.wave * 1.2) * eliteSpd;
-      e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
+      e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 14 * megaR, speed: spd, baseSpeed: spd,
         dmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#7cf24a", xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
     } else if (r < 0.85) {
       const hp = 32 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (195 + s.wave * 1.5) * eliteSpd;
-      e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
+      e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 10 * megaR, speed: spd, baseSpeed: spd,
         dmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#4ad6ff", xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
     } else {
       const hp = 170 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (75 + s.wave * 0.6) * eliteSpd;
-      e = { pos: edgeSpawn(), vel: { x: 0, y: 0 },
+      e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 20 * megaR, speed: spd, baseSpeed: spd,
         dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
         color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
