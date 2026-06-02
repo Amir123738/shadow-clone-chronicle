@@ -329,6 +329,44 @@ function rollWheel(): WheelReward {
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
 
+// ---------- Tasks ----------
+type TaskMetric = "kills" | "wavesCleared" | "shadowEarned";
+type TaskTemplate = { id: string; metric: TaskMetric; target: number; reward: number; label: string };
+const TASK_TEMPLATES: TaskTemplate[] = [
+  { id: "kill_50",   metric: "kills",        target: 50,   reward: 150,  label: "Kill 50 enemies" },
+  { id: "kill_200",  metric: "kills",        target: 200,  reward: 400,  label: "Kill 200 enemies" },
+  { id: "kill_500",  metric: "kills",        target: 500,  reward: 900,  label: "Kill 500 enemies" },
+  { id: "clear_5",   metric: "wavesCleared", target: 5,    reward: 200,  label: "Clear 5 waves" },
+  { id: "clear_20",  metric: "wavesCleared", target: 20,   reward: 600,  label: "Clear 20 waves" },
+  { id: "clear_50",  metric: "wavesCleared", target: 50,   reward: 1500, label: "Clear 50 waves" },
+  { id: "shadow_500",  metric: "shadowEarned", target: 500,  reward: 300,  label: "Earn 500 Shadow Coins" },
+  { id: "shadow_2000", metric: "shadowEarned", target: 2000, reward: 1000, label: "Earn 2,000 Shadow Coins" },
+];
+type ActiveTask = { id: string; baseline: number; claimed: boolean };
+type LifetimeStats = { kills: number; wavesCleared: number; shadowEarned: number; wins100Streak: number };
+const DEFAULT_LIFETIME: LifetimeStats = { kills: 0, wavesCleared: 0, shadowEarned: 0, wins100Streak: 0 };
+const LIFETIME_KEY = "scs_lifetime_v1";
+const TASKS_KEY = "scs_tasks_v1";
+const ELITE_TARGET = 10;
+function loadLifetime(): LifetimeStats {
+  if (typeof window === "undefined") return { ...DEFAULT_LIFETIME };
+  try { const raw = localStorage.getItem(LIFETIME_KEY); if (raw) return { ...DEFAULT_LIFETIME, ...JSON.parse(raw) }; } catch {}
+  return { ...DEFAULT_LIFETIME };
+}
+function saveLifetime(v: LifetimeStats) { try { localStorage.setItem(LIFETIME_KEY, JSON.stringify(v)); } catch {} }
+function loadTasks(): ActiveTask[] | null {
+  if (typeof window === "undefined") return null;
+  try { const raw = localStorage.getItem(TASKS_KEY); if (raw) return JSON.parse(raw); } catch {}
+  return null;
+}
+function saveTasks(v: ActiveTask[]) { try { localStorage.setItem(TASKS_KEY, JSON.stringify(v)); } catch {} }
+function rollTasks(lt: LifetimeStats): ActiveTask[] {
+  const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
+  return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
+}
+
+
+
 // ---------- Constants ----------
 const W = 960;
 const H = 600;
