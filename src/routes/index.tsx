@@ -697,6 +697,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     lastWaveEnemyCount: 0,
     bgColor: "#0b0d1a" as string,
     waveWarningTimer: 0,
+    // levels/bosses mode
+    gameMode: "normal" as "normal" | "level",
+    levelId: 0,
+    levelMult: 1,
+    levelTotalWaves: TOTAL_WAVES,
   });
 
   const resetGame = useCallback(() => {
