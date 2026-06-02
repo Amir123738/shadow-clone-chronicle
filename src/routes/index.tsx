@@ -499,6 +499,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     level: 1,
     over: false,
     won: false,
+    wonRewardGiven: false,
     betweenWaves: false,
     pendingUpgrades: null as Upgrade[] | null,
     waveCleared: false,
