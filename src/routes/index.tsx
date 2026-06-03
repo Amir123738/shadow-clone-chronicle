@@ -1208,16 +1208,62 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     startWave();
   };
 
-  const [musicOn, setMusicOn] = useState(true);
-  const musicOnRef = useRef(true);
-  useEffect(() => { musicOnRef.current = musicOn; }, [musicOn]);
+  // ====== Settings (language, music, brightness, etc.) ======
+  type Lang = "en" | "ru" | "kk" | "uk" | "tr" | "de" | "ko" | "zh" | "mn";
+  type Settings = {
+    lang: Lang;
+    music: boolean;
+    sfxVolume: number;     // 0..100
+    brightness: number;    // 50..150 (%)
+    screenShake: boolean;
+    showFps: boolean;
+    highContrast: boolean;
+    reduceMotion: boolean;
+  };
+  const DEFAULT_SETTINGS: Settings = {
+    lang: "en", music: true, sfxVolume: 70, brightness: 100,
+    screenShake: true, showFps: false, highContrast: false, reduceMotion: false,
+  };
+  const [settings, setSettings] = useState<Settings>(() => {
+    if (typeof window === "undefined") return DEFAULT_SETTINGS;
+    try {
+      const raw = localStorage.getItem("sc_settings");
+      if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_SETTINGS;
+  });
+  useEffect(() => {
+    try { localStorage.setItem("sc_settings", JSON.stringify(settings)); } catch {}
+  }, [settings]);
+  const updateSetting = <K extends keyof Settings>(k: K, v: Settings[K]) =>
+    setSettings((s) => ({ ...s, [k]: v }));
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const TRANSLATIONS: Record<Lang, Record<string, string>> = {
+    en: { ready:"Ready to survive?", start:"Start Game", shop:"Shop", inventory:"Inventory", tasks:"Tasks", levels:"LVL's/Bosses", settings:"Settings", music:"Music", language:"Language", brightness:"Brightness", sfx:"SFX Volume", screenShake:"Screen Shake", showFps:"Show FPS", highContrast:"High Contrast", reduceMotion:"Reduce Motion", on:"On", off:"Off", close:"Close", reset:"Reset to defaults" },
+    ru: { ready:"Готов выжить?", start:"Начать игру", shop:"Магазин", inventory:"Инвентарь", tasks:"Задания", levels:"Уровни/Боссы", settings:"Настройки", music:"Музыка", language:"Язык", brightness:"Яркость", sfx:"Громкость эффектов", screenShake:"Тряска экрана", showFps:"Показывать FPS", highContrast:"Высокий контраст", reduceMotion:"Меньше анимации", on:"Вкл", off:"Выкл", close:"Закрыть", reset:"Сбросить настройки" },
+    kk: { ready:"Аман қалуға дайынсың ба?", start:"Ойынды бастау", shop:"Дүкен", inventory:"Қорап", tasks:"Тапсырмалар", levels:"Деңгейлер/Боссылар", settings:"Баптаулар", music:"Музыка", language:"Тіл", brightness:"Жарықтық", sfx:"Эффект дауысы", screenShake:"Экран дірілі", showFps:"FPS көрсету", highContrast:"Жоғары контраст", reduceMotion:"Анимацияны азайту", on:"Қосулы", off:"Өшірулі", close:"Жабу", reset:"Әдепкіге қайтару" },
+    uk: { ready:"Готовий вижити?", start:"Почати гру", shop:"Магазин", inventory:"Інвентар", tasks:"Завдання", levels:"Рівні/Боси", settings:"Налаштування", music:"Музика", language:"Мова", brightness:"Яскравість", sfx:"Гучність ефектів", screenShake:"Тряска екрану", showFps:"Показувати FPS", highContrast:"Високий контраст", reduceMotion:"Менше анімації", on:"Увімк", off:"Вимк", close:"Закрити", reset:"Скинути" },
+    tr: { ready:"Hayatta kalmaya hazır mısın?", start:"Oyunu Başlat", shop:"Mağaza", inventory:"Envanter", tasks:"Görevler", levels:"Seviyeler/Bosslar", settings:"Ayarlar", music:"Müzik", language:"Dil", brightness:"Parlaklık", sfx:"Efekt Sesi", screenShake:"Ekran Sarsıntısı", showFps:"FPS Göster", highContrast:"Yüksek Kontrast", reduceMotion:"Animasyonu Azalt", on:"Açık", off:"Kapalı", close:"Kapat", reset:"Sıfırla" },
+    de: { ready:"Bereit zu überleben?", start:"Spiel starten", shop:"Shop", inventory:"Inventar", tasks:"Aufgaben", levels:"Level/Bosse", settings:"Einstellungen", music:"Musik", language:"Sprache", brightness:"Helligkeit", sfx:"Effektlautstärke", screenShake:"Bildschirmwackeln", showFps:"FPS anzeigen", highContrast:"Hoher Kontrast", reduceMotion:"Weniger Bewegung", on:"An", off:"Aus", close:"Schließen", reset:"Zurücksetzen" },
+    ko: { ready:"생존할 준비됐어?", start:"게임 시작", shop:"상점", inventory:"인벤토리", tasks:"임무", levels:"레벨/보스", settings:"설정", music:"음악", language:"언어", brightness:"밝기", sfx:"효과음 볼륨", screenShake:"화면 흔들림", showFps:"FPS 표시", highContrast:"고대비", reduceMotion:"애니메이션 줄이기", on:"켜짐", off:"꺼짐", close:"닫기", reset:"초기화" },
+    zh: { ready:"准备好生存了吗？", start:"开始游戏", shop:"商店", inventory:"背包", tasks:"任务", levels:"关卡/Boss", settings:"设置", music:"音乐", language:"语言", brightness:"亮度", sfx:"音效音量", screenShake:"屏幕震动", showFps:"显示FPS", highContrast:"高对比度", reduceMotion:"减少动画", on:"开", off:"关", close:"关闭", reset:"重置" },
+    mn: { ready:"Амьд үлдэхэд бэлэн үү?", start:"Тоглоом эхлэх", shop:"Дэлгүүр", inventory:"Эд хэрэгсэл", tasks:"Даалгавар", levels:"Түвшин/Босс", settings:"Тохиргоо", music:"Хөгжим", language:"Хэл", brightness:"Гэрэлтүүлэг", sfx:"Эффектийн дуу", screenShake:"Дэлгэц чичрэх", showFps:"FPS харуулах", highContrast:"Өндөр тодрол", reduceMotion:"Анимаци багасгах", on:"Асаалттай", off:"Унтраалттай", close:"Хаах", reset:"Сэргээх" },
+  };
+  const LANG_NAMES: Record<Lang, string> = { en:"English", ru:"Русский", kk:"Қазақша", uk:"Українська", tr:"Türkçe", de:"Deutsch", ko:"한국어", zh:"中文", mn:"Монгол" };
+  const t = (k: string) => TRANSLATIONS[settings.lang]?.[k] ?? TRANSLATIONS.en[k] ?? k;
+
+  
+  const musicOnRef = useRef(settings.music);
+  useEffect(() => { musicOnRef.current = settings.music; }, [settings.music]);
   useEffect(() => () => { stopMusic(); }, []);
 
   const toggleMusic = () => {
-    setMusicOn((on) => {
-      const next = !on;
+    setSettings((s) => {
+      const next = !s.music;
       if (next) startMusic(); else stopMusic();
-      return next;
+      return { ...s, music: next };
     });
   };
 
@@ -2821,7 +2867,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           <canvas
             ref={canvasRef} width={W} height={H}
             className="block w-full h-auto cursor-crosshair bg-[#0b0d1a]"
-            style={{ aspectRatio: `${W}/${H}`, filter: uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : undefined, transition: "filter 0.2s" }}
+            style={{
+              aspectRatio: `${W}/${H}`,
+              filter: [
+                uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : "",
+                `brightness(${settings.brightness}%)`,
+                settings.highContrast ? "contrast(140%) saturate(120%)" : "",
+              ].filter(Boolean).join(" "),
+              transition: "filter 0.2s",
+            }}
           />
 
 
@@ -2833,37 +2887,141 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <p className="text-white/70 text-sm">Wave reached: {uiState.wave} · Score: {uiState.score}</p>
                 </div>
               )}
-              <h2 className="text-2xl font-bold mb-2">Ready to survive?</h2>
+              <h2 className="text-2xl font-bold mb-2">{t("ready")}</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
               </p>
               <div className="flex gap-3 flex-wrap justify-center">
                 <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                  Start Game
+                  {t("start")}
                 </button>
                 <button onClick={() => setShopOpen(true)} className="px-6 py-3 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition">
-                  Shop ◆ {shop.shadowCoins}
+                  {t("shop")} ◆ {shop.shadowCoins}
                 </button>
                 <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
-                  Inventory
+                  {t("inventory")}
                 </button>
                 <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
-                  Tasks
+                  {t("tasks")}
                 </button>
                 <button onClick={() => setLevelsOpen(true)} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
-                  LVL's/Bosses
+                  {t("levels")}
                 </button>
                 <button
-                  onClick={toggleMusic}
-                  className="px-6 py-3 rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition border border-white/20"
-                  title="Toggle background music"
+                  onClick={() => setSettingsOpen(true)}
+                  className="px-6 py-3 rounded-lg bg-[#f472b6] text-black font-bold hover:scale-105 transition"
+                  title={t("settings")}
                 >
-                  {musicOn ? "♪ Music: On" : "♪ Music: Off"}
+                  ⚙ {t("settings")}
                 </button>
               </div>
 
             </Overlay>
           )}
+
+          {settingsOpen && (
+            <Overlay>
+              <div className="w-full max-w-lg px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#f472b6] to-[#ffe066] bg-clip-text text-transparent">⚙ {t("settings")}</h2>
+                  <button
+                    onClick={() => setSettingsOpen(false)}
+                    className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
+                  >
+                    ✕ {t("close")}
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Language */}
+                  <div className="p-3 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2 font-bold">🌐 {t("language")}</label>
+                    <select
+                      value={settings.lang}
+                      onChange={(e) => updateSetting("lang", e.target.value as Lang)}
+                      className="w-full px-3 py-2 rounded bg-[#0b0d1a] text-white border border-white/20 focus:border-[#f472b6] outline-none text-sm"
+                    >
+                      {(Object.keys(LANG_NAMES) as Lang[]).map((code) => (
+                        <option key={code} value={code}>{LANG_NAMES[code]}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Music */}
+                  <div className="p-3 rounded-lg bg-white/5 ring-1 ring-white/10 flex items-center justify-between">
+                    <span className="text-sm font-bold">♪ {t("music")}</span>
+                    <button
+                      onClick={toggleMusic}
+                      className={`px-4 py-1.5 rounded font-bold text-sm transition ${settings.music ? "bg-[#34d399] text-black" : "bg-white/10 text-white border border-white/20"}`}
+                    >
+                      {settings.music ? t("on") : t("off")}
+                    </button>
+                  </div>
+
+                  {/* SFX Volume */}
+                  <div className="p-3 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold">🔊 {t("sfx")}</span>
+                      <span className="text-xs text-white/60 tabular-nums">{settings.sfxVolume}%</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={100} step={1}
+                      value={settings.sfxVolume}
+                      onChange={(e) => updateSetting("sfxVolume", Number(e.target.value))}
+                      className="w-full accent-[#f472b6]"
+                    />
+                  </div>
+
+                  {/* Brightness */}
+                  <div className="p-3 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold">☀ {t("brightness")}</span>
+                      <span className="text-xs text-white/60 tabular-nums">{settings.brightness}%</span>
+                    </div>
+                    <input
+                      type="range" min={50} max={150} step={5}
+                      value={settings.brightness}
+                      onChange={(e) => updateSetting("brightness", Number(e.target.value))}
+                      className="w-full accent-[#ffe066]"
+                    />
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {([
+                      ["screenShake", "📳"],
+                      ["showFps", "📊"],
+                      ["highContrast", "◐"],
+                      ["reduceMotion", "🐢"],
+                    ] as const).map(([key, icon]) => (
+                      <button
+                        key={key}
+                        onClick={() => updateSetting(key, !settings[key])}
+                        className={`p-3 rounded-lg ring-1 text-left transition ${settings[key] ? "bg-[#7dd3fc]/15 ring-[#7dd3fc]/50" : "bg-white/5 ring-white/10 hover:bg-white/10"}`}
+                      >
+                        <div className="text-xs text-white/60 mb-0.5">{icon} {t(key)}</div>
+                        <div className={`text-sm font-bold ${settings[key] ? "text-[#7dd3fc]" : "text-white/70"}`}>
+                          {settings[key] ? t("on") : t("off")}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSettings(DEFAULT_SETTINGS);
+                      if (DEFAULT_SETTINGS.music) startMusic(); else stopMusic();
+                    }}
+                    className="w-full px-4 py-2 rounded bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold border border-white/10"
+                  >
+                    ↺ {t("reset")}
+                  </button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+
 
           {levelsOpen && (
             <Overlay>
