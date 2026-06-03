@@ -4583,7 +4583,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   onClick={(e) => { e.stopPropagation(); setDivineRevealOpen(false); }}
                   className="relative z-10 px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer"
                 >
-                  Claim Reward
+                  {t("claimReward")}
                 </button>
               </div>
             </div>
