@@ -517,6 +517,15 @@ function randomColor() {
   return `hsl(${h} ${s}% ${l}%)`;
 }
 
+type PlayMode = "classic" | "echo" | "army" | "corruption" | "events";
+const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; color: string }[] = [
+  { id: "classic",    name: "Classic",          emoji: "⚔️", desc: "The original shadow survival.",                                  color: "#ffe066" },
+  { id: "echo",       name: "Shadow Echoes",    emoji: "👤", desc: "Every 30s your past becomes a hostile clone that hunts you.",   color: "#ff5d8a" },
+  { id: "army",       name: "Clone Army",       emoji: "🛡️", desc: "On level-up, choose Attacker / Healer / Tank / Sniper clones.",  color: "#7cdcff" },
+  { id: "corruption", name: "Shadow Corruption",emoji: "🩸", desc: "Power grows over time. At 100% you become deadly but bleed HP.", color: "#b388ff" },
+  { id: "events",     name: "Random Events",    emoji: "🎲", desc: "Meteor Shower, Eclipse, Time Freeze, Treasure Goblin & more.",   color: "#7cffb2" },
+];
+
 function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -532,6 +541,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     waveWarning: number;
     totalWaves: number;
     gameMode: "normal" | "level";
+    playMode: PlayMode;
+    corruption: number;
+    eventName: string | null;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -543,6 +555,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     waveWarning: 0,
     totalWaves: TOTAL_WAVES,
     gameMode: "normal",
+    playMode: "classic",
+    corruption: 0,
+    eventName: null,
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
@@ -557,6 +572,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [freeWheelSpins, setFreeWheelSpins] = useState<number>(() => loadFreeSpins(FREE_WHEEL_SPINS_KEY));
   const [freeDivineSpins, setFreeDivineSpins] = useState<number>(() => loadFreeSpins(FREE_DIVINE_SPINS_KEY));
   const [difficultyOpen, setDifficultyOpen] = useState(false);
+  const [modeOpen, setModeOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<PlayMode>("classic");
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
   const [shadyAngle, setShadyAngle] = useState(0);
@@ -887,6 +904,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     levelMult: 1,
     levelTotalWaves: TOTAL_WAVES,
     difficulty: "medium" as "easy" | "medium" | "hard",
+    // 4 new modes
+    playMode: "classic" as PlayMode,
+    corruption: 0,
+    corruptionApplied: false,
+    echoTimer: 30,
+    eventTimer: 90,
+    currentEvent: null as null | string,
+    currentEventTimer: 0,
+    meteorCd: 0,
   });
 
   const resetGame = useCallback(() => {
@@ -912,6 +938,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.waveWarningTimer = 0;
     s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
     s.difficulty = "medium";
+    s.playMode = "classic"; s.corruption = 0; s.corruptionApplied = false;
+    s.echoTimer = 30; s.eventTimer = 90; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -1227,6 +1255,37 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
+    const s = stateRef.current;
+    if (s.playMode === "army") {
+      const mk = (id: string, name: string, desc: string, apply: () => void): Upgrade =>
+        ({ id, name, desc, apply: () => { apply(); return { id, name, undo: () => {}, redo: () => {} }; } });
+      return [
+        mk("army_atk", "⚔️ Attacker Clone", "+1 big clone shooting fire arrows", () => {
+          const st = stateRef.current;
+          st.specialClones.push({ kind: "big", angle: Math.random() * Math.PI * 2, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+          st.fireArrowTime = Math.max(st.fireArrowTime, 9999);
+        }),
+        mk("army_heal", "💚 Healer Clone", "+1 healer clone (lifetime 60s) + 25 max HP", () => {
+          const st = stateRef.current;
+          st.clones.push({ frames: [], idx: 0, trail: [], healer: true, life: 60 });
+          st.cloneFireCd.push(0);
+          st.player.maxHp += 25; st.player.hp = Math.min(st.player.maxHp, st.player.hp + 25);
+        }),
+        mk("army_tank", "🛡️ Tank Clone", "+50 max HP + 5s shield + 2 orbit clones", () => {
+          const st = stateRef.current;
+          st.player.maxHp += 50; st.player.hp += 50;
+          st.shieldTime = Math.max(st.shieldTime, 5);
+          st.specialClones.push({ kind: "electric", angle: 0,       radius: 46, orbitSpeed: 2.2, life: 9999, fireCd: 0.2 });
+          st.specialClones.push({ kind: "electric", angle: Math.PI, radius: 46, orbitSpeed: 2.2, life: 9999, fireCd: 0.2 });
+        }),
+        mk("army_snipe", "🎯 Sniper Clone", "+1 big clone + 35% damage + faster bullets", () => {
+          const st = stateRef.current;
+          st.stats.bulletDmg *= 1.35;
+          st.stats.bulletSpeed *= 1.25;
+          st.specialClones.push({ kind: "big", angle: Math.random() * Math.PI * 2, radius: 70, orbitSpeed: 1.0, fireCd: 0.45 });
+        }),
+      ];
+    }
     const pool = [...allUpgrades];
     const out: Upgrade[] = [];
     while (out.length < 3 && pool.length > 0) {
@@ -1306,11 +1365,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     });
   };
 
-  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium") => {
+  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium", mode: PlayMode = "classic") => {
     resetGame();
     stateRef.current.difficulty = difficulty;
+    stateRef.current.playMode = mode;
     setDifficultyOpen(false);
-    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    setModeOpen(false);
+    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null, playMode: mode, corruption: 0, eventName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
   };
@@ -1616,6 +1677,77 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.over || s.won || s.betweenWaves) return;
 
       s.time += dt;
+
+      // ===== PLAY MODE EFFECTS =====
+      if (s.playMode === "echo") {
+        s.echoTimer -= dt;
+        if (s.echoTimer <= 0) {
+          s.echoTimer = 30;
+          // spawn a hostile shadow clone enemy at edge that hunts player
+          const spawn = edgeSpawn();
+          s.enemies.push({
+            pos: spawn, vel: { x: 0, y: 0 }, r: 14, hp: 220, maxHp: 220, speed: 145, baseSpeed: 145,
+            dmg: 16, baseDmg: 16, color: "#1a0a2a", xp: 8, coin: 6, kind: "fast",
+          });
+        }
+      }
+      if (s.playMode === "corruption") {
+        s.corruption = Math.min(100, s.corruption + (100 / 180) * dt);
+        if (s.corruption >= 100 && !s.corruptionApplied) {
+          s.corruptionApplied = true;
+          s.stats.bulletDmg *= 1.75;
+          s.stats.fireRate *= 1.25;
+          s.stats.moveSpeed *= 1.15;
+        }
+        if (s.corruption >= 100) {
+          s.player.hp = Math.max(1, s.player.hp - 4 * dt);
+        }
+      }
+      if (s.playMode === "events") {
+        s.eventTimer -= dt;
+        if (s.currentEventTimer > 0) s.currentEventTimer = Math.max(0, s.currentEventTimer - dt);
+        if (s.meteorCd > 0) s.meteorCd -= dt;
+        if (s.currentEvent === "meteor" && s.meteorCd <= 0 && s.currentEventTimer > 0) {
+          s.meteorCd = 0.4;
+          // damage random spot near player
+          const mx = s.player.pos.x + rand(-180, 180);
+          const my = s.player.pos.y + rand(-180, 180);
+          s.explosionFx.push({ x: mx, y: my, r: 0, maxR: 60, life: 0.4 });
+          for (const e of s.enemies) {
+            if (Math.hypot(e.pos.x - mx, e.pos.y - my) < 70) e.hp -= 40;
+          }
+          if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= 6;
+        }
+        if (s.eventTimer <= 0) {
+          s.eventTimer = 90;
+          s.currentEventTimer = 6;
+          const evs = ["meteor", "eclipse", "freeze", "goblin", "rebellion"] as const;
+          const ev = evs[Math.floor(Math.random() * evs.length)];
+          s.currentEvent = ev;
+          if (ev === "eclipse") { s.darknessTime = Math.max(s.darknessTime, 8); s.blurTime = Math.max(s.blurTime, 8); }
+          if (ev === "freeze") { s.enemyFreezeTime = Math.max(s.enemyFreezeTime, 6); }
+          if (ev === "goblin") {
+            // treasure goblin: drop a burst of coins around player
+            for (let k = 0; k < 12; k++) {
+              const a = (k / 12) * Math.PI * 2;
+              s.pickups.push({ pos: { x: s.player.pos.x + Math.cos(a) * 80, y: s.player.pos.y + Math.sin(a) * 80 }, kind: "coin", value: 5 });
+            }
+          }
+          if (ev === "rebellion") {
+            // turn 2 enemies into chaos: just spawn 3 strong fast enemies
+            for (let k = 0; k < 3; k++) {
+              const sp = edgeSpawn();
+              s.enemies.push({
+                pos: sp, vel: { x: 0, y: 0 }, r: 12, hp: 140, maxHp: 140, speed: 170, baseSpeed: 170,
+                dmg: 14, baseDmg: 14, color: "#ff2e88", xp: 4, coin: 3, kind: "fast",
+              });
+            }
+          }
+        }
+        if (s.currentEventTimer <= 0 && s.currentEvent) s.currentEvent = null;
+      }
+
+
 
       // tick effect timers
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
@@ -2866,6 +2998,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           waveWarning: s.waveWarningTimer,
           totalWaves: s.gameMode === "level" ? LEVEL_WAVES : TOTAL_WAVES,
           gameMode: s.gameMode,
+          playMode: s.playMode,
+          corruption: s.corruption,
+          eventName: s.currentEvent,
         };
       });
       raf = requestAnimationFrame(loop);
@@ -2959,7 +3094,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
-                  onClick={() => setDifficultyOpen(true)}
+                  onClick={() => setModeOpen(true)}
                   className="flex items-center gap-3 px-10 py-5 rounded-xl bg-[#ffe066] text-black font-black text-xl shadow-[0_0_40px_rgba(255,224,102,0.35)] hover:scale-105 transition"
                 >
                   <Play className="w-6 h-6" />
@@ -3009,6 +3144,39 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {modeOpen && (
+            <Overlay>
+              <div className="w-full max-w-md px-4 max-h-full overflow-y-auto">
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose a Game</h2>
+                <p className="text-center text-white/60 text-sm mb-5">Pick a mode, then a difficulty.</p>
+                <div className="flex flex-col gap-2.5">
+                  {PLAY_MODES.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setPendingMode(m.id); setModeOpen(false); setDifficultyOpen(true); }}
+                      className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border hover:scale-[1.02] transition"
+                      style={{ borderColor: `${m.color}80` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">{m.emoji}</div>
+                        <div className="flex-1">
+                          <div className="font-black text-base" style={{ color: m.color }}>{m.name}</div>
+                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{m.desc}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setModeOpen(false)}
+                  className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Overlay>
+          )}
+
           {difficultyOpen && (
             <Overlay>
               <div className="w-full max-w-md px-4">
@@ -3016,7 +3184,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <p className="text-center text-white/60 text-sm mb-5">Beat all 100 waves to claim the reward.</p>
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => startGame("easy")}
+                    onClick={() => startGame("easy", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#4ade80]/30 to-transparent border border-[#4ade80]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
@@ -3026,7 +3194,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <div className="text-xs text-white/60 mt-1">Enemies and bosses are weakened. Best for warming up.</div>
                   </button>
                   <button
-                    onClick={() => startGame("medium")}
+                    onClick={() => startGame("medium", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ffe066]/25 to-transparent border border-[#ffe066]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
@@ -3036,7 +3204,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <div className="text-xs text-white/60 mt-1">Standard difficulty. Already own the Bronze Hat? You'll get +1 Shady Spin & +1 Wheel of Fortune spin instead.</div>
                   </button>
                   <button
-                    onClick={() => startGame("hard")}
+                    onClick={() => startGame("hard", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ff2e88]/25 to-transparent border border-[#ff2e88]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
@@ -3789,10 +3957,30 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
               </div>
-              <button onClick={() => setDifficultyOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+              <button onClick={() => setModeOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 Play Again
               </button>
             </Overlay>
+          )}
+
+          {uiState.started && uiState.playMode === "corruption" && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-[260px]">
+              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">Shadow Corruption {Math.floor(uiState.corruption)}%</div>
+              <div className="h-2 rounded-full bg-black/60 ring-1 ring-[#b388ff]/40 overflow-hidden">
+                <div className="h-full transition-all" style={{ width: `${uiState.corruption}%`, background: uiState.corruption >= 100 ? "linear-gradient(90deg,#ff2e88,#b388ff)" : "linear-gradient(90deg,#b388ff,#ff5d8a)" }} />
+              </div>
+            </div>
+          )}
+          {uiState.started && uiState.eventName && (
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="px-4 py-1.5 rounded-full bg-black/70 ring-1 ring-[#7cffb2]/50 text-[#7cffb2] font-black text-sm uppercase tracking-wider animate-pulse">
+                {uiState.eventName === "meteor" && "☄️ Meteor Shower"}
+                {uiState.eventName === "eclipse" && "🌑 Darkness Eclipse"}
+                {uiState.eventName === "freeze" && "❄️ Time Freeze"}
+                {uiState.eventName === "goblin" && "💰 Treasure Goblin"}
+                {uiState.eventName === "rebellion" && "⚡ Clone Rebellion"}
+              </div>
+            </div>
           )}
 
 
