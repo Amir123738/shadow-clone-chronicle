@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
+import { LANG_NAMES, LANG_FLAGS, makeT, type Lang } from "@/lib/i18n";
 
 import upgFire from "@/assets/upgrades/fire.png";
 import upgDmg from "@/assets/upgrades/dmg.png";
@@ -1337,7 +1338,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   };
 
   // ====== Settings (language, music, brightness, etc.) ======
-  type Lang = "en" | "ru" | "kk" | "uk" | "tr" | "de" | "ko" | "zh" | "mn";
   type Settings = {
     lang: Lang;
     music: boolean;
@@ -1368,19 +1368,19 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const TRANSLATIONS: Record<Lang, Record<string, string>> = {
-    en: { ready:"Ready to survive?", start:"Start Game", shop:"Shop", inventory:"Inventory", tasks:"Tasks", levels:"LVL's/Bosses", settings:"Settings", music:"Music", language:"Language", brightness:"Brightness", sfx:"SFX Volume", screenShake:"Screen Shake", showFps:"Show FPS", highContrast:"High Contrast", reduceMotion:"Reduce Motion", on:"On", off:"Off", close:"Close", reset:"Reset to defaults" },
-    ru: { ready:"Готов выжить?", start:"Начать игру", shop:"Магазин", inventory:"Инвентарь", tasks:"Задания", levels:"Уровни/Боссы", settings:"Настройки", music:"Музыка", language:"Язык", brightness:"Яркость", sfx:"Громкость эффектов", screenShake:"Тряска экрана", showFps:"Показывать FPS", highContrast:"Высокий контраст", reduceMotion:"Меньше анимации", on:"Вкл", off:"Выкл", close:"Закрыть", reset:"Сбросить настройки" },
-    kk: { ready:"Аман қалуға дайынсың ба?", start:"Ойынды бастау", shop:"Дүкен", inventory:"Қорап", tasks:"Тапсырмалар", levels:"Деңгейлер/Боссылар", settings:"Баптаулар", music:"Музыка", language:"Тіл", brightness:"Жарықтық", sfx:"Эффект дауысы", screenShake:"Экран дірілі", showFps:"FPS көрсету", highContrast:"Жоғары контраст", reduceMotion:"Анимацияны азайту", on:"Қосулы", off:"Өшірулі", close:"Жабу", reset:"Әдепкіге қайтару" },
-    uk: { ready:"Готовий вижити?", start:"Почати гру", shop:"Магазин", inventory:"Інвентар", tasks:"Завдання", levels:"Рівні/Боси", settings:"Налаштування", music:"Музика", language:"Мова", brightness:"Яскравість", sfx:"Гучність ефектів", screenShake:"Тряска екрану", showFps:"Показувати FPS", highContrast:"Високий контраст", reduceMotion:"Менше анімації", on:"Увімк", off:"Вимк", close:"Закрити", reset:"Скинути" },
-    tr: { ready:"Hayatta kalmaya hazır mısın?", start:"Oyunu Başlat", shop:"Mağaza", inventory:"Envanter", tasks:"Görevler", levels:"Seviyeler/Bosslar", settings:"Ayarlar", music:"Müzik", language:"Dil", brightness:"Parlaklık", sfx:"Efekt Sesi", screenShake:"Ekran Sarsıntısı", showFps:"FPS Göster", highContrast:"Yüksek Kontrast", reduceMotion:"Animasyonu Azalt", on:"Açık", off:"Kapalı", close:"Kapat", reset:"Sıfırla" },
-    de: { ready:"Bereit zu überleben?", start:"Spiel starten", shop:"Shop", inventory:"Inventar", tasks:"Aufgaben", levels:"Level/Bosse", settings:"Einstellungen", music:"Musik", language:"Sprache", brightness:"Helligkeit", sfx:"Effektlautstärke", screenShake:"Bildschirmwackeln", showFps:"FPS anzeigen", highContrast:"Hoher Kontrast", reduceMotion:"Weniger Bewegung", on:"An", off:"Aus", close:"Schließen", reset:"Zurücksetzen" },
-    ko: { ready:"생존할 준비됐어?", start:"게임 시작", shop:"상점", inventory:"인벤토리", tasks:"임무", levels:"레벨/보스", settings:"설정", music:"음악", language:"언어", brightness:"밝기", sfx:"효과음 볼륨", screenShake:"화면 흔들림", showFps:"FPS 표시", highContrast:"고대비", reduceMotion:"애니메이션 줄이기", on:"켜짐", off:"꺼짐", close:"닫기", reset:"초기화" },
-    zh: { ready:"准备好生存了吗？", start:"开始游戏", shop:"商店", inventory:"背包", tasks:"任务", levels:"关卡/Boss", settings:"设置", music:"音乐", language:"语言", brightness:"亮度", sfx:"音效音量", screenShake:"屏幕震动", showFps:"显示FPS", highContrast:"高对比度", reduceMotion:"减少动画", on:"开", off:"关", close:"关闭", reset:"重置" },
-    mn: { ready:"Амьд үлдэхэд бэлэн үү?", start:"Тоглоом эхлэх", shop:"Дэлгүүр", inventory:"Эд хэрэгсэл", tasks:"Даалгавар", levels:"Түвшин/Босс", settings:"Тохиргоо", music:"Хөгжим", language:"Хэл", brightness:"Гэрэлтүүлэг", sfx:"Эффектийн дуу", screenShake:"Дэлгэц чичрэх", showFps:"FPS харуулах", highContrast:"Өндөр тодрол", reduceMotion:"Анимаци багасгах", on:"Асаалттай", off:"Унтраалттай", close:"Хаах", reset:"Сэргээх" },
+  // First-launch language picker: shown once per browser until dismissed.
+  const [langPickerOpen, setLangPickerOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return !localStorage.getItem("sc_lang_chosen"); } catch { return false; }
+  });
+  const acceptLanguage = (l: Lang) => {
+    updateSetting("lang", l);
+    try { localStorage.setItem("sc_lang_chosen", "1"); } catch {}
+    setLangPickerOpen(false);
   };
-  const LANG_NAMES: Record<Lang, string> = { en:"English", ru:"Русский", kk:"Қазақша", uk:"Українська", tr:"Türkçe", de:"Deutsch", ko:"한국어", zh:"中文", mn:"Монгол" };
-  const t = (k: string) => TRANSLATIONS[settings.lang]?.[k] ?? TRANSLATIONS.en[k] ?? k;
+
+  const t = makeT(settings.lang);
+
 
   
   const musicOnRef = useRef(settings.music);
@@ -3553,18 +3553,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
       <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
         <span className="text-white/70">
-          Player: <span className="font-bold text-white">{nickname || "…"}</span>
+          {t("player")}: <span className="font-bold text-white">{nickname || "…"}</span>
         </span>
         <button
           type="button"
           onClick={() => {
-            if (window.confirm("Log out? Your progress is saved to your account.")) {
+            if (window.confirm(t("logoutConfirm"))) {
               signOut();
             }
           }}
           className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
         >
-          Log out
+          {t("logout")}
         </button>
 
       </div>
@@ -3573,22 +3573,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           Shadow Clone Survivor
         </h1>
 
-        <p className="text-sm text-white/60">WASD · Mouse aim · Click to shoot · Survive 100 waves</p>
+        <p className="text-sm text-white/60">{t("controls")}</p>
       </header>
 
       <div className="relative" style={{ width: "min(96vw, 960px)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm font-mono">
-          <Stat label="Wave" value={`${uiState.wave}/${uiState.totalWaves}`} />
-          <Stat label="Score" value={uiState.score.toString()} />
-          <Stat label="Coins" value={uiState.coins.toString()} />
-          <Stat label="Shadow ◆" value={uiState.shadowCoins.toString()} />
-          <Stat label="Lvl" value={uiState.level.toString()} />
-          <Stat label="Clones" value={uiState.clones.toString()} />
-          <Stat label="Next Clone" value={`${uiState.cloneTimer.toFixed(1)}s`} />
-          <Stat label="Time" value={`${uiState.time.toFixed(1)}s`} />
-          <Stat label="Enemies" value={uiState.enemiesLeft.toString()} />
-          {uiState.stolen && <Stat label="STOLEN" value={`${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)`} />}
+          <Stat label={t("wave")} value={`${uiState.wave}/${uiState.totalWaves}`} />
+          <Stat label={t("score")} value={uiState.score.toString()} />
+          <Stat label={t("coins")} value={uiState.coins.toString()} />
+          <Stat label={t("shadowSym")} value={uiState.shadowCoins.toString()} />
+          <Stat label={t("lvl")} value={uiState.level.toString()} />
+          <Stat label={t("clones")} value={uiState.clones.toString()} />
+          <Stat label={t("nextClone")} value={`${uiState.cloneTimer.toFixed(1)}s`} />
+          <Stat label={t("time")} value={`${uiState.time.toFixed(1)}s`} />
+          <Stat label={t("enemies")} value={uiState.enemiesLeft.toString()} />
+          {uiState.stolen && <Stat label={t("stolen")} value={`${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)`} />}
         </div>
+
 
         <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-1">
           <div className="h-full bg-gradient-to-r from-[#ff5d5d] to-[#ffe066] transition-[width] duration-150"
@@ -3618,13 +3619,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               {uiState.wave > 0 && (
                 <div className="text-center mb-4">
-                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">You fell.</h2>
-                  <p className="text-white/70 text-sm">Wave reached: {uiState.wave} · Score: {uiState.score}</p>
+                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">{t("youFell")}</h2>
+                  <p className="text-white/70 text-sm">{t("waveReached")}: {uiState.wave} · {t("score")}: {uiState.score}</p>
                 </div>
               )}
               <h2 className="text-2xl font-bold mb-2">{t("ready")}</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
-                100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
+                {t("intro100")}
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
@@ -3681,8 +3682,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           {modeOpen && (
             <Overlay>
               <div className="w-full max-w-md px-4 max-h-full overflow-y-auto">
-                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose a Game</h2>
-                <p className="text-center text-white/60 text-sm mb-5">Pick a mode, then a difficulty.</p>
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">{t("chooseGame")}</h2>
+                <p className="text-center text-white/60 text-sm mb-5">{t("pickModeDiff")}</p>
                 <div className="flex flex-col gap-2.5">
                   {PLAY_MODES.map(m => (
                     <button
@@ -3694,8 +3695,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       <div className="flex items-center gap-3">
                         <div className="text-2xl">{m.emoji}</div>
                         <div className="flex-1">
-                          <div className="font-black text-base" style={{ color: m.color }}>{m.name}</div>
-                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{m.desc}</div>
+                          <div className="font-black text-base" style={{ color: m.color }}>{t(`mode${m.id.charAt(0).toUpperCase()+m.id.slice(1)}`)}</div>
+                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{t(`mode${m.id.charAt(0).toUpperCase()+m.id.slice(1)}Desc`)}</div>
                         </div>
                       </div>
                     </button>
@@ -3705,7 +3706,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   onClick={() => setModeOpen(false)}
                   className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
               </div>
             </Overlay>
@@ -3714,45 +3715,45 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           {difficultyOpen && (
             <Overlay>
               <div className="w-full max-w-md px-4">
-                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose Difficulty</h2>
-                <p className="text-center text-white/60 text-sm mb-5">Beat all 100 waves to claim the reward.</p>
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">{t("chooseDifficulty")}</h2>
+                <p className="text-center text-white/60 text-sm mb-5">{t("beatAll100")}</p>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => startGame("easy", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#4ade80]/30 to-transparent border border-[#4ade80]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-black text-lg text-[#86efac]">EASY</div>
-                      <div className="text-xs text-[#86efac]/80">Reward: ◆ 250</div>
+                      <div className="font-black text-lg text-[#86efac]">{t("easy")}</div>
+                      <div className="text-xs text-[#86efac]/80">{t("rewardLabel")}: ◆ 250</div>
                     </div>
-                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are weakened. Best for warming up.</div>
+                    <div className="text-xs text-white/60 mt-1">{t("easyDesc")}</div>
                   </button>
                   <button
                     onClick={() => startGame("medium", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ffe066]/25 to-transparent border border-[#ffe066]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-black text-lg text-[#ffe066]">MEDIUM</div>
-                      <div className="text-xs text-[#ffe066]/80">Reward: ◆ 500 + Bronze Hat</div>
+                      <div className="font-black text-lg text-[#ffe066]">{t("medium")}</div>
+                      <div className="text-xs text-[#ffe066]/80">{t("rewardLabel")}: ◆ 500 + Bronze Hat</div>
                     </div>
-                    <div className="text-xs text-white/60 mt-1">Standard difficulty. Already own the Bronze Hat? You'll get +1 Shady Spin & +1 Wheel of Fortune spin instead.</div>
+                    <div className="text-xs text-white/60 mt-1">{t("mediumDesc")}</div>
                   </button>
                   <button
                     onClick={() => startGame("hard", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ff2e88]/25 to-transparent border border-[#ff2e88]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-black text-lg text-[#ff5d8a]">HARD</div>
+                      <div className="font-black text-lg text-[#ff5d8a]">{t("hard")}</div>
                       <div className="text-xs text-[#ff5d8a]/80">◆ 2000 + 2 Shady + 1 Divine Spin</div>
                     </div>
-                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are brutal. Only for veterans.</div>
+                    <div className="text-xs text-white/60 mt-1">{t("hardDesc")}</div>
                   </button>
                 </div>
                 <button
                   onClick={() => setDifficultyOpen(false)}
                   className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
               </div>
             </Overlay>
@@ -3866,13 +3867,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">LVL's / Bosses</h2>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">{t("levelsTitle")}</h2>
                   <div className="flex items-center gap-3 text-xs text-white/70">
                     <span>◆ {shop.shadowCoins.toLocaleString()}</span>
-                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 Shady Spins: {shadySpins}</span>
+                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 {t("shadySpinsLabel")}: {shadySpins}</span>
                   </div>
                 </div>
-                <p className="text-xs text-white/60 mb-3">Beat 5 waves per level. Each level ends with a unique boss. Win = free Shady Spin(s). Bosses get brutally harder each level.</p>
+                <p className="text-xs text-white/60 mb-3">{t("levelsDesc")}</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
                   {LEVELS.map(lv => {
@@ -3881,15 +3882,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       <div key={lv.id} className={`p-3 rounded-lg ring-1 ${done ? "ring-[#34d399]/60 bg-[#34d399]/10" : "ring-white/10 bg-white/5"}`}>
                         <div className="flex items-center justify-between mb-1">
                           <div className="font-bold text-sm">{lv.name}</div>
-                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">CLEARED</span>}
+                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">{t("cleared")}</span>}
                         </div>
-                        <div className="text-xs text-white/70 mb-1">Boss: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
-                        <div className="text-[11px] text-white/50 mb-2">Reward: +{lv.spinReward} Shady Spin{lv.spinReward > 1 ? "s" : ""}</div>
+                        <div className="text-xs text-white/70 mb-1">{t("boss")}: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
+                        <div className="text-[11px] text-white/50 mb-2">{t("rewardLabel")}: +{lv.spinReward} {t("shadySpin")}{lv.spinReward > 1 ? "s" : ""}</div>
                         <button
                           onClick={() => startLevel(lv.id)}
                           className="w-full px-3 py-1.5 rounded bg-[#ff7a18] text-black font-bold text-xs hover:scale-[1.02] transition"
                         >
-                          Start Level
+                          {t("startLevel")}
                         </button>
                       </div>
                     );
@@ -3898,10 +3899,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
                 <div className="p-4 rounded-lg ring-1 ring-[#ffe066]/40 bg-gradient-to-br from-[#ff7a18]/20 to-[#ffe066]/10">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-black text-[#ffe066]">🎰 Shady Spin</h3>
-                    <span className="text-xs text-white/70">Spins available: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
+                    <h3 className="text-lg font-black text-[#ffe066]">🎰 {t("shadySpin")}</h3>
+                    <span className="text-xs text-white/70">{t("spinsAvailable")}: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
                   </div>
-                  <p className="text-[11px] text-white/60 mb-3">Earn spins by clearing levels. Each spin awards Shadow Coins.</p>
+                  <p className="text-[11px] text-white/60 mb-3">{t("earnSpinsHint")}</p>
 
                   <div className="flex flex-col md:flex-row gap-4 items-center">
                     <div className="relative w-56 h-56 shrink-0">
@@ -3939,7 +3940,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                         disabled={shadySpinning || shadySpins <= 0}
                         className="w-full px-4 py-3 rounded-lg bg-[#ffe066] text-black font-black text-lg hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed mb-3"
                       >
-                        {shadySpinning ? "Spinning…" : shadySpins > 0 ? "SPIN" : "No Spins"}
+                        {shadySpinning ? t("spinning") : shadySpins > 0 ? t("spin") : t("noSpins")}
                       </button>
                       {shadyMsg && <div className="text-center text-sm text-[#ffe066] font-bold mb-2">{shadyMsg}</div>}
                       <div className="text-[11px] text-white/60 space-y-0.5">
@@ -3955,7 +3956,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
 
                 <div className="flex justify-end mt-4">
-                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">Close</button>
+                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
@@ -3966,10 +3967,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="text-center mb-4">
                   <h2 className="text-3xl font-black bg-gradient-to-r from-[#ff2e88] via-[#ffe066] to-[#7cdcff] bg-clip-text text-transparent">
-                    Choose Your Super Upgrade
+                    {t("chooseSuper")}
                   </h2>
                   <p className="text-xs text-white/60 mt-1">
-                    Level {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — one pick only
+                    {t("lvl")} {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — {t("onePickOnly")}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3990,7 +3991,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => { setSuperPickOpen(false); setPendingSuperLevelId(null); setLevelsOpen(true); }}
                     className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm"
                   >
-                    Back
+                    {t("back")}
                   </button>
                 </div>
               </div>
@@ -4003,21 +4004,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#34d399] to-[#ffe066] bg-clip-text text-transparent">Tasks</h2>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#34d399] to-[#ffe066] bg-clip-text text-transparent">{t("tasksTitle")}</h2>
                   <div className="text-xs text-white/60">◆ {shop.shadowCoins}</div>
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  {tasks.map(t => {
-                    const def = TASK_TEMPLATES.find(d => d.id === t.id);
+                  {tasks.map(tk => {
+                    const def = TASK_TEMPLATES.find(d => d.id === tk.id);
                     if (!def) return null;
-                    const current = Math.max(0, (lifetime[def.metric] ?? 0) - t.baseline);
+                    const current = Math.max(0, (lifetime[def.metric] ?? 0) - tk.baseline);
                     const pct = Math.min(100, (current / def.target) * 100);
                     const done = current >= def.target;
                     return (
-                      <div key={t.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
+                      <div key={tk.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold">{def.label}</div>
+                          <div className="font-bold">{t(`task_${def.id}`)}</div>
                           <div className="text-xs text-[#ffe066]">+{def.reward} ◆</div>
                         </div>
                         <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
@@ -4025,15 +4026,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/60">{Math.min(current, def.target)} / {def.target}</span>
-                          {t.claimed ? (
-                            <span className="text-white/40">Claimed</span>
+                          {tk.claimed ? (
+                            <span className="text-white/40">{t("claimed")}</span>
                           ) : (
                             <button
                               disabled={!done}
-                              onClick={() => claimTask(t.id)}
+                              onClick={() => claimTask(tk.id)}
                               className="px-3 py-1 rounded bg-[#34d399] text-black font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                              {done ? "Claim" : "In Progress"}
+                              {done ? t("claim") : t("inProgress")}
                             </button>
                           )}
                         </div>
@@ -4052,35 +4053,35 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   return (
                     <div className="p-4 rounded-lg ring-2 ring-[#ff0033] bg-gradient-to-br from-[#330011] to-[#1a0008] mb-4 shadow-[0_0_30px_rgba(255,0,51,0.5)]">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-black text-[#ff5577] tracking-wider">THE ELITE SHADOW GAMER</div>
-                        <div className="text-[10px] uppercase tracking-widest text-[#ff0033]">Impossible</div>
+                        <div className="font-black text-[#ff5577] tracking-wider">{t("eliteTitle")}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#ff0033]">{t("impossible")}</div>
                       </div>
-                      <div className="text-xs text-white/70 mb-2">Complete 100 waves 10 times in a row. Dying before wave 100 resets your streak.</div>
+                      <div className="text-xs text-white/70 mb-2">{t("eliteDesc")}</div>
                       <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
                         <div className="h-full bg-[#ff0033]" style={{ width: `${pct}%` }} />
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Streak: {streak} / {ELITE_TARGET}</span>
+                        <span className="text-white/60">{t("streak")}: {streak} / {ELITE_TARGET}</span>
                         {claimed ? (
-                          <span className="text-[#ff5577] font-bold">CLAIMED · Admin Unlocked</span>
+                          <span className="text-[#ff5577] font-bold">{t("claimedAdmin")}</span>
                         ) : (
                           <button
                             disabled={!done}
                             onClick={claimElite}
                             className="px-3 py-1 rounded bg-[#ff0033] text-white font-black text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            {done ? "Claim Admin Skin" : "Locked"}
+                            {done ? t("claimAdmin") : t("locked")}
                           </button>
                         )}
                       </div>
-                      <div className="mt-2 text-[10px] text-white/50">Reward: Admin skin, Admin Hat & Admin Jacket</div>
+                      <div className="mt-2 text-[10px] text-white/50">{t("eliteReward")}</div>
                     </div>
                   );
                 })()}
 
                 <div className="flex gap-3 justify-end">
-                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title="You can reroll 3 times each day." className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">Reroll Tasks ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
-                  <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">Close</button>
+                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title={t("rerollHint")} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">{t("rerollTasks")} ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
+                  <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
@@ -4091,14 +4092,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">Inventory</h2>
-                  <div className="text-xs text-white/60">{shop.owned.length} skins · {shop.accessories.length} accessories</div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">{t("inventoryTitle")}</h2>
+                  <div className="text-xs text-white/60">{shop.owned.length} {t("skinsCount")} · {shop.accessories.length} {t("accessoriesCount")}</div>
                 </div>
 
                 <div className="mb-5">
-                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">Accessories</div>
+                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">{t("accessoriesHeader")}</div>
                   {shop.accessories.length === 0 ? (
-                    <div className="text-white/50 text-sm">No accessories yet. Try the Wheel of Fortune in the Shop!</div>
+                    <div className="text-white/50 text-sm">{t("noAccessoriesHint")}</div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {ACCESSORIES.filter(a => shop.accessories.includes(a.id)).map(a => {
@@ -4112,7 +4113,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                             <button
                               onClick={() => setShop(v => ({ ...v, equippedAccessory: eq ? null : a.id }))}
                               className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
-                            >{eq ? "Unequip" : "Equip"}</button>
+                            >{eq ? t("unequip") : t("equip")}</button>
                           </div>
                         );
                       })}
@@ -4142,7 +4143,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                 <div className="w-6 h-6 rounded-full" style={{ background: sk.color, boxShadow: `0 0 10px ${sk.glow ?? sk.color}` }} />
                                 <div className="text-[11px] font-bold truncate">{sk.name}</div>
                               </div>
-                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">Equipped</div>}
+                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">{t("equipped")}</div>}
                             </button>
                           );
                         })}
@@ -4152,7 +4153,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 })}
 
                 <div className="flex justify-end mt-4">
-                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
@@ -4162,10 +4163,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#b388ff] to-[#ffe066] bg-clip-text text-transparent">Shadow Shop</h2>
-                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#b388ff] to-[#ffe066] bg-clip-text text-transparent">{t("shopTitle")}</h2>
+                  <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
-                <p className="text-white/60 text-xs mb-3">Earn Shadow Coins by defeating enemies (bosses drop big). Skins change your shadow clones' look.</p>
+                <p className="text-white/60 text-xs mb-3">{t("shopDesc")}</p>
                 {RARITY_ORDER.map((rar) => {
                   const items = SKINS.filter(s => s.rarity === rar);
                   if (items.length === 0) return null;
@@ -4189,14 +4190,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                 <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
                                 <div className="font-bold text-sm leading-tight">{sk.name}</div>
                               </div>
-                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price.toLocaleString()}`}</div>
+                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? t("starter") : `◆ ${sk.price.toLocaleString()}`}</div>
                               {owned ? (
                                 <button
                                   disabled={selected}
                                   onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
                                 >
-                                  {selected ? "Equipped" : "Equip"}
+                                  {selected ? t("equipped") : t("equip")}
                                 </button>
                               ) : (
                                 <button
@@ -4204,7 +4205,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
                                 >
-                                  {canBuy ? "Buy & Equip" : `Need ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
+                                  {canBuy ? t("buyEquip") : `${t("need")} ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
                                 </button>
                               )}
                             </div>
@@ -4218,15 +4219,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="mt-6 p-4 rounded-xl ring-1 ring-[#ffe066]/30 bg-gradient-to-br from-[#1a0f2e] to-[#0b0d1a]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Wheel of Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}{freeWheelSpins > 0 ? ` · 🎟 ${freeWheelSpins} free` : ""}</p>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">{t("wheelTitle")}</h3>
+                      <p className="text-[11px] text-white/50">{t("wheelSpinCost")} = ◆ {SPIN_COST.toLocaleString()}{freeWheelSpins > 0 ? ` · 🎟 ${freeWheelSpins} ${t("freeSpinLabel")}` : ""}</p>
                     </div>
                     <button
                       onClick={spinWheel}
                       disabled={wheelSpinning || (freeWheelSpins === 0 && shop.shadowCoins < SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-[#ffe066] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100"
                     >
-                      {wheelSpinning ? "Spinning…" : freeWheelSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${SPIN_COST})`}
+                      {wheelSpinning ? t("spinning") : freeWheelSpins > 0 ? t("spinFree") : `${t("spin")} (◆${SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -4264,12 +4265,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                           onClick={skipWheel}
                           className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition"
                         >
-                          Skip ▶▶
+                          {t("skip")}
                         </button>
                       )}
                     </div>
                     <div className="flex-1 w-full">
-                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">{t("rewardsOdds")}</div>
                       <ul className="text-xs space-y-1">
                         {WHEEL_REWARDS.map(r => (
                           <li key={r.id} className="flex items-center gap-2">
@@ -4292,15 +4293,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="mt-6 p-4 rounded-xl ring-1 ring-[#fb7185]/40 bg-gradient-to-br from-[#2a0a1a] via-[#1a0f2e] to-[#0b0d1a]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">✨ Divine Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes{freeDivineSpins > 0 ? ` · 🎟 ${freeDivineSpins} free` : ""}</p>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">{t("divineTitle")}</h3>
+                      <p className="text-[11px] text-white/50">{t("wheelSpinCost")} = ◆ {DIVINE_SPIN_COST.toLocaleString()} — {t("divineDesc")}{freeDivineSpins > 0 ? ` · 🎟 ${freeDivineSpins} ${t("freeSpinLabel")}` : ""}</p>
                     </div>
                     <button
                       onClick={spinDivine}
                       disabled={divineSpinning || (freeDivineSpins === 0 && shop.shadowCoins < DIVINE_SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fb7185] to-[#f0abfc] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100 disabled:from-white/10 disabled:to-white/10"
                     >
-                      {divineSpinning ? "Spinning…" : freeDivineSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${DIVINE_SPIN_COST})`}
+                      {divineSpinning ? t("spinning") : freeDivineSpins > 0 ? t("spinFree") : `${t("spin")} (◆${DIVINE_SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -4333,12 +4334,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       </div>
                       {divineSpinning && (
                         <button onClick={skipDivine} className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition">
-                          Skip ▶▶
+                          {t("skip")}
                         </button>
                       )}
                     </div>
                     <div className="flex-1 w-full">
-                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">{t("rewardsOdds")}</div>
                       <ul className="text-xs space-y-1">
                         {DIVINE_REWARDS.map(r => (
                           <li key={r.id} className="flex items-center gap-2">
@@ -4364,9 +4365,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => { setShopOpen(false); setAccShopOpen(true); }}
                     className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] text-black font-black text-sm hover:scale-105 transition"
                   >
-                    🎩 Accessories
+                    {t("accessoriesBtn")}
                   </button>
-                  <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                  <button onClick={() => setShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
@@ -4376,10 +4377,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">Accessory Shop</h2>
-                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">{t("accShopTitle")}</h2>
+                  <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
-                <p className="text-white/60 text-xs mb-3">Equip accessories on top of your skins. Only one accessory can be equipped at a time.</p>
+                <p className="text-white/60 text-xs mb-3">{t("accShopDesc")}</p>
                 {ACC_RARITY_ORDER.map((rar) => {
                   const items = ACCESSORIES.filter(a => a.rarity === rar);
                   if (items.length === 0) return null;
@@ -4410,7 +4411,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, equippedAccessory: equipped ? null : a.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
                                 >
-                                  {equipped ? "Unequip" : "Equip"}
+                                  {equipped ? t("unequip") : t("equip")}
                                 </button>
                               ) : (
                                 <button
@@ -4418,7 +4419,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - price, accessories: [...v.accessories, a.id], equippedAccessory: a.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
                                 >
-                                  {canBuy ? "Buy & Equip" : `Need ◆${(price - shop.shadowCoins).toLocaleString()}`}
+                                  {canBuy ? t("buyEquip") : `${t("need")} ◆${(price - shop.shadowCoins).toLocaleString()}`}
                                 </button>
                               )}
                             </div>
@@ -4433,9 +4434,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => { setAccShopOpen(false); setShopOpen(true); }}
                     className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm"
                   >
-                    ← Back to Shop
+                    {t("backToShop")}
                   </button>
-                  <button onClick={() => setAccShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                  <button onClick={() => setAccShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
@@ -4443,8 +4444,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.started && uiState.betweenWaves && uiState.upgrades.length > 0 && (
             <Overlay>
-              <h2 className="text-xl font-bold mb-1">Wave {uiState.wave} cleared!</h2>
-              <p className="text-white/60 text-sm mb-4">Pick an upgrade</p>
+              <h2 className="text-xl font-bold mb-1">{t("waveCleared", { n: uiState.wave })}</h2>
+              <p className="text-white/60 text-sm mb-4">{t("pickUpgrade")}</p>
               <div className="grid md:grid-cols-3 gap-3 w-full max-w-3xl px-4">
                 {uiState.upgrades.map((u, idx) => (
                   <button
@@ -4468,15 +4469,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.won && uiState.gameMode === "level" && (
             <Overlay>
-              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">Boss Defeated!</h2>
-              <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
-              <p className="text-white/70 mb-4">Level cleared — Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""} awarded.</p>
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">{t("bossDefeated")}</h2>
+              <p className="text-white/70 mb-1">{t("score")}: {uiState.score} · {t("coins")}: {uiState.coins}</p>
+              <p className="text-white/70 mb-4">{t("levelClearedMsg").replace("{s}", (LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : "")}</p>
               <div className="flex flex-col items-center gap-1 mb-5">
-                <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
+                <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} {t("shadySpin")}{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { stateRef.current.won = false; stateRef.current.over = true; setUiState(u => ({ ...u, started: false, won: false })); setLevelsOpen(true); }} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
-                  Back to Levels
+                  {t("backToLevels")}
                 </button>
               </div>
             </Overlay>
@@ -4484,22 +4485,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.won && uiState.gameMode === "normal" && (
             <Overlay>
-              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">Omega Slain!</h2>
-              <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
-              <p className="text-white/70 mb-4">All 100 waves survived.</p>
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">{t("omegaSlain")}</h2>
+              <p className="text-white/70 mb-1">{t("score")}: {uiState.score} · {t("coins")}: {uiState.coins}</p>
+              <p className="text-white/70 mb-4">{t("allWavesSurvived")}</p>
               <div className="flex flex-col items-center gap-1 mb-5">
-                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
-                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 {t("shadowCoinsLabel")}</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">{t("bronzeHatUnlocked")}</div>
               </div>
               <button onClick={() => setModeOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                Play Again
+                {t("playAgain")}
               </button>
             </Overlay>
           )}
 
           {uiState.started && uiState.playMode === "corruption" && (
             <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-[260px]">
-              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">Shadow Corruption {Math.floor(uiState.corruption)}%</div>
+              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">{t("corruptionHud")} {Math.floor(uiState.corruption)}%</div>
               <div className="h-2 rounded-full bg-black/60 ring-1 ring-[#b388ff]/40 overflow-hidden">
                 <div className="h-full transition-all" style={{ width: `${uiState.corruption}%`, background: uiState.corruption >= 100 ? "linear-gradient(90deg,#ff2e88,#b388ff)" : "linear-gradient(90deg,#b388ff,#ff5d8a)" }} />
               </div>
@@ -4508,11 +4509,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           {uiState.started && uiState.eventName && (
             <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
               <div className="px-4 py-1.5 rounded-full bg-black/70 ring-1 ring-[#7cffb2]/50 text-[#7cffb2] font-black text-sm uppercase tracking-wider animate-pulse">
-                {uiState.eventName === "meteor" && "☄️ Meteor Shower"}
-                {uiState.eventName === "eclipse" && "🌑 Darkness Eclipse"}
-                {uiState.eventName === "freeze" && "❄️ Time Freeze"}
-                {uiState.eventName === "goblin" && "💰 Treasure Goblin"}
-                {uiState.eventName === "rebellion" && "⚡ Clone Rebellion"}
+                {uiState.eventName === "meteor" && t("evMeteor")}
+                {uiState.eventName === "eclipse" && t("evEclipse")}
+                {uiState.eventName === "freeze" && t("evFreeze")}
+                {uiState.eventName === "goblin" && t("evGoblin")}
+                {uiState.eventName === "rebellion" && t("evRebellion")}
               </div>
             </div>
           )}
@@ -4522,13 +4523,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
               <div className="text-center animate-pulse">
                 <div className="text-5xl md:text-7xl font-black text-[#ff2e2e] drop-shadow-[0_0_30px_rgba(255,46,46,0.8)] mb-2">
-                  WAVE {uiState.wave}
+                  {t("wave").toUpperCase()} {uiState.wave}
                 </div>
                 <div className="text-xl md:text-3xl font-black text-[#ff5d5d] drop-shadow-[0_0_20px_rgba(255,93,93,0.7)] mb-1">
-                  WARNING
+                  {t("warning")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-white/90 tracking-widest uppercase">
-                  {uiState.wave === 75 ? "Elite Surge Incoming" : "Enemies Powered Up"}
+                  {uiState.wave === 75 ? t("eliteSurgeIncoming") : t("enemiesPoweredUp")}
                 </div>
               </div>
             </div>
@@ -4541,7 +4542,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             >
               <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]" onClick={(e) => e.stopPropagation()}>
                 <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse pointer-events-none" style={{ background: `radial-gradient(circle, ${wheelRevealReward.color} 0%, transparent 70%)` }} />
-                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-white/60">You Won</div>
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-white/60">{t("youWon")}</div>
                 <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: wheelRevealReward.color, textShadow: `0 0 30px ${wheelRevealReward.color}88, 0 0 60px ${wheelRevealReward.color}44` }}>
                   {wheelRevealReward.label}
                 </div>
@@ -4555,7 +4556,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   onClick={(e) => { e.stopPropagation(); setWheelRevealOpen(false); }}
                   className="relative z-10 px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer"
                 >
-                  Claim Reward
+                  {t("claimReward")}
                 </button>
               </div>
             </div>
@@ -4568,7 +4569,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             >
               <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]" onClick={(e) => e.stopPropagation()}>
                 <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse pointer-events-none" style={{ background: `radial-gradient(circle, ${divineRevealReward.color} 0%, transparent 70%)` }} />
-                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-[#fb7185]">Divine Fortune</div>
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-[#fb7185]">{t("divineFortuneLabel")}</div>
                 <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: divineRevealReward.color, textShadow: `0 0 30px ${divineRevealReward.color}88, 0 0 60px ${divineRevealReward.color}44` }}>
                   {divineRevealReward.label}
                 </div>
@@ -4582,7 +4583,42 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   onClick={(e) => { e.stopPropagation(); setDivineRevealOpen(false); }}
                   className="relative z-10 px-8 py-3 rounded-xl bg-white text-black font-black text-lg hover:scale-105 transition shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer"
                 >
-                  Claim Reward
+                  {t("claimReward")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {langPickerOpen && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+              <div className="w-full max-w-md rounded-2xl bg-gradient-to-br from-[#1a0f2e] to-[#0b0d1a] ring-1 ring-white/15 p-6 shadow-2xl">
+                <div className="text-center mb-5">
+                  <div className="text-4xl mb-2">🌐</div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">
+                    {t("pickLangTitle")}
+                  </h2>
+                  <p className="text-xs text-white/60 mt-1">{t("pickLangDesc")}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4 max-h-[50vh] overflow-y-auto">
+                  {(Object.keys(LANG_NAMES) as Lang[]).map((code) => {
+                    const sel = settings.lang === code;
+                    return (
+                      <button
+                        key={code}
+                        onClick={() => updateSetting("lang", code)}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-bold transition ${sel ? "bg-[#ffe066] text-black ring-2 ring-[#ffe066]" : "bg-white/5 hover:bg-white/10 text-white ring-1 ring-white/10"}`}
+                      >
+                        <span className="text-lg">{LANG_FLAGS[code]}</span>
+                        <span className="truncate">{LANG_NAMES[code]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => acceptLanguage(settings.lang)}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-[#ffe066] to-[#ff5dff] text-black font-black hover:scale-[1.02] transition"
+                >
+                  {t("continueBtn")}
                 </button>
               </div>
             </div>
