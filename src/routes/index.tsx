@@ -1257,8 +1257,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const rollUpgrades = useCallback((): Upgrade[] => {
     const s = stateRef.current;
     if (s.playMode === "army") {
-      const mk = (id: string, name: string, desc: string, icon: string, apply: () => void): Upgrade =>
-        ({ id, name, desc, icon, apply: () => { apply(); return { name, redo: () => {} }; } } as unknown as Upgrade);
+      const mk = (id: string, name: string, desc: string, apply: () => void): Upgrade =>
+        ({ id, name, desc, apply: () => { apply(); return { id, name, undo: () => {}, redo: () => {} }; } });
       return [
         mk("army_atk", "⚔️ Attacker Clone", "+1 big clone shooting fire arrows", upgBigclones, () => {
           const st = stateRef.current;
