@@ -1013,9 +1013,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   function spawnBossFor(id: BossId) {
     const s = stateRef.current;
     if (!id) return;
-    let hp = 14000, dmg = 60, sp = 125, r = 48, color = "#ff2e88", guards = 8;
-    if (id === "mega") { hp = 28000; dmg = 80; sp = 145; r = 54; color = "#a000ff"; guards = 12; }
-    if (id === "hyper") { hp = 50000; dmg = 100; sp = 160; r = 60; color = "#00e5ff"; guards = 16; }
+    let hp = 9500, dmg = 42, sp = 115, r = 44, color = "#ff2e88", guards = 6;
+    if (id === "mega") { hp = 19000; dmg = 55; sp = 130; r = 50; color = "#a000ff"; guards = 9; }
+    if (id === "hyper") { hp = 34000; dmg = 70; sp = 145; r = 56; color = "#00e5ff"; guards = 12; }
     if (id === "plantium") { hp = 85000; dmg = 130; sp = 175; r = 68; color = "#7cf24a"; guards = 20; }
     if (id === "final") { hp = 160000; dmg = 170; sp = 195; r = 80; color = "#ff0040"; guards = 26; }
     if (id === "plusplantium") { hp = 320000; dmg = 220; sp = 210; r = 92; color = "#ffe066"; guards = 36; }
