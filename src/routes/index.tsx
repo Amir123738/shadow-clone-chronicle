@@ -3009,6 +3009,53 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {difficultyOpen && (
+            <Overlay>
+              <div className="w-full max-w-md px-4">
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose Difficulty</h2>
+                <p className="text-center text-white/60 text-sm mb-5">Beat all 100 waves to claim the reward.</p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => startGame("easy")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#4ade80]/30 to-transparent border border-[#4ade80]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#86efac]">EASY</div>
+                      <div className="text-xs text-[#86efac]/80">Reward: ◆ 250</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are weakened. Best for warming up.</div>
+                  </button>
+                  <button
+                    onClick={() => startGame("medium")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ffe066]/25 to-transparent border border-[#ffe066]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#ffe066]">MEDIUM</div>
+                      <div className="text-xs text-[#ffe066]/80">Reward: ◆ 500 + Bronze Hat</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Standard difficulty. Already own the Bronze Hat? You'll get +1 Shady Spin & +1 Wheel of Fortune spin instead.</div>
+                  </button>
+                  <button
+                    onClick={() => startGame("hard")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ff2e88]/25 to-transparent border border-[#ff2e88]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#ff5d8a]">HARD</div>
+                      <div className="text-xs text-[#ff5d8a]/80">◆ 2000 + 2 Shady + 1 Divine Spin</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are brutal. Only for veterans.</div>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setDifficultyOpen(false)}
+                  className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Overlay>
+          )}
+
           {settingsOpen && (
             <Overlay>
               <div className="w-full max-w-lg px-4 max-h-full overflow-y-auto">
