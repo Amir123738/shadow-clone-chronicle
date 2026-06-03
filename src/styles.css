@@ -2,18 +2,18 @@
 @source "../src";
 @import "tw-animate-css";
 
-/* Figma design system — monochrome editorial frame with pastel color blocks. */
+/* RunwayML design system — monochrome editorial, cinematic gallery aesthetic. */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 22px);
-  --radius-md: calc(var(--radius) - 16px);
+  --radius-sm: calc(var(--radius) - 12px);
+  --radius-md: calc(var(--radius) - 8px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 8px);
-  --radius-2xl: calc(var(--radius) + 20px);
-  --radius-3xl: calc(var(--radius) + 40px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
   --radius-4xl: 9999px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -48,105 +48,105 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: "Inter", "Geist", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-serif: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 
 :root {
-  --radius: 1.5rem; /* 24px — Figma lg radius */
+  --radius: 1rem; /* 16px — RunwayML lg radius */
 
   /* Canvas: pure white */
   --background: oklch(1 0 0);                       /* #ffffff */
-  --foreground: oklch(0.165 0.003 60);            /* #141413 ink */
+  --foreground: oklch(0.15 0 0);                    /* #030303 ink */
 
   /* Cards — soft surface */
-  --card: oklch(0.97 0.003 85);                   /* #f7f7f5 surface-soft */
-  --card-foreground: oklch(0.165 0.003 60);
+  --card: oklch(0.999 0 0);                         /* #fefefe canvas-warm */
+  --card-foreground: oklch(0.15 0 0);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.165 0.003 60);
+  --popover-foreground: oklch(0.15 0 0);
 
   /* Primary: ink black pill */
-  --primary: oklch(0.165 0.003 60);               /* #141413 */
-  --primary-foreground: oklch(1 0 0);             /* white on black */
+  --primary: oklch(0 0 0);                          /* #000000 */
+  --primary-foreground: oklch(1 0 0);               /* white on black */
 
-  --secondary: oklch(1 0 0);                      /* white outlined pill */
-  --secondary-foreground: oklch(0.165 0.003 60);
+  --secondary: oklch(1 0 0);                        /* white outlined pill */
+  --secondary-foreground: oklch(0.15 0 0);
 
-  --muted: oklch(0.95 0.005 80);
-  --muted-foreground: oklch(0.55 0 0);
+  --muted: oklch(0.93 0.005 260);                   /* #e7eaf0 hairline */
+  --muted-foreground: oklch(0.55 0.02 250);         /* #676f7b slate */
 
-  /* Accent: magenta promo */
-  --accent: oklch(0.65 0.22 10);                  /* #ff3d8b approx */
+  /* Accent: slate soft for subtle emphasis */
+  --accent: oklch(0.58 0.02 250);                   /* #727a85 slate-soft */
   --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.65 0.22 10);             /* magenta doubles as alert */
+  --destructive: oklch(0.42 0 0);                   /* #404040 graphite */
   --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.91 0 0);                      /* #e6e6e6 hairline */
-  --input: oklch(0.91 0 0);
-  --ring: oklch(0.165 0.003 60);
+  --border: oklch(0.93 0.005 260);                  /* #e7eaf0 hairline */
+  --input: oklch(0.82 0.005 260);                  /* #c9ccd1 hairline-soft */
+  --ring: oklch(0 0 0);
 
-  /* Chart slots — ink, magenta, lilac, lime, coral */
-  --chart-1: oklch(0.165 0.003 60);
-  --chart-2: oklch(0.65 0.22 10);
-  --chart-3: oklch(0.75 0.12 290);                /* lilac approx */
-  --chart-4: oklch(0.9 0.08 120);                /* lime approx */
-  --chart-5: oklch(0.85 0.1 45);                 /* coral approx */
+  /* Chart slots — ink, slate, stone, ash, cool surface */
+  --chart-1: oklch(0.15 0 0);                      /* ink */
+  --chart-2: oklch(0.55 0.02 250);                 /* slate */
+  --chart-3: oklch(0.65 0 0);                     /* stone */
+  --chart-4: oklch(0.68 0 0);                     /* ash */
+  --chart-5: oklch(0.85 0.005 180);                /* surface-cool */
 
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.165 0.003 60);
-  --sidebar-primary: oklch(0.165 0.003 60);
+  --sidebar-foreground: oklch(0.15 0 0);
+  --sidebar-primary: oklch(0 0 0);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.65 0.22 10);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: oklch(0.165 0.003 60);
+  --sidebar-accent: oklch(0.93 0.005 260);
+  --sidebar-accent-foreground: oklch(0.15 0 0);
+  --sidebar-border: oklch(0.93 0.005 260);
+  --sidebar-ring: oklch(0 0 0);
 }
 
 .dark {
-  --background: oklch(0.165 0.003 60);            /* #141413 ink */
-  --foreground: oklch(1 0 0);                     /* white */
+  --background: oklch(0.15 0 0);                  /* #030303 ink */
+  --foreground: oklch(1 0 0);                       /* white */
 
-  --card: oklch(0.22 0.003 60);                   /* charcoal */
+  --card: oklch(0.22 0 0);                        /* #1a1a1a ink-soft */
   --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.22 0.003 60);
+  --popover: oklch(0.22 0 0);
   --popover-foreground: oklch(1 0 0);
 
   --primary: oklch(1 0 0);                        /* white pill on dark */
-  --primary-foreground: oklch(0.165 0.003 60);
+  --primary-foreground: oklch(0.15 0 0);
 
-  --secondary: oklch(0.22 0.003 60);
+  --secondary: oklch(0.22 0 0);
   --secondary-foreground: oklch(1 0 0);
 
-  --muted: oklch(0.22 0.003 60);
-  --muted-foreground: oklch(0.75 0.005 80);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.68 0 0);              /* ash */
 
-  --accent: oklch(0.7 0.2 10);                    /* brighter magenta on dark */
-  --accent-foreground: oklch(0.165 0.003 60);
+  --accent: oklch(0.65 0 0);                       /* stone on dark */
+  --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.7 0.2 10);
+  --destructive: oklch(0.42 0 0);
   --destructive-foreground: oklch(1 0 0);
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.7 0.2 10);
+  --ring: oklch(0.65 0 0);
 
   --chart-1: oklch(1 0 0);
-  --chart-2: oklch(0.7 0.2 10);
-  --chart-3: oklch(0.75 0.12 290);
-  --chart-4: oklch(0.9 0.08 120);
-  --chart-5: oklch(0.85 0.1 45);
+  --chart-2: oklch(0.55 0.02 250);
+  --chart-3: oklch(0.65 0 0);
+  --chart-4: oklch(0.68 0 0);
+  --chart-5: oklch(0.85 0.005 180);
 
-  --sidebar: oklch(0.165 0.003 60);
+  --sidebar: oklch(0.15 0 0);
   --sidebar-foreground: oklch(1 0 0);
   --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0.165 0.003 60);
-  --sidebar-accent: oklch(0.7 0.2 10);
-  --sidebar-accent-foreground: oklch(0.165 0.003 60);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.65 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.2 10);
+  --sidebar-ring: oklch(0.65 0 0);
 }
 
 @layer base {
@@ -163,22 +163,22 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Figma display type: fine weights, tight tracking */
+  /* RunwayML display type: fine weights, tight negative tracking */
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-sans);
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: -0.02em;
   }
   h1 { line-height: 1; }
   h2 { line-height: 1.1; }
   h3 { line-height: 1.35; }
 
-  /* Eyebrow — mono uppercase tracked label */
+  /* Eyebrow — uppercase tracked label */
   .eyebrow {
-    font-family: var(--font-mono);
-    font-weight: 400;
+    font-family: var(--font-sans);
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 12px;
+    letter-spacing: 0.35px;
+    font-size: 14px;
   }
 }
