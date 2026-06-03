@@ -1357,6 +1357,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   useEffect(() => { musicOnRef.current = settings.music; }, [settings.music]);
   useEffect(() => () => { stopMusic(); }, []);
 
+  // Switch the music track every wave so each round sounds different.
+  const lastMusicWave = useRef(-1);
+  useEffect(() => {
+    if (!uiState.started || uiState.wave <= 0) { lastMusicWave.current = -1; return; }
+    if (uiState.wave === lastMusicWave.current) return;
+    lastMusicWave.current = uiState.wave;
+    const s = stateRef.current;
+    const base = s.gameMode === "level" ? (s.levelId - 1) * 3 : 0;
+    setMusicTrack((base + uiState.wave) % getTrackCount());
+  }, [uiState.wave, uiState.started]);
+
   const toggleMusic = () => {
     setSettings((s) => {
       const next = !s.music;
