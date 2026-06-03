@@ -955,6 +955,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     e.dmg *= lvlMult; e.baseDmg *= lvlMult;
     e.speed *= Math.min(1.6, 1 + (lvlMult - 1) * 0.05);
     e.baseSpeed = e.speed;
+    // Difficulty multiplier (normal mode only)
+    if (s.gameMode === "normal") {
+      const dMult = s.difficulty === "easy" ? 0.55 : s.difficulty === "hard" ? 1.85 : 1;
+      e.hp *= dMult; e.maxHp *= dMult;
+      e.dmg *= dMult; e.baseDmg *= dMult;
+    }
     s.enemies.push(e);
   }
 
