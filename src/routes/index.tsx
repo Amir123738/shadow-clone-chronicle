@@ -4542,7 +4542,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             >
               <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]" onClick={(e) => e.stopPropagation()}>
                 <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse pointer-events-none" style={{ background: `radial-gradient(circle, ${wheelRevealReward.color} 0%, transparent 70%)` }} />
-                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-white/60">You Won</div>
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-white/60">{t("youWon")}</div>
                 <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: wheelRevealReward.color, textShadow: `0 0 30px ${wheelRevealReward.color}88, 0 0 60px ${wheelRevealReward.color}44` }}>
                   {wheelRevealReward.label}
                 </div>
