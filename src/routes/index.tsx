@@ -992,7 +992,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
       color, xp: 120, coin: 80, kind: "boss", bossId: id,
-      abilityCds: { pull: 5, freeze: 8, steal: 12, revive: 10, blur: 15, hasten: 20, empower: 25 },
+      abilityCds: { pull: 5, freeze: 8, steal: 12, revive: 10, blur: 15, hasten: 20, empower: 25, barrage: 3, dash: 5, quake: 9 },
       abilityFlags: {},
     });
     let guardHp = s.wave >= 50 ? 280 * 6 : 280;
