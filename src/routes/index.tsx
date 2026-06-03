@@ -1738,7 +1738,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             for (let k = 0; k < 3; k++) {
               const sp = edgeSpawn();
               s.enemies.push({
-                pos: sp, r: 12, hp: 140, maxHp: 140, speed: 170, baseSpeed: 170,
+                pos: sp, vel: { x: 0, y: 0 }, r: 12, hp: 140, maxHp: 140, speed: 170, baseSpeed: 170,
                 dmg: 14, baseDmg: 14, color: "#ff2e88", xp: 4, coin: 3, kind: "fast",
               });
             }
