@@ -3867,13 +3867,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">LVL's / Bosses</h2>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">{t("levelsTitle")}</h2>
                   <div className="flex items-center gap-3 text-xs text-white/70">
                     <span>◆ {shop.shadowCoins.toLocaleString()}</span>
-                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 Shady Spins: {shadySpins}</span>
+                    <span className="px-2 py-1 rounded bg-[#ff7a18]/20 ring-1 ring-[#ff7a18]/40 text-[#ffe066] font-bold">🎰 {t("shadySpinsLabel")}: {shadySpins}</span>
                   </div>
                 </div>
-                <p className="text-xs text-white/60 mb-3">Beat 5 waves per level. Each level ends with a unique boss. Win = free Shady Spin(s). Bosses get brutally harder each level.</p>
+                <p className="text-xs text-white/60 mb-3">{t("levelsDesc")}</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
                   {LEVELS.map(lv => {
@@ -3882,15 +3882,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       <div key={lv.id} className={`p-3 rounded-lg ring-1 ${done ? "ring-[#34d399]/60 bg-[#34d399]/10" : "ring-white/10 bg-white/5"}`}>
                         <div className="flex items-center justify-between mb-1">
                           <div className="font-bold text-sm">{lv.name}</div>
-                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">CLEARED</span>}
+                          {done && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#34d399]/30 text-[#34d399] font-bold">{t("cleared")}</span>}
                         </div>
-                        <div className="text-xs text-white/70 mb-1">Boss: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
-                        <div className="text-[11px] text-white/50 mb-2">Reward: +{lv.spinReward} Shady Spin{lv.spinReward > 1 ? "s" : ""}</div>
+                        <div className="text-xs text-white/70 mb-1">{t("boss")}: <span style={{ color: lv.bossColor }} className="font-bold">{lv.bossName}</span></div>
+                        <div className="text-[11px] text-white/50 mb-2">{t("rewardLabel")}: +{lv.spinReward} {t("shadySpin")}{lv.spinReward > 1 ? "s" : ""}</div>
                         <button
                           onClick={() => startLevel(lv.id)}
                           className="w-full px-3 py-1.5 rounded bg-[#ff7a18] text-black font-bold text-xs hover:scale-[1.02] transition"
                         >
-                          Start Level
+                          {t("startLevel")}
                         </button>
                       </div>
                     );
@@ -3899,10 +3899,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
                 <div className="p-4 rounded-lg ring-1 ring-[#ffe066]/40 bg-gradient-to-br from-[#ff7a18]/20 to-[#ffe066]/10">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-black text-[#ffe066]">🎰 Shady Spin</h3>
-                    <span className="text-xs text-white/70">Spins available: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
+                    <h3 className="text-lg font-black text-[#ffe066]">🎰 {t("shadySpin")}</h3>
+                    <span className="text-xs text-white/70">{t("spinsAvailable")}: <span className="font-bold text-[#ffe066]">{shadySpins}</span></span>
                   </div>
-                  <p className="text-[11px] text-white/60 mb-3">Earn spins by clearing levels. Each spin awards Shadow Coins.</p>
+                  <p className="text-[11px] text-white/60 mb-3">{t("earnSpinsHint")}</p>
 
                   <div className="flex flex-col md:flex-row gap-4 items-center">
                     <div className="relative w-56 h-56 shrink-0">
@@ -3940,7 +3940,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                         disabled={shadySpinning || shadySpins <= 0}
                         className="w-full px-4 py-3 rounded-lg bg-[#ffe066] text-black font-black text-lg hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed mb-3"
                       >
-                        {shadySpinning ? "Spinning…" : shadySpins > 0 ? "SPIN" : "No Spins"}
+                        {shadySpinning ? t("spinning") : shadySpins > 0 ? t("spin") : t("noSpins")}
                       </button>
                       {shadyMsg && <div className="text-center text-sm text-[#ffe066] font-bold mb-2">{shadyMsg}</div>}
                       <div className="text-[11px] text-white/60 space-y-0.5">
@@ -3956,7 +3956,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
 
                 <div className="flex justify-end mt-4">
-                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">Close</button>
+                  <button onClick={() => setLevelsOpen(false)} className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
