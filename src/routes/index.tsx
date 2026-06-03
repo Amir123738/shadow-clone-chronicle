@@ -3144,6 +3144,39 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {modeOpen && (
+            <Overlay>
+              <div className="w-full max-w-md px-4 max-h-full overflow-y-auto">
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose a Game</h2>
+                <p className="text-center text-white/60 text-sm mb-5">Pick a mode, then a difficulty.</p>
+                <div className="flex flex-col gap-2.5">
+                  {PLAY_MODES.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setPendingMode(m.id); setModeOpen(false); setDifficultyOpen(true); }}
+                      className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border hover:scale-[1.02] transition"
+                      style={{ borderColor: `${m.color}80` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">{m.emoji}</div>
+                        <div className="flex-1">
+                          <div className="font-black text-base" style={{ color: m.color }}>{m.name}</div>
+                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{m.desc}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setModeOpen(false)}
+                  className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Overlay>
+          )}
+
           {difficultyOpen && (
             <Overlay>
               <div className="w-full max-w-md px-4">
