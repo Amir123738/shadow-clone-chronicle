@@ -938,6 +938,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.waveWarningTimer = 0;
     s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
     s.difficulty = "medium";
+    s.playMode = "classic"; s.corruption = 0; s.corruptionApplied = false;
+    s.echoTimer = 30; s.eventTimer = 90; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
   }, []);
 
   function edgeSpawn(): Vec {
