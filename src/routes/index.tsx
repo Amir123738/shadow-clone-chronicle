@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
-import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -1364,8 +1364,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (uiState.wave === lastMusicWave.current) return;
     lastMusicWave.current = uiState.wave;
     const s = stateRef.current;
-    const base = s.gameMode === "level" ? (s.levelId - 1) * 3 : 0;
-    setMusicTrack((base + uiState.wave) % getTrackCount());
+    const isFinalBoss = s.gameMode === "level"
+      ? s.wave >= LEVEL_WAVES
+      : s.wave === TOTAL_WAVES;
+    if (isFinalBoss) {
+      setMusicTrack(BOSS_TRACK_INDEX);
+    } else {
+      const base = s.gameMode === "level" ? (s.levelId - 1) * 3 : 0;
+      setMusicTrack((base + uiState.wave) % getTrackCount());
+    }
   }, [uiState.wave, uiState.started]);
 
   const toggleMusic = () => {
