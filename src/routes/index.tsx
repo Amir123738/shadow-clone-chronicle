@@ -2983,42 +2983,201 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               ctx.lineTo(cx + i * er * 0.1 - er * 0.04, cy - er * 0.2);
               ctx.closePath(); ctx.fill();
             }
-          } else {
-            // Default wave-boss (super/mega/hyper/plantium/plusplantium): rune ring demon
-            const pulse = 1 + Math.sin(t * 3) * 0.08;
-            ctx.save();
-            ctx.translate(cx, cy); ctx.rotate(t * 0.6);
-            ctx.strokeStyle = e.color + "cc"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(0, 0, (er + 14) * pulse, 0, Math.PI * 2); ctx.stroke();
-            for (let i = 0; i < 8; i++) {
-              const a = (i / 8) * Math.PI * 2;
-              ctx.fillStyle = e.color;
-              ctx.beginPath(); ctx.arc(Math.cos(a) * (er + 14) * pulse, Math.sin(a) * (er + 14) * pulse, 3, 0, Math.PI * 2); ctx.fill();
+          } else if (e.bossId === "super") {
+            // SUPER SHADOW — four-armed wraith with twin floating blades
+            ctx.fillStyle = "rgba(10,5,20,1)";
+            ctx.beginPath(); ctx.ellipse(cx, cy + er * 0.2, er * 1.0, er * 1.15, 0, 0, Math.PI * 2); ctx.fill();
+            // four arms (two pairs)
+            ctx.strokeStyle = "rgba(10,5,20,1)"; ctx.lineWidth = 6;
+            for (let i = 0; i < 4; i++) {
+              const a = (i / 4) * Math.PI * 2 + Math.sin(t * 2) * 0.3;
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              ctx.lineTo(cx + Math.cos(a) * er * 1.3, cy + Math.sin(a) * er * 1.0);
+              ctx.stroke();
             }
-            ctx.restore();
-            ctx.fillStyle = "rgba(5,0,10,1)";
-            ctx.beginPath(); ctx.ellipse(cx, cy + er * 0.1, er * 1.15, er * 1.25, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = e.color + "66";
-            ctx.beginPath(); ctx.ellipse(cx, cy + er * 0.1, er * 1.1, er * 1.2, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "rgba(0,0,0,0.95)";
+            // floating twin blades
+            for (let i = -1; i <= 1; i += 2) {
+              const bx = cx + i * (er * 1.4 + Math.sin(t * 2) * 4);
+              const by = cy - er * 0.2;
+              ctx.fillStyle = "#dfefff"; ctx.shadowColor = e.color; ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.moveTo(bx, by - er * 0.6); ctx.lineTo(bx + i * er * 0.12, by); ctx.lineTo(bx, by + er * 0.6); ctx.lineTo(bx - i * er * 0.12, by); ctx.closePath(); ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+            // head
+            ctx.fillStyle = "rgba(5,0,15,1)";
+            ctx.beginPath(); ctx.arc(cx, cy - er * 0.6, er * 0.5, 0, Math.PI * 2); ctx.fill();
+            // single cyclopean eye
+            ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 16;
+            ctx.beginPath(); ctx.ellipse(cx, cy - er * 0.6, er * 0.22, er * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+          } else if (e.bossId === "mega") {
+            // MEGA SHADOW — armored juggernaut, hexagonal shell, spiked shoulders
+            ctx.fillStyle = "rgba(15,15,25,1)";
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+              const px = cx + Math.cos(a) * er * 1.15;
+              const py = cy + er * 0.1 + Math.sin(a) * er * 1.15;
+              if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath(); ctx.fill();
+            // rivets along edge
+            ctx.fillStyle = e.color;
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 - Math.PI / 2 + Math.PI / 6;
+              ctx.beginPath(); ctx.arc(cx + Math.cos(a) * er * 0.95, cy + er * 0.1 + Math.sin(a) * er * 0.95, 3, 0, Math.PI * 2); ctx.fill();
+            }
+            // shoulder spikes
+            ctx.fillStyle = "#3a3a4a";
             for (let i = -1; i <= 1; i += 2) {
               ctx.beginPath();
-              ctx.moveTo(cx + i * er * 0.9, cy - er * 0.2);
-              ctx.lineTo(cx + i * er * 1.4, cy - er * 0.8);
-              ctx.lineTo(cx + i * er * 0.6, cy - er * 0.3);
+              ctx.moveTo(cx + i * er * 0.8, cy - er * 0.4);
+              ctx.lineTo(cx + i * er * 1.5, cy - er * 1.0);
+              ctx.lineTo(cx + i * er * 0.95, cy - er * 0.2);
               ctx.closePath(); ctx.fill();
             }
-            ctx.fillStyle = "rgba(5,0,10,1)";
-            ctx.beginPath(); ctx.arc(cx, cy - er * 0.7, er * 0.65, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = e.color;
-            ctx.beginPath();
-            ctx.moveTo(cx - er * 0.45, cy - er * 1.0); ctx.lineTo(cx - er * 0.85, cy - er * 1.6); ctx.lineTo(cx - er * 0.25, cy - er * 1.1); ctx.closePath(); ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(cx + er * 0.45, cy - er * 1.0); ctx.lineTo(cx + er * 0.85, cy - er * 1.6); ctx.lineTo(cx + er * 0.25, cy - er * 1.1); ctx.closePath(); ctx.fill();
-            ctx.shadowColor = e.color; ctx.shadowBlur = 12;
+            // visor
+            ctx.fillStyle = "#000";
+            ctx.fillRect(cx - er * 0.55, cy - er * 0.55, er * 1.1, er * 0.22);
+            ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 14;
+            ctx.fillRect(cx - er * 0.5, cy - er * 0.5, er * 1.0, er * 0.06);
+            ctx.shadowBlur = 0;
+            // chest core
+            ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 18;
+            ctx.beginPath(); ctx.arc(cx, cy + er * 0.2, er * 0.18, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+          } else if (e.bossId === "hyper") {
+            // HYPER SHADOW — multi-eyed orb wreathed in jagged energy lances
+            // outer energy lances
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 1.2);
+            ctx.fillStyle = e.color + "cc"; ctx.shadowColor = e.color; ctx.shadowBlur = 14;
+            for (let i = 0; i < 10; i++) {
+              const a = (i / 10) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(a) * er * 0.9, Math.sin(a) * er * 0.9);
+              ctx.lineTo(Math.cos(a + 0.06) * er * 1.7, Math.sin(a + 0.06) * er * 1.7);
+              ctx.lineTo(Math.cos(a - 0.06) * er * 0.9, Math.sin(a - 0.06) * er * 0.9);
+              ctx.closePath(); ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            // dark orb body
+            const grad = ctx.createRadialGradient(cx, cy, er * 0.2, cx, cy, er);
+            grad.addColorStop(0, e.color);
+            grad.addColorStop(1, "rgba(5,0,15,1)");
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(cx, cy, er * 0.95, 0, Math.PI * 2); ctx.fill();
+            // five eyes scattered on the orb
+            const eyes: [number, number][] = [[0, -0.4], [-0.4, -0.05], [0.4, -0.05], [-0.22, 0.35], [0.22, 0.35]];
+            for (const [dx, dy] of eyes) {
+              ctx.fillStyle = "#fff200"; ctx.shadowColor = e.color; ctx.shadowBlur = 10;
+              ctx.beginPath(); ctx.arc(cx + dx * er, cy + dy * er, er * 0.1, 0, Math.PI * 2); ctx.fill();
+              ctx.shadowBlur = 0;
+              ctx.fillStyle = "#000";
+              ctx.beginPath(); ctx.arc(cx + dx * er, cy + dy * er, er * 0.04, 0, Math.PI * 2); ctx.fill();
+            }
+          } else if (e.bossId === "plantium") {
+            // PLANTIUM SHADOW — corrupted root golem with vine tendrils and bloom core
+            // tendrils
+            ctx.strokeStyle = "#1a3a1a"; ctx.lineWidth = 5; ctx.lineCap = "round";
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 + Math.sin(t + i) * 0.25;
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              ctx.quadraticCurveTo(
+                cx + Math.cos(a) * er * 0.8,
+                cy + Math.sin(a) * er * 0.8 - er * 0.4,
+                cx + Math.cos(a) * er * 1.6,
+                cy + Math.sin(a) * er * 1.4
+              );
+              ctx.stroke();
+            }
+            ctx.lineCap = "butt";
+            // bark body
+            ctx.fillStyle = "rgba(40,25,10,1)";
+            ctx.beginPath(); ctx.ellipse(cx, cy + er * 0.15, er * 1.05, er * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+            // bark cracks
+            ctx.strokeStyle = "rgba(80,50,20,1)"; ctx.lineWidth = 2;
+            for (let i = 0; i < 5; i++) {
+              ctx.beginPath();
+              ctx.moveTo(cx - er * 0.5 + i * er * 0.25, cy - er * 0.5);
+              ctx.lineTo(cx - er * 0.55 + i * er * 0.25, cy + er * 0.7);
+              ctx.stroke();
+            }
+            // bloom core (sickly flower)
+            ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 16;
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 + t * 0.4;
+              ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * er * 0.35, cy + Math.sin(a) * er * 0.35, er * 0.2, er * 0.1, a, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.shadowBlur = 0;
             ctx.fillStyle = "#fff200";
-            ctx.beginPath(); ctx.arc(cx - er * 0.22, cy - er * 0.75, er * 0.14, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx + er * 0.22, cy - er * 0.75, er * 0.14, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, er * 0.18, 0, Math.PI * 2); ctx.fill();
+            // spore puffs
+            ctx.fillStyle = "rgba(180,255,90,0.5)";
+            for (let i = 0; i < 5; i++) {
+              const a = t * 0.8 + i;
+              ctx.beginPath(); ctx.arc(cx + Math.cos(a) * er * 1.3, cy + Math.sin(a) * er * 0.8 - er * 0.5, 3, 0, Math.PI * 2); ctx.fill();
+            }
+          } else if (e.bossId === "plusplantium") {
+            // PLUSPLANTIUM — final Classic boss: prismatic crystalline titan with orbiting shards
+            // orbiting shards
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.7);
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2;
+              const sx = Math.cos(a) * er * 1.7, sy = Math.sin(a) * er * 1.7;
+              const hue = (i * 60 + (t * 60)) % 360;
+              ctx.fillStyle = `hsl(${hue},100%,60%)`;
+              ctx.shadowColor = ctx.fillStyle as string; ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy - 8); ctx.lineTo(sx + 6, sy); ctx.lineTo(sx, sy + 8); ctx.lineTo(sx - 6, sy); ctx.closePath(); ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            // crystalline body (octagon)
+            ctx.fillStyle = "rgba(20,10,40,1)";
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+              const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+              const px = cx + Math.cos(a) * er * 1.1;
+              const py = cy + Math.sin(a) * er * 1.1;
+              if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath(); ctx.fill();
+            // prismatic facets
+            ctx.strokeStyle = e.color; ctx.lineWidth = 1.5;
+            for (let i = 0; i < 8; i++) {
+              const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+              ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * er * 1.1, cy + Math.sin(a) * er * 1.1); ctx.stroke();
+            }
+            // rainbow core
+            const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, er * 0.55);
+            coreGrad.addColorStop(0, "#fff");
+            coreGrad.addColorStop(0.5, e.color);
+            coreGrad.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath(); ctx.arc(cx, cy, er * 0.55, 0, Math.PI * 2); ctx.fill();
+            // crown of thin spires above
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            for (let i = -2; i <= 2; i++) {
+              ctx.beginPath();
+              ctx.moveTo(cx + i * er * 0.2, cy - er * 1.1);
+              ctx.lineTo(cx + i * er * 0.2, cy - er * 1.5 - Math.abs(i) * er * 0.1);
+              ctx.stroke();
+            }
+            // twin slit eyes
+            ctx.fillStyle = "#000";
+            ctx.fillRect(cx - er * 0.25, cy - er * 0.1, er * 0.18, er * 0.05);
+            ctx.fillRect(cx + er * 0.07, cy - er * 0.1, er * 0.18, er * 0.05);
+          } else {
+            // Fallback (e.g. bossId "final" if ever used): minimal demon silhouette
+            ctx.fillStyle = "rgba(5,0,10,1)";
+            ctx.beginPath(); ctx.ellipse(cx, cy + er * 0.1, er * 1.1, er * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(cx - er * 0.22, cy - er * 0.4, er * 0.12, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx + er * 0.22, cy - er * 0.4, er * 0.12, 0, Math.PI * 2); ctx.fill();
             ctx.shadowBlur = 0;
           }
         } else {
