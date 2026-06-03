@@ -1334,11 +1334,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     });
   };
 
-  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium") => {
+  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium", mode: PlayMode = "classic") => {
     resetGame();
     stateRef.current.difficulty = difficulty;
+    stateRef.current.playMode = mode;
     setDifficultyOpen(false);
-    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    setModeOpen(false);
+    setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null, playMode: mode, corruption: 0, eventName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
   };
