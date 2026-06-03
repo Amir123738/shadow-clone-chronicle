@@ -2980,7 +2980,32 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const s = stateRef.current;
       setUiState((u) => {
         if (s.over) {
-          return { ...u, started: false, over: false, wave: s.wave, score: s.score };
+          // Reset run stats on the HUD when the player stops/dies — but keep
+          // shadowCoins and total time-played as the user requested.
+          return {
+            ...u,
+            started: false,
+            over: false,
+            won: false,
+            wave: 0,
+            score: 0,
+            level: 1,
+            xp: 0,
+            xpNext: 5,
+            hp: 100,
+            maxHp: 100,
+            clones: 0,
+            enemiesLeft: 0,
+            betweenWaves: false,
+            upgrades: [],
+            blur: 0,
+            frozen: false,
+            stolen: null,
+            bossName: null,
+            waveWarning: 0,
+            corruption: 0,
+            eventName: null,
+          };
         }
         const upg = s.pendingUpgrades ?? u.upgrades;
         const boss = s.enemies.find(e => e.kind === "boss");
