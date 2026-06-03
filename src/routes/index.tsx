@@ -954,6 +954,35 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     return { x: rand(60, W - 60), y: rand(60, H - 60) };
   }
 
+  // Per-playMode + level enemy palette so enemies look distinct in every mode
+  function modeEnemyPalette() {
+    const s = stateRef.current;
+    if (s.gameMode === "level") {
+      // Level mode rotates palette per level so it never matches the 5 play modes
+      const lp = [
+        { grunt: "#7cf24a", fast: "#bef264", tank: "#65a30d" }, // 1 verdant
+        { grunt: "#ff8a3d", fast: "#ffd54a", tank: "#b91c1c" }, // 2 ember
+        { grunt: "#ff2e88", fast: "#ff7ab8", tank: "#7f1d1d" }, // 3 crimson
+        { grunt: "#7dd3fc", fast: "#e0f2fe", tank: "#1e40af" }, // 4 glacier
+        { grunt: "#a000ff", fast: "#c084fc", tank: "#2e1065" }, // 5 void
+        { grunt: "#00e5ff", fast: "#a5f3fc", tank: "#0e7490" }, // 6 storm
+        { grunt: "#a3e635", fast: "#d9f99d", tank: "#365314" }, // 7 plague
+        { grunt: "#fde047", fast: "#fef08a", tank: "#713f12" }, // 8 obsidian
+        { grunt: "#c084fc", fast: "#e9d5ff", tank: "#581c87" }, // 9 nullking
+        { grunt: "#ff0033", fast: "#ff6b6b", tank: "#0a0a0a" }, // 10 eternal
+      ];
+      return lp[(s.levelId - 1 + lp.length) % lp.length];
+    }
+    switch (s.playMode) {
+      case "echo":       return { grunt: "#ff5d8a", fast: "#fda4af", tank: "#9f1239" }; // pink echoes
+      case "army":       return { grunt: "#7cdcff", fast: "#a5f3fc", tank: "#155e75" }; // cyan corps
+      case "corruption": return { grunt: "#b388ff", fast: "#c4b5fd", tank: "#4c1d95" }; // violet rot
+      case "events":     return { grunt: "#7cffb2", fast: "#bbf7d0", tank: "#14532d" }; // chaos green
+      case "classic":
+      default:           return { grunt: "#7cf24a", fast: "#4ad6ff", tank: "#ff8a3d" }; // original
+    }
+  }
+
   function spawnGrunt() {
     const s = stateRef.current;
     const waveBoost = 1 + s.wave * 0.15;
@@ -970,6 +999,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const megaDmg = isMega ? 5 : 1;
     const megaR = isMega ? 1.7 : 1;
     const r = Math.random();
+    const pal = modeEnemyPalette();
     let e: Enemy;
     if (r < 0.55) {
       const hp = 55 * waveBoost * hardHp * eliteHp * megaHp;
@@ -977,21 +1007,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 14 * megaR, speed: spd, baseSpeed: spd,
         dmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#7cf24a", xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
+        color: isMega ? "#ff3df0" : pal.grunt, xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
     } else if (r < 0.85) {
       const hp = 32 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (195 + s.wave * 1.5) * eliteSpd;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 10 * megaR, speed: spd, baseSpeed: spd,
         dmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#4ad6ff", xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
+        color: isMega ? "#ff3df0" : pal.fast, xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
     } else {
       const hp = 170 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (75 + s.wave * 0.6) * eliteSpd;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 20 * megaR, speed: spd, baseSpeed: spd,
         dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
+        color: isMega ? "#ff3df0" : pal.tank, xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
     // Levels/Bosses mode: enemies scaled by level multiplier
     const lvlMult = s.levelMult || 1;
@@ -1594,103 +1624,279 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       } else { make(dir.x, dir.y); }
     };
 
+    // ============================================================
+    // PER-BOSS UNIQUE ABILITIES
+    // Each boss key maps to its OWN brutal ability set so no two
+    // bosses share the same fingerprint. Wave-bosses keyed by id,
+    // level-bosses keyed by customBossName.
+    // ============================================================
+    type AbilityName =
+      | "barrage" | "dash" | "quake" | "pull" | "freeze" | "steal"
+      | "revive" | "blur" | "hasten" | "empower"
+      | "spiral" | "mines" | "lasers" | "summonTanks" | "drain"
+      | "swap" | "vortex" | "doubleshot" | "thornring" | "blackhole"
+      | "judgment";
+    function abilitySetFor(boss: Enemy): AbilityName[] {
+      const key = (boss.customBossName ?? "").toUpperCase();
+      switch (key) {
+        case "SHADE WHELP":         return ["barrage", "dash"];
+        case "ASH REAVER":          return ["spiral", "empower"];
+        case "CRIMSON HOUND":       return ["dash", "summonTanks"];
+        case "GLACIER MAW":         return ["freeze", "thornring"];
+        case "VOIDFANG":            return ["vortex", "blur"];
+        case "STORMCALLER THRAX":   return ["lasers", "hasten"];
+        case "PLAGUE SOVEREIGN":    return ["mines", "drain"];
+        case "OBSIDIAN TYRANT":     return ["doubleshot", "quake"];
+        case "NULLKING VORATH":     return ["swap", "steal"];
+        case "THE ETERNAL SHADOWLORD":
+          return ["judgment", "blackhole", "revive"];
+      }
+      switch (boss.bossId) {
+        case "super":         return ["barrage", "dash"];
+        case "mega":          return ["pull", "quake"];
+        case "hyper":         return ["freeze", "steal", "hasten"];
+        case "plantium":      return ["revive", "blur", "empower"];
+        case "final":         return ["lasers", "vortex", "doubleshot"];
+        case "plusplantium":  return ["judgment", "blackhole", "thornring", "spiral"];
+        default:              return ["barrage"];
+      }
+    }
+
     const runBossAbilities = (boss: Enemy, dt: number) => {
       const s = stateRef.current;
       const cds = boss.abilityCds!;
       const flags = boss.abilityFlags!;
-      const id = boss.bossId;
-      const isPP = id === "plusplantium";
-      // ===== BRUTAL ABILITIES (all bosses) =====
-      // Barrage: ring of 8 homing-ish projectiles. Can't just kite.
-      cds.barrage = (cds.barrage ?? 3) - dt;
-      if (cds.barrage <= 0) {
-        const count = isPP ? 14 : id === "final" ? 12 : id === "plantium" ? 10 : 8;
-        const speed = isPP ? 360 : 300;
-        const dmg = boss.dmg * (isPP ? 0.35 : 0.28);
-        const aimAng = Math.atan2(s.player.pos.y - boss.pos.y, s.player.pos.x - boss.pos.x);
-        for (let i = 0; i < count; i++) {
-          const a = aimAng + (i - (count - 1) / 2) * 0.18;
-          s.bullets.push({
-            pos: { x: boss.pos.x, y: boss.pos.y },
-            vel: { x: Math.cos(a) * speed, y: Math.sin(a) * speed },
-            life: 2.5, dmg, from: "boss", color: boss.color, r: 6,
-          });
-        }
-        cds.barrage = isPP ? 3 : id === "final" ? 4 : 5.5;
-      }
-      // Dash: boss charges at the player at 3x speed
-      cds.dash = (cds.dash ?? 5) - dt;
-      if ((boss.abilityFlags as any)._dashT === undefined) (boss.abilityFlags as any)._dashT = 0;
-      if (cds.dash <= 0 && !(boss.abilityFlags as any)._dashing) {
-        (boss.abilityFlags as any)._dashing = true;
-        (boss.abilityFlags as any)._dashT = isPP ? 0.9 : 0.7;
-        const d = norm({ x: s.player.pos.x - boss.pos.x, y: s.player.pos.y - boss.pos.y });
-        (boss.abilityFlags as any)._dashDx = d.x;
-        (boss.abilityFlags as any)._dashDy = d.y;
-        cds.dash = isPP ? 4.5 : id === "final" ? 6 : 8;
-      }
-      if ((boss.abilityFlags as any)._dashing) {
-        const t = ((boss.abilityFlags as any)._dashT as number) - dt;
-        (boss.abilityFlags as any)._dashT = t;
-        const dx = (boss.abilityFlags as any)._dashDx as number;
-        const dy = (boss.abilityFlags as any)._dashDy as number;
-        const ds = boss.baseSpeed * (isPP ? 4.5 : 3.5);
-        boss.pos.x += dx * ds * dt;
-        boss.pos.y += dy * ds * dt;
-        if (dist(boss.pos, s.player.pos) < boss.r + s.player.r + 6) {
-          s.player.hp -= boss.dmg * 0.9 * (s.shieldTime > 0 ? 0.55 : 1);
-          (boss.abilityFlags as any)._dashing = false;
-        }
-        if (t <= 0) (boss.abilityFlags as any)._dashing = false;
-      }
-      // Quake: AOE shockwave that hits player no matter the distance (within radius)
-      cds.quake = (cds.quake ?? 9) - dt;
-      if (cds.quake <= 0) {
-        const radius = isPP ? 380 : id === "final" ? 320 : id === "plantium" ? 280 : 230;
-        if (dist(boss.pos, s.player.pos) < radius) {
-          s.player.hp -= boss.dmg * (isPP ? 1.1 : 0.75) * (s.shieldTime > 0 ? 0.55 : 1);
-          s.blurTime = Math.max(s.blurTime, 1.5);
-        }
-        cds.quake = isPP ? 7 : id === "final" ? 9 : 12;
-      }
-      // ===== Original tiered abilities =====
-      if (id === "mega" || id === "plantium" || id === "final" || isPP) {
-        cds.pull -= dt;
-        if (cds.pull <= 0) {
-          s.pullTime = isPP ? 1.6 : 1.2;
-          cds.pull = isPP ? 4 : id === "final" ? 6 : 8;
+      const set = (boss.abilityFlags as any)._set as AbilityName[] | undefined ?? (() => {
+        const v = abilitySetFor(boss);
+        (boss.abilityFlags as any)._set = v;
+        return v;
+      })();
+      const has = (a: AbilityName) => set.includes(a);
+      const isPP = boss.bossId === "plusplantium";
+      const shielded = s.shieldTime > 0 ? 0.55 : 1;
+
+      // ---------- BARRAGE: ring of homing-ish projectiles ----------
+      if (has("barrage")) {
+        cds.barrage = (cds.barrage ?? 3) - dt;
+        if (cds.barrage <= 0) {
+          const count = 10;
+          const aim = Math.atan2(s.player.pos.y - boss.pos.y, s.player.pos.x - boss.pos.x);
+          for (let i = 0; i < count; i++) {
+            const a = aim + (i - (count - 1) / 2) * 0.18;
+            s.bullets.push({ pos: { x: boss.pos.x, y: boss.pos.y },
+              vel: { x: Math.cos(a) * 300, y: Math.sin(a) * 300 },
+              life: 2.5, dmg: boss.dmg * 0.28, from: "boss", color: boss.color, r: 6 });
+          }
+          cds.barrage = 5.5;
         }
       }
-      if (id === "hyper" || id === "plantium" || id === "final" || isPP) {
-        cds.freeze -= dt;
+      // ---------- DASH: charges player at high speed ----------
+      if (has("dash")) {
+        cds.dash = (cds.dash ?? 5) - dt;
+        if (cds.dash <= 0 && !(flags as any)._dashing) {
+          (flags as any)._dashing = true;
+          (flags as any)._dashT = 0.7;
+          const d = norm({ x: s.player.pos.x - boss.pos.x, y: s.player.pos.y - boss.pos.y });
+          (flags as any)._dashDx = d.x; (flags as any)._dashDy = d.y;
+          cds.dash = 7;
+        }
+        if ((flags as any)._dashing) {
+          const t = ((flags as any)._dashT as number) - dt;
+          (flags as any)._dashT = t;
+          const sp = boss.baseSpeed * 3.5;
+          boss.pos.x += ((flags as any)._dashDx as number) * sp * dt;
+          boss.pos.y += ((flags as any)._dashDy as number) * sp * dt;
+          if (dist(boss.pos, s.player.pos) < boss.r + s.player.r + 6) {
+            s.player.hp -= boss.dmg * 0.9 * shielded; (flags as any)._dashing = false;
+          }
+          if (t <= 0) (flags as any)._dashing = false;
+        }
+      }
+      // ---------- QUAKE: huge AOE shockwave ----------
+      if (has("quake")) {
+        cds.quake = (cds.quake ?? 9) - dt;
+        if (cds.quake <= 0) {
+          if (dist(boss.pos, s.player.pos) < 320) {
+            s.player.hp -= boss.dmg * 0.85 * shielded;
+            s.blurTime = Math.max(s.blurTime, 1.5);
+          }
+          cds.quake = 11;
+        }
+      }
+      // ---------- PULL: yanks player toward boss ----------
+      if (has("pull")) {
+        cds.pull = (cds.pull ?? 4) - dt;
+        if (cds.pull <= 0) { s.pullTime = 1.3; cds.pull = 7; }
+      }
+      // ---------- FREEZE: locks the player in place + dmg ----------
+      if (has("freeze")) {
+        cds.freeze = (cds.freeze ?? 6) - dt;
         if (cds.freeze <= 0) {
-          s.freezeTime = isPP ? 3 : 2.5;
-          s.player.hp -= boss.dmg * (isPP ? 0.8 : 0.6) * (s.shieldTime > 0 ? 0.55 : 1);
-          cds.freeze = isPP ? 9 : id === "final" ? 12 : 15;
+          s.freezeTime = 2.5;
+          s.player.hp -= boss.dmg * 0.6 * shielded;
+          cds.freeze = 13;
         }
       }
-      if (id === "hyper" || id === "final" || isPP) {
-        cds.steal -= dt;
+      // ---------- STEAL: temporarily removes a random upgrade ----------
+      if (has("steal")) {
+        cds.steal = (cds.steal ?? 10) - dt;
         if (cds.steal <= 0 && !s.stolenUpgrade && s.appliedUpgrades.length > 0) {
           const idx = Math.floor(Math.random() * s.appliedUpgrades.length);
-          const stolen = s.appliedUpgrades[idx];
-          stolen.undo();
-          s.stolenUpgrade = stolen;
-          s.stolenTimer = isPP ? 35 : 25;
-          cds.steal = isPP ? 22 : 30;
+          const st = s.appliedUpgrades[idx]; st.undo();
+          s.stolenUpgrade = st; s.stolenTimer = 25; cds.steal = 28;
         }
       }
-      if (id === "plantium" || id === "final" || isPP) {
-        cds.revive -= dt;
+      // ---------- REVIVE: spawns a horde of grunts ----------
+      if (has("revive")) {
+        cds.revive = (cds.revive ?? 8) - dt;
         if (cds.revive <= 0) {
-          const n = isPP ? Math.max(8, s.lastWaveEnemyCount) : Math.max(4, Math.floor(s.lastWaveEnemyCount * 0.5));
+          const n = Math.max(4, Math.floor(s.lastWaveEnemyCount * 0.5));
           for (let k = 0; k < n; k++) spawnGrunt();
-          cds.revive = isPP ? 18 : 25;
+          cds.revive = 22;
         }
-        cds.blur -= dt;
-        if (cds.blur <= 0) { s.blurTime = isPP ? 9 : 6; cds.blur = isPP ? 14 : 18; }
-        if (!flags.hastened) { cds.hasten -= dt; if (cds.hasten <= 0) { boss.speed = boss.baseSpeed * (isPP ? 1.8 : 1.5); flags.hastened = true; } }
-        if (!flags.empowered) { cds.empower -= dt; if (cds.empower <= 0) { boss.dmg = boss.baseDmg * (isPP ? 1.5 : 1.25); flags.empowered = true; } }
+      }
+      // ---------- BLUR: distorts vision ----------
+      if (has("blur")) {
+        cds.blur = (cds.blur ?? 12) - dt;
+        if (cds.blur <= 0) { s.blurTime = 6; cds.blur = 16; }
+      }
+      // ---------- HASTEN: boss speeds up permanently ----------
+      if (has("hasten") && !flags.hastened) {
+        cds.hasten = (cds.hasten ?? 16) - dt;
+        if (cds.hasten <= 0) { boss.speed = boss.baseSpeed * 1.5; flags.hastened = true; }
+      }
+      // ---------- EMPOWER: boss damage up permanently ----------
+      if (has("empower") && !flags.empowered) {
+        cds.empower = (cds.empower ?? 20) - dt;
+        if (cds.empower <= 0) { boss.dmg = boss.baseDmg * 1.3; flags.empowered = true; }
+      }
+      // ---------- SPIRAL: rotating bullet spiral (Ash Reaver) ----------
+      if (has("spiral")) {
+        (cds as any).spiral = ((cds as any).spiral ?? 0) - dt;
+        if ((cds as any).spiral <= 0) {
+          const base = ((flags as any)._spiralAng ?? 0) + 0.6;
+          (flags as any)._spiralAng = base;
+          for (let i = 0; i < 6; i++) {
+            const a = base + (i / 6) * Math.PI * 2;
+            s.bullets.push({ pos: { x: boss.pos.x, y: boss.pos.y },
+              vel: { x: Math.cos(a) * 240, y: Math.sin(a) * 240 },
+              life: 3, dmg: boss.dmg * 0.22, from: "boss", color: "#ff8a3d", r: 5 });
+          }
+          (cds as any).spiral = 0.35;
+        }
+      }
+      // ---------- MINES: drops damaging zones (Plague Sovereign) ----------
+      if (has("mines")) {
+        (cds as any).mines = ((cds as any).mines ?? 5) - dt;
+        if ((cds as any).mines <= 0) {
+          // mines = stationary "bullets" with no velocity, long life
+          for (let i = 0; i < 4; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = 60 + Math.random() * 120;
+            s.bullets.push({ pos: { x: boss.pos.x + Math.cos(a) * d, y: boss.pos.y + Math.sin(a) * d },
+              vel: { x: 0, y: 0 }, life: 8, dmg: boss.dmg * 0.55, from: "boss", color: "#a3e635", r: 14 });
+          }
+          (cds as any).mines = 4;
+        }
+      }
+      // ---------- LASERS: telegraphed cross-beam (Stormcaller / Final) ----------
+      if (has("lasers")) {
+        (cds as any).lasers = ((cds as any).lasers ?? 6) - dt;
+        if ((cds as any).lasers <= 0) {
+          const aim = Math.atan2(s.player.pos.y - boss.pos.y, s.player.pos.x - boss.pos.x);
+          for (let k = 0; k < 4; k++) {
+            const a = aim + (k * Math.PI) / 2;
+            for (let r = 30; r < 600; r += 30) {
+              s.bullets.push({ pos: { x: boss.pos.x + Math.cos(a) * r, y: boss.pos.y + Math.sin(a) * r },
+                vel: { x: 0, y: 0 }, life: 0.5, dmg: boss.dmg * 0.45, from: "boss", color: "#00e5ff", r: 6 });
+            }
+          }
+          (cds as any).lasers = 7;
+        }
+      }
+      // ---------- SUMMON TANKS: spawns 2 fast guards (Crimson Hound) ----------
+      if (has("summonTanks")) {
+        (cds as any).summonTanks = ((cds as any).summonTanks ?? 10) - dt;
+        if ((cds as any).summonTanks <= 0) {
+          for (let i = 0; i < 3; i++) spawnGrunt();
+          (cds as any).summonTanks = 14;
+        }
+      }
+      // ---------- DRAIN: leeches HP from player ----------
+      if (has("drain")) {
+        (cds as any).drain = ((cds as any).drain ?? 7) - dt;
+        if ((cds as any).drain <= 0 && dist(boss.pos, s.player.pos) < 260) {
+          const dmg = boss.dmg * 0.5 * shielded;
+          s.player.hp -= dmg; boss.hp = Math.min(boss.maxHp, boss.hp + dmg * 1.5);
+          (cds as any).drain = 6;
+        }
+      }
+      // ---------- SWAP: teleport-swaps places with player ----------
+      if (has("swap")) {
+        (cds as any).swap = ((cds as any).swap ?? 12) - dt;
+        if ((cds as any).swap <= 0) {
+          const px = s.player.pos.x, py = s.player.pos.y;
+          s.player.pos.x = boss.pos.x; s.player.pos.y = boss.pos.y;
+          boss.pos.x = px; boss.pos.y = py;
+          s.player.hp -= boss.dmg * 0.4 * shielded;
+          (cds as any).swap = 15;
+        }
+      }
+      // ---------- VORTEX: orbiting projectiles around boss ----------
+      if (has("vortex")) {
+        (cds as any).vortex = ((cds as any).vortex ?? 4) - dt;
+        if ((cds as any).vortex <= 0) {
+          const ang = ((flags as any)._vortAng ?? 0) + 0.5; (flags as any)._vortAng = ang;
+          for (let i = 0; i < 8; i++) {
+            const a = ang + (i / 8) * Math.PI * 2;
+            const r = 120;
+            s.bullets.push({ pos: { x: boss.pos.x + Math.cos(a) * r, y: boss.pos.y + Math.sin(a) * r },
+              vel: { x: -Math.sin(a) * 180, y: Math.cos(a) * 180 },
+              life: 2, dmg: boss.dmg * 0.3, from: "boss", color: "#a000ff", r: 6 });
+          }
+          (cds as any).vortex = 3.5;
+        }
+      }
+      // ---------- DOUBLESHOT: twin aimed slugs (Obsidian Tyrant) ----------
+      if (has("doubleshot")) {
+        (cds as any).doubleshot = ((cds as any).doubleshot ?? 1.5) - dt;
+        if ((cds as any).doubleshot <= 0) {
+          const aim = Math.atan2(s.player.pos.y - boss.pos.y, s.player.pos.x - boss.pos.x);
+          for (const off of [-0.05, 0.05]) {
+            const a = aim + off;
+            s.bullets.push({ pos: { x: boss.pos.x, y: boss.pos.y },
+              vel: { x: Math.cos(a) * 420, y: Math.sin(a) * 420 },
+              life: 2, dmg: boss.dmg * 0.5, from: "boss", color: "#fde047", r: 7 });
+          }
+          (cds as any).doubleshot = 1.2;
+        }
+      }
+      // ---------- THORN RING: damaging ring at fixed radius ----------
+      if (has("thornring")) {
+        (cds as any).thornring = ((cds as any).thornring ?? 6) - dt;
+        if ((cds as any).thornring <= 0) {
+          const d = dist(boss.pos, s.player.pos);
+          if (d > 180 && d < 260) s.player.hp -= boss.dmg * 0.7 * shielded;
+          (cds as any).thornring = 5;
+        }
+      }
+      // ---------- BLACKHOLE: massive pull + DOT ----------
+      if (has("blackhole")) {
+        (cds as any).blackhole = ((cds as any).blackhole ?? 15) - dt;
+        if ((cds as any).blackhole <= 0) {
+          s.pullTime = 2.5; s.blurTime = Math.max(s.blurTime, 2);
+          s.player.hp -= boss.dmg * 0.6 * shielded;
+          (cds as any).blackhole = 14;
+        }
+      }
+      // ---------- JUDGMENT: unavoidable percentage smite (Eternal) ----------
+      if (has("judgment")) {
+        (cds as any).judgment = ((cds as any).judgment ?? 20) - dt;
+        if ((cds as any).judgment <= 0) {
+          s.player.hp -= Math.max(40, s.player.maxHp * 0.18) * shielded;
+          s.freezeTime = Math.max(s.freezeTime, 1.2);
+          (cds as any).judgment = isPP ? 14 : 18;
+        }
       }
     };
 
@@ -2179,6 +2385,51 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     saveFreeSpins(FREE_WHEEL_SPINS_KEY, newFreeWheel); setFreeWheelSpins(newFreeWheel);
                     bumpLifetime({ wins100Streak: 1 });
                     toast.success("Medium Mode Cleared! +1 Shady Spin & +1 Wheel Spin", { duration: 6000 });
+                  }
+                }
+                // ---- PER-PLAYMODE BONUS (each of the 4 new modes gets its own unique reward on top of classic) ----
+                if (s.playMode !== "classic") {
+                  const cur2 = shopRef.current;
+                  if (s.playMode === "echo") {
+                    // Shadow Echoes: bonus Shadow Coins + Wheel spins
+                    const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 400 };
+                    shopRef.current = next; setShop(next);
+                    const fw = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 2;
+                    saveFreeSpins(FREE_WHEEL_SPINS_KEY, fw); setFreeWheelSpins(fw);
+                    bumpLifetime({ shadowEarned: 400 });
+                    toast.success("Echoes Bonus: +400 Shadow Coins & +2 Wheel Spins", { duration: 5000 });
+                  } else if (s.playMode === "army") {
+                    // Clone Army: bonus Shady Spins (the strategic gambler reward)
+                    const ns = loadShadySpins() + 3;
+                    saveShadySpins(ns); setShadySpins(ns);
+                    toast.success("Army Bonus: +3 Shady Spins", { duration: 5000 });
+                  } else if (s.playMode === "corruption") {
+                    // Corruption: brutal mode → big coin bag + Divine spin
+                    const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 900 };
+                    shopRef.current = next; setShop(next);
+                    const nd = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 1;
+                    saveFreeSpins(FREE_DIVINE_SPINS_KEY, nd); setFreeDivineSpins(nd);
+                    bumpLifetime({ shadowEarned: 900 });
+                    toast.success("Corruption Bonus: +900 Shadow Coins & +1 Divine Spin", { duration: 5000 });
+                  } else if (s.playMode === "events") {
+                    // Random Events: chaotic, jackpot-style — random roll
+                    const roll = Math.random();
+                    if (roll < 0.5) {
+                      const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 1500 };
+                      shopRef.current = next; setShop(next);
+                      bumpLifetime({ shadowEarned: 1500 });
+                      toast.success("Lucky Event: +1500 Shadow Coins!", { duration: 5000 });
+                    } else if (roll < 0.85) {
+                      const fw = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 3;
+                      saveFreeSpins(FREE_WHEEL_SPINS_KEY, fw); setFreeWheelSpins(fw);
+                      const ns = loadShadySpins() + 1;
+                      saveShadySpins(ns); setShadySpins(ns);
+                      toast.success("Event Spin Jackpot: +3 Wheel & +1 Shady Spins", { duration: 5000 });
+                    } else {
+                      const nd = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 2;
+                      saveFreeSpins(FREE_DIVINE_SPINS_KEY, nd); setFreeDivineSpins(nd);
+                      toast.success("MYTHIC EVENT: +2 Divine Spins!", { duration: 6000 });
+                    }
                   }
                 }
               }
@@ -2795,6 +3046,40 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           ctx.beginPath(); ctx.arc(e.pos.x + er * 0.18, eyeY, er * 0.22, 0, Math.PI * 2); ctx.fill();
           ctx.fillStyle = e.color + "33";
           ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
+        }
+        // ---- Per-playMode visual signature so enemies look unique in each mode ----
+        if (s.gameMode !== "level") {
+          const tt = performance.now() / 1000;
+          ctx.save();
+          if (s.playMode === "echo") {
+            // pink trailing afterimage
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = "#ff5d8a";
+            ctx.beginPath(); ctx.arc(e.pos.x - Math.cos(tt * 2) * 6, e.pos.y - Math.sin(tt * 2) * 6, er * 0.5, 0, Math.PI * 2); ctx.fill();
+          } else if (s.playMode === "army") {
+            // cyan armor plates: small orbiting squares
+            ctx.fillStyle = "#7cdcff";
+            for (let i = 0; i < 3; i++) {
+              const a = tt * 1.4 + (i / 3) * Math.PI * 2;
+              ctx.fillRect(e.pos.x + Math.cos(a) * (er + 4) - 2, e.pos.y + Math.sin(a) * (er + 4) - 2, 4, 4);
+            }
+          } else if (s.playMode === "corruption") {
+            // violet rot drip + crackling outline
+            ctx.strokeStyle = "#b388ff"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
+            ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er + 3, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#b388ff";
+            ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y + er + 2 + Math.sin(tt * 4) * 2, 2, 0, Math.PI * 2); ctx.fill();
+          } else if (s.playMode === "events") {
+            // chaos confetti — random rotating triangle
+            ctx.save();
+            ctx.translate(e.pos.x + er * 0.6, e.pos.y - er * 0.6);
+            ctx.rotate(tt * 3);
+            ctx.fillStyle = "#7cffb2";
+            ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(4, 4); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill();
+            ctx.restore();
+          }
+          ctx.restore();
         }
         const w = er * 2;
         const barY = e.pos.y - er - (isBossE ? 18 : 8);
