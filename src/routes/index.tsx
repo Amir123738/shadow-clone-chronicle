@@ -2998,6 +2998,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           waveWarning: s.waveWarningTimer,
           totalWaves: s.gameMode === "level" ? LEVEL_WAVES : TOTAL_WAVES,
           gameMode: s.gameMode,
+          playMode: s.playMode,
+          corruption: s.corruption,
+          eventName: s.currentEvent,
         };
       });
       raf = requestAnimationFrame(loop);
