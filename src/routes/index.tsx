@@ -572,6 +572,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [freeWheelSpins, setFreeWheelSpins] = useState<number>(() => loadFreeSpins(FREE_WHEEL_SPINS_KEY));
   const [freeDivineSpins, setFreeDivineSpins] = useState<number>(() => loadFreeSpins(FREE_DIVINE_SPINS_KEY));
   const [difficultyOpen, setDifficultyOpen] = useState(false);
+  const [modeOpen, setModeOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<PlayMode>("classic");
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
   const [shadyAngle, setShadyAngle] = useState(0);
