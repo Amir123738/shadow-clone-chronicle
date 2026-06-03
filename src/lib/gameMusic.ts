@@ -189,8 +189,32 @@ const TRACK7: Track = {
   padGain: 0.055,
 };
 
-const TRACKS: Track[] = [TRACK0, TRACK1, TRACK2, TRACK3, TRACK4, TRACK5, TRACK6, TRACK7];
+// Track 8 — Final Boss (Dm – Bbm – Gm – C)
+// Heavier, darker, and more aggressive than normal tracks.
+const TRACK8: Track = {
+  bass: [25, 22, 19, 24],
+  chords: [
+    [50, 53, 57],
+    [46, 50, 53],
+    [43, 47, 50],
+    [48, 52, 55],
+  ],
+  lead: [
+    62, 65, 69, 74, 69, 65, 62, 65,
+    58, 62, 65, 70, 65, 62, 58, 62,
+    55, 59, 62, 67, 62, 59, 55, 59,
+    60, 64, 67, 72, 67, 64, 60, 64,
+  ],
+  leadType: "sawtooth",
+  padType: "sawtooth",
+  leadGain: 0.11,
+  padGain: 0.075,
+};
+
+const TRACKS: Track[] = [TRACK0, TRACK1, TRACK2, TRACK3, TRACK4, TRACK5, TRACK6, TRACK7, TRACK8];
 let forcedTrack: number | null = null;
+
+export const BOSS_TRACK_INDEX = 8;
 
 const BPM = 110;
 const SIXTEENTH = 60 / BPM / 4; // seconds per 16th note
@@ -224,7 +248,7 @@ function playNote(
 function getTrackAtTime(time: number): Track {
   if (forcedTrack !== null) return TRACKS[forcedTrack % TRACKS.length];
   const elapsed = Math.max(0, time - musicStartTime);
-  const idx = Math.floor(elapsed / SWITCH_INTERVAL) % TRACKS.length;
+  const idx = Math.floor(elapsed / SWITCH_INTERVAL) % (TRACKS.length - 1);
   return TRACKS[idx];
 }
 
@@ -237,7 +261,8 @@ export function setMusicTrack(idx: number | null) {
 }
 
 export function getTrackCount() {
-  return TRACKS.length;
+  // Exclude the dedicated boss track from normal rotation.
+  return TRACKS.length - 1;
 }
 
 function scheduleStep(s: number, time: number) {
