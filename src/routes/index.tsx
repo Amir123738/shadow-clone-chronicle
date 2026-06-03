@@ -3967,10 +3967,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="text-center mb-4">
                   <h2 className="text-3xl font-black bg-gradient-to-r from-[#ff2e88] via-[#ffe066] to-[#7cdcff] bg-clip-text text-transparent">
-                    Choose Your Super Upgrade
+                    {t("chooseSuper")}
                   </h2>
                   <p className="text-xs text-white/60 mt-1">
-                    Level {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — one pick only
+                    {t("lvl")} {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — {t("onePickOnly")}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3991,7 +3991,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => { setSuperPickOpen(false); setPendingSuperLevelId(null); setLevelsOpen(true); }}
                     className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm"
                   >
-                    Back
+                    {t("back")}
                   </button>
                 </div>
               </div>
