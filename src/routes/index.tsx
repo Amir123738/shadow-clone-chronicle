@@ -904,6 +904,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     levelMult: 1,
     levelTotalWaves: TOTAL_WAVES,
     difficulty: "medium" as "easy" | "medium" | "hard",
+    // 4 new modes
+    playMode: "classic" as PlayMode,
+    corruption: 0,
+    corruptionApplied: false,
+    echoTimer: 30,
+    eventTimer: 90,
+    currentEvent: null as null | string,
+    currentEventTimer: 0,
+    meteorCd: 0,
   });
 
   const resetGame = useCallback(() => {
