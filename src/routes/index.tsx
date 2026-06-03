@@ -654,7 +654,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
     const sv = shopRef.current;
-    if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return; }
+    const freeAvail = loadFreeSpins(FREE_WHEEL_SPINS_KEY);
+    const useFree = freeAvail > 0;
+    if (!useFree && sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return; }
     const reward = rollWheel();
     const idx = WHEEL_REWARDS.indexOf(reward);
     const slice = 360 / WHEEL_REWARDS.length;
@@ -669,9 +671,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (delta < 0) delta += 360;
       return prev + 360 * 6 + delta;
     });
-    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
-    shopRef.current = afterCost;
-    setShop(afterCost);
+    if (useFree) {
+      const remaining = freeAvail - 1;
+      saveFreeSpins(FREE_WHEEL_SPINS_KEY, remaining);
+      setFreeWheelSpins(remaining);
+    } else {
+      const afterCost = { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
+      shopRef.current = afterCost;
+      setShop(afterCost);
+    }
     pendingRewardRef.current = reward;
     wheelTimeoutRef.current = window.setTimeout(() => {
       pendingRewardRef.current = null;
