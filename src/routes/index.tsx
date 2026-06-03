@@ -3470,14 +3470,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-lg font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Wheel of Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}</p>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}{freeWheelSpins > 0 ? ` · 🎟 ${freeWheelSpins} free` : ""}</p>
                     </div>
                     <button
                       onClick={spinWheel}
-                      disabled={wheelSpinning || shop.shadowCoins < SPIN_COST}
+                      disabled={wheelSpinning || (freeWheelSpins === 0 && shop.shadowCoins < SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-[#ffe066] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100"
                     >
-                      {wheelSpinning ? "Spinning…" : `SPIN (◆${SPIN_COST})`}
+                      {wheelSpinning ? "Spinning…" : freeWheelSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
