@@ -939,7 +939,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
     s.difficulty = "medium";
     s.playMode = "classic"; s.corruption = 0; s.corruptionApplied = false;
-    s.echoTimer = 30; s.eventTimer = 90; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
+    s.echoTimer = 30; s.eventTimer = 12; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -1719,8 +1719,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= 6;
         }
         if (s.eventTimer <= 0) {
-          s.eventTimer = 90;
-          s.currentEventTimer = 6;
+          s.eventTimer = 40;
+          s.currentEventTimer = 8;
           const evs = ["meteor", "eclipse", "freeze", "goblin", "rebellion"] as const;
           const ev = evs[Math.floor(Math.random() * evs.length)];
           s.currentEvent = ev;
