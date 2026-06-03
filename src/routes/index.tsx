@@ -1254,7 +1254,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const LANG_NAMES: Record<Lang, string> = { en:"English", ru:"Русский", kk:"Қазақша", uk:"Українська", tr:"Türkçe", de:"Deutsch", ko:"한국어", zh:"中文", mn:"Монгол" };
   const t = (k: string) => TRANSLATIONS[settings.lang]?.[k] ?? TRANSLATIONS.en[k] ?? k;
 
-  const musicOn = settings.music;
+  
   const musicOnRef = useRef(settings.music);
   useEffect(() => { musicOnRef.current = settings.music; }, [settings.music]);
   useEffect(() => () => { stopMusic(); }, []);
