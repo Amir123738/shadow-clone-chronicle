@@ -4469,15 +4469,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.won && uiState.gameMode === "level" && (
             <Overlay>
-              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">Boss Defeated!</h2>
-              <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
-              <p className="text-white/70 mb-4">Level cleared — Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""} awarded.</p>
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ff7a18] to-[#ffe066] bg-clip-text text-transparent">{t("bossDefeated")}</h2>
+              <p className="text-white/70 mb-1">{t("score")}: {uiState.score} · {t("coins")}: {uiState.coins}</p>
+              <p className="text-white/70 mb-4">{t("levelClearedMsg").replace("{s}", (LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : "")}</p>
               <div className="flex flex-col items-center gap-1 mb-5">
-                <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} Shady Spin{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
+                <div className="text-lg font-bold text-[#ffe066]">+{LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1} {t("shadySpin")}{(LEVELS.find(l => l.id === stateRef.current.levelId)?.spinReward ?? 1) > 1 ? "s" : ""}</div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { stateRef.current.won = false; stateRef.current.over = true; setUiState(u => ({ ...u, started: false, won: false })); setLevelsOpen(true); }} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
-                  Back to Levels
+                  {t("backToLevels")}
                 </button>
               </div>
             </Overlay>
@@ -4485,22 +4485,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.won && uiState.gameMode === "normal" && (
             <Overlay>
-              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">Omega Slain!</h2>
-              <p className="text-white/70 mb-1">Score: {uiState.score} · Coins: {uiState.coins}</p>
-              <p className="text-white/70 mb-4">All 100 waves survived.</p>
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-[#ffe066] to-[#b388ff] bg-clip-text text-transparent">{t("omegaSlain")}</h2>
+              <p className="text-white/70 mb-1">{t("score")}: {uiState.score} · {t("coins")}: {uiState.coins}</p>
+              <p className="text-white/70 mb-4">{t("allWavesSurvived")}</p>
               <div className="flex flex-col items-center gap-1 mb-5">
-                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
-                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 {t("shadowCoinsLabel")}</div>
+                <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">{t("bronzeHatUnlocked")}</div>
               </div>
               <button onClick={() => setModeOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
-                Play Again
+                {t("playAgain")}
               </button>
             </Overlay>
           )}
 
           {uiState.started && uiState.playMode === "corruption" && (
             <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-[260px]">
-              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">Shadow Corruption {Math.floor(uiState.corruption)}%</div>
+              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">{t("corruptionHud")} {Math.floor(uiState.corruption)}%</div>
               <div className="h-2 rounded-full bg-black/60 ring-1 ring-[#b388ff]/40 overflow-hidden">
                 <div className="h-full transition-all" style={{ width: `${uiState.corruption}%`, background: uiState.corruption >= 100 ? "linear-gradient(90deg,#ff2e88,#b388ff)" : "linear-gradient(90deg,#b388ff,#ff5d8a)" }} />
               </div>
@@ -4509,11 +4509,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           {uiState.started && uiState.eventName && (
             <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
               <div className="px-4 py-1.5 rounded-full bg-black/70 ring-1 ring-[#7cffb2]/50 text-[#7cffb2] font-black text-sm uppercase tracking-wider animate-pulse">
-                {uiState.eventName === "meteor" && "☄️ Meteor Shower"}
-                {uiState.eventName === "eclipse" && "🌑 Darkness Eclipse"}
-                {uiState.eventName === "freeze" && "❄️ Time Freeze"}
-                {uiState.eventName === "goblin" && "💰 Treasure Goblin"}
-                {uiState.eventName === "rebellion" && "⚡ Clone Rebellion"}
+                {uiState.eventName === "meteor" && t("evMeteor")}
+                {uiState.eventName === "eclipse" && t("evEclipse")}
+                {uiState.eventName === "freeze" && t("evFreeze")}
+                {uiState.eventName === "goblin" && t("evGoblin")}
+                {uiState.eventName === "rebellion" && t("evRebellion")}
               </div>
             </div>
           )}
@@ -4523,13 +4523,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
               <div className="text-center animate-pulse">
                 <div className="text-5xl md:text-7xl font-black text-[#ff2e2e] drop-shadow-[0_0_30px_rgba(255,46,46,0.8)] mb-2">
-                  WAVE {uiState.wave}
+                  {t("wave").toUpperCase()} {uiState.wave}
                 </div>
                 <div className="text-xl md:text-3xl font-black text-[#ff5d5d] drop-shadow-[0_0_20px_rgba(255,93,93,0.7)] mb-1">
-                  WARNING
+                  {t("warning")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-white/90 tracking-widest uppercase">
-                  {uiState.wave === 75 ? "Elite Surge Incoming" : "Enemies Powered Up"}
+                  {uiState.wave === 75 ? t("eliteSurgeIncoming") : t("enemiesPoweredUp")}
                 </div>
               </div>
             </div>
