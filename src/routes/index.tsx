@@ -3151,7 +3151,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <p className="text-center text-white/60 text-sm mb-5">Beat all 100 waves to claim the reward.</p>
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => startGame("easy")}
+                    onClick={() => startGame("easy", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#4ade80]/30 to-transparent border border-[#4ade80]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
@@ -3161,7 +3161,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <div className="text-xs text-white/60 mt-1">Enemies and bosses are weakened. Best for warming up.</div>
                   </button>
                   <button
-                    onClick={() => startGame("medium")}
+                    onClick={() => startGame("medium", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ffe066]/25 to-transparent border border-[#ffe066]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
@@ -3171,7 +3171,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <div className="text-xs text-white/60 mt-1">Standard difficulty. Already own the Bronze Hat? You'll get +1 Shady Spin & +1 Wheel of Fortune spin instead.</div>
                   </button>
                   <button
-                    onClick={() => startGame("hard")}
+                    onClick={() => startGame("hard", pendingMode)}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ff2e88]/25 to-transparent border border-[#ff2e88]/50 hover:scale-[1.02] transition"
                   >
                     <div className="flex items-center justify-between">
