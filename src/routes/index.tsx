@@ -1686,7 +1686,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           // spawn a hostile shadow clone enemy at edge that hunts player
           const spawn = edgeSpawn();
           s.enemies.push({
-            pos: spawn, r: 14, hp: 220, maxHp: 220, speed: 145, baseSpeed: 145,
+            pos: spawn, vel: { x: 0, y: 0 }, r: 14, hp: 220, maxHp: 220, speed: 145, baseSpeed: 145,
             dmg: 16, baseDmg: 16, color: "#1a0a2a", xp: 8, coin: 6, kind: "fast",
           });
         }
