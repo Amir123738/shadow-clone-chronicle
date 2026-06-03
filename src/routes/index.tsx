@@ -2943,7 +2943,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
-                  onClick={startGame}
+                  onClick={() => setDifficultyOpen(true)}
                   className="flex items-center gap-3 px-10 py-5 rounded-xl bg-[#ffe066] text-black font-black text-xl shadow-[0_0_40px_rgba(255,224,102,0.35)] hover:scale-105 transition"
                 >
                   <Play className="w-6 h-6" />
