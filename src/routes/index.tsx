@@ -1678,6 +1678,77 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       s.time += dt;
 
+      // ===== PLAY MODE EFFECTS =====
+      if (s.playMode === "echo") {
+        s.echoTimer -= dt;
+        if (s.echoTimer <= 0) {
+          s.echoTimer = 30;
+          // spawn a hostile shadow clone enemy at edge that hunts player
+          const spawn = edgeSpawn();
+          s.enemies.push({
+            pos: spawn, r: 14, hp: 220, maxHp: 220, speed: 145, baseSpeed: 145,
+            dmg: 16, baseDmg: 16, color: "#1a0a2a", xp: 8, coin: 6, kind: "fast",
+          });
+        }
+      }
+      if (s.playMode === "corruption") {
+        s.corruption = Math.min(100, s.corruption + (100 / 180) * dt);
+        if (s.corruption >= 100 && !s.corruptionApplied) {
+          s.corruptionApplied = true;
+          s.stats.bulletDmg *= 1.75;
+          s.stats.fireRate *= 1.25;
+          s.stats.moveSpeed *= 1.15;
+        }
+        if (s.corruption >= 100) {
+          s.player.hp = Math.max(1, s.player.hp - 4 * dt);
+        }
+      }
+      if (s.playMode === "events") {
+        s.eventTimer -= dt;
+        if (s.currentEventTimer > 0) s.currentEventTimer = Math.max(0, s.currentEventTimer - dt);
+        if (s.meteorCd > 0) s.meteorCd -= dt;
+        if (s.currentEvent === "meteor" && s.meteorCd <= 0 && s.currentEventTimer > 0) {
+          s.meteorCd = 0.4;
+          // damage random spot near player
+          const mx = s.player.pos.x + rand(-180, 180);
+          const my = s.player.pos.y + rand(-180, 180);
+          s.explosionFx.push({ pos: { x: mx, y: my }, r: 0, maxR: 60, life: 0.4, maxLife: 0.4 });
+          for (const e of s.enemies) {
+            if (Math.hypot(e.pos.x - mx, e.pos.y - my) < 70) e.hp -= 40;
+          }
+          if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= 6;
+        }
+        if (s.eventTimer <= 0) {
+          s.eventTimer = 90;
+          s.currentEventTimer = 6;
+          const evs = ["meteor", "eclipse", "freeze", "goblin", "rebellion"] as const;
+          const ev = evs[Math.floor(Math.random() * evs.length)];
+          s.currentEvent = ev;
+          if (ev === "eclipse") { s.darknessTime = Math.max(s.darknessTime, 8); s.blurTime = Math.max(s.blurTime, 8); }
+          if (ev === "freeze") { s.enemyFreezeTime = Math.max(s.enemyFreezeTime, 6); }
+          if (ev === "goblin") {
+            // treasure goblin: drop a burst of coins around player
+            for (let k = 0; k < 12; k++) {
+              const a = (k / 12) * Math.PI * 2;
+              s.pickups.push({ pos: { x: s.player.pos.x + Math.cos(a) * 80, y: s.player.pos.y + Math.sin(a) * 80 }, kind: "coin", value: 5 });
+            }
+          }
+          if (ev === "rebellion") {
+            // turn 2 enemies into chaos: just spawn 3 strong fast enemies
+            for (let k = 0; k < 3; k++) {
+              const sp = edgeSpawn();
+              s.enemies.push({
+                pos: sp, r: 12, hp: 140, maxHp: 140, speed: 170, baseSpeed: 170,
+                dmg: 14, baseDmg: 14, color: "#ff2e88", xp: 4, coin: 3, kind: "fast",
+              });
+            }
+          }
+        }
+        if (s.currentEventTimer <= 0 && s.currentEvent) s.currentEvent = null;
+      }
+
+
+
       // tick effect timers
       if (s.blurTime > 0) s.blurTime = Math.max(0, s.blurTime - dt);
       if (s.freezeTime > 0) s.freezeTime = Math.max(0, s.freezeTime - dt);
