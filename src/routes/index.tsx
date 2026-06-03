@@ -1338,7 +1338,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   };
 
   // ====== Settings (language, music, brightness, etc.) ======
-  type Lang = "en" | "ru" | "kk" | "uk" | "tr" | "de" | "ko" | "zh" | "mn";
   type Settings = {
     lang: Lang;
     music: boolean;
@@ -1369,19 +1368,19 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const TRANSLATIONS: Record<Lang, Record<string, string>> = {
-    en: { ready:"Ready to survive?", start:"Start Game", shop:"Shop", inventory:"Inventory", tasks:"Tasks", levels:"LVL's/Bosses", settings:"Settings", music:"Music", language:"Language", brightness:"Brightness", sfx:"SFX Volume", screenShake:"Screen Shake", showFps:"Show FPS", highContrast:"High Contrast", reduceMotion:"Reduce Motion", on:"On", off:"Off", close:"Close", reset:"Reset to defaults" },
-    ru: { ready:"Готов выжить?", start:"Начать игру", shop:"Магазин", inventory:"Инвентарь", tasks:"Задания", levels:"Уровни/Боссы", settings:"Настройки", music:"Музыка", language:"Язык", brightness:"Яркость", sfx:"Громкость эффектов", screenShake:"Тряска экрана", showFps:"Показывать FPS", highContrast:"Высокий контраст", reduceMotion:"Меньше анимации", on:"Вкл", off:"Выкл", close:"Закрыть", reset:"Сбросить настройки" },
-    kk: { ready:"Аман қалуға дайынсың ба?", start:"Ойынды бастау", shop:"Дүкен", inventory:"Қорап", tasks:"Тапсырмалар", levels:"Деңгейлер/Боссылар", settings:"Баптаулар", music:"Музыка", language:"Тіл", brightness:"Жарықтық", sfx:"Эффект дауысы", screenShake:"Экран дірілі", showFps:"FPS көрсету", highContrast:"Жоғары контраст", reduceMotion:"Анимацияны азайту", on:"Қосулы", off:"Өшірулі", close:"Жабу", reset:"Әдепкіге қайтару" },
-    uk: { ready:"Готовий вижити?", start:"Почати гру", shop:"Магазин", inventory:"Інвентар", tasks:"Завдання", levels:"Рівні/Боси", settings:"Налаштування", music:"Музика", language:"Мова", brightness:"Яскравість", sfx:"Гучність ефектів", screenShake:"Тряска екрану", showFps:"Показувати FPS", highContrast:"Високий контраст", reduceMotion:"Менше анімації", on:"Увімк", off:"Вимк", close:"Закрити", reset:"Скинути" },
-    tr: { ready:"Hayatta kalmaya hazır mısın?", start:"Oyunu Başlat", shop:"Mağaza", inventory:"Envanter", tasks:"Görevler", levels:"Seviyeler/Bosslar", settings:"Ayarlar", music:"Müzik", language:"Dil", brightness:"Parlaklık", sfx:"Efekt Sesi", screenShake:"Ekran Sarsıntısı", showFps:"FPS Göster", highContrast:"Yüksek Kontrast", reduceMotion:"Animasyonu Azalt", on:"Açık", off:"Kapalı", close:"Kapat", reset:"Sıfırla" },
-    de: { ready:"Bereit zu überleben?", start:"Spiel starten", shop:"Shop", inventory:"Inventar", tasks:"Aufgaben", levels:"Level/Bosse", settings:"Einstellungen", music:"Musik", language:"Sprache", brightness:"Helligkeit", sfx:"Effektlautstärke", screenShake:"Bildschirmwackeln", showFps:"FPS anzeigen", highContrast:"Hoher Kontrast", reduceMotion:"Weniger Bewegung", on:"An", off:"Aus", close:"Schließen", reset:"Zurücksetzen" },
-    ko: { ready:"생존할 준비됐어?", start:"게임 시작", shop:"상점", inventory:"인벤토리", tasks:"임무", levels:"레벨/보스", settings:"설정", music:"음악", language:"언어", brightness:"밝기", sfx:"효과음 볼륨", screenShake:"화면 흔들림", showFps:"FPS 표시", highContrast:"고대비", reduceMotion:"애니메이션 줄이기", on:"켜짐", off:"꺼짐", close:"닫기", reset:"초기화" },
-    zh: { ready:"准备好生存了吗？", start:"开始游戏", shop:"商店", inventory:"背包", tasks:"任务", levels:"关卡/Boss", settings:"设置", music:"音乐", language:"语言", brightness:"亮度", sfx:"音效音量", screenShake:"屏幕震动", showFps:"显示FPS", highContrast:"高对比度", reduceMotion:"减少动画", on:"开", off:"关", close:"关闭", reset:"重置" },
-    mn: { ready:"Амьд үлдэхэд бэлэн үү?", start:"Тоглоом эхлэх", shop:"Дэлгүүр", inventory:"Эд хэрэгсэл", tasks:"Даалгавар", levels:"Түвшин/Босс", settings:"Тохиргоо", music:"Хөгжим", language:"Хэл", brightness:"Гэрэлтүүлэг", sfx:"Эффектийн дуу", screenShake:"Дэлгэц чичрэх", showFps:"FPS харуулах", highContrast:"Өндөр тодрол", reduceMotion:"Анимаци багасгах", on:"Асаалттай", off:"Унтраалттай", close:"Хаах", reset:"Сэргээх" },
+  // First-launch language picker: shown once per browser until dismissed.
+  const [langPickerOpen, setLangPickerOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return !localStorage.getItem("sc_lang_chosen"); } catch { return false; }
+  });
+  const acceptLanguage = (l: Lang) => {
+    updateSetting("lang", l);
+    try { localStorage.setItem("sc_lang_chosen", "1"); } catch {}
+    setLangPickerOpen(false);
   };
-  const LANG_NAMES: Record<Lang, string> = { en:"English", ru:"Русский", kk:"Қазақша", uk:"Українська", tr:"Türkçe", de:"Deutsch", ko:"한국어", zh:"中文", mn:"Монгол" };
-  const t = (k: string) => TRANSLATIONS[settings.lang]?.[k] ?? TRANSLATIONS.en[k] ?? k;
+
+  const t = makeT(settings.lang);
+
 
   
   const musicOnRef = useRef(settings.music);
