@@ -3047,6 +3047,40 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           ctx.fillStyle = e.color + "33";
           ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er, 0, Math.PI * 2); ctx.fill();
         }
+        // ---- Per-playMode visual signature so enemies look unique in each mode ----
+        if (s.gameMode !== "level") {
+          const tt = performance.now() / 1000;
+          ctx.save();
+          if (s.playMode === "echo") {
+            // pink trailing afterimage
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = "#ff5d8a";
+            ctx.beginPath(); ctx.arc(e.pos.x - Math.cos(tt * 2) * 6, e.pos.y - Math.sin(tt * 2) * 6, er * 0.5, 0, Math.PI * 2); ctx.fill();
+          } else if (s.playMode === "army") {
+            // cyan armor plates: small orbiting squares
+            ctx.fillStyle = "#7cdcff";
+            for (let i = 0; i < 3; i++) {
+              const a = tt * 1.4 + (i / 3) * Math.PI * 2;
+              ctx.fillRect(e.pos.x + Math.cos(a) * (er + 4) - 2, e.pos.y + Math.sin(a) * (er + 4) - 2, 4, 4);
+            }
+          } else if (s.playMode === "corruption") {
+            // violet rot drip + crackling outline
+            ctx.strokeStyle = "#b388ff"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
+            ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y, er + 3, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#b388ff";
+            ctx.beginPath(); ctx.arc(e.pos.x, e.pos.y + er + 2 + Math.sin(tt * 4) * 2, 2, 0, Math.PI * 2); ctx.fill();
+          } else if (s.playMode === "events") {
+            // chaos confetti — random rotating triangle
+            ctx.save();
+            ctx.translate(e.pos.x + er * 0.6, e.pos.y - er * 0.6);
+            ctx.rotate(tt * 3);
+            ctx.fillStyle = "#7cffb2";
+            ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(4, 4); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill();
+            ctx.restore();
+          }
+          ctx.restore();
+        }
         const w = er * 2;
         const barY = e.pos.y - er - (isBossE ? 18 : 8);
         ctx.fillStyle = "rgba(0,0,0,0.6)";
