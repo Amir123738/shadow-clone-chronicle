@@ -870,6 +870,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     levelId: 0,
     levelMult: 1,
     levelTotalWaves: TOTAL_WAVES,
+    difficulty: "medium" as "easy" | "medium" | "hard",
   });
 
   const resetGame = useCallback(() => {
