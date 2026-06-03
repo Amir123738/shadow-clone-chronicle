@@ -1719,8 +1719,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= 6;
         }
         if (s.eventTimer <= 0) {
-          s.eventTimer = 90;
-          s.currentEventTimer = 6;
+          s.eventTimer = 40;
+          s.currentEventTimer = 8;
           const evs = ["meteor", "eclipse", "freeze", "goblin", "rebellion"] as const;
           const ev = evs[Math.floor(Math.random() * evs.length)];
           s.currentEvent = ev;
