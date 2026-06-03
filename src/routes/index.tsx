@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
+import { TRANSLATIONS, LANG_NAMES, LANG_FLAGS, makeT, type Lang } from "@/lib/i18n";
 
 import upgFire from "@/assets/upgrades/fire.png";
 import upgDmg from "@/assets/upgrades/dmg.png";
