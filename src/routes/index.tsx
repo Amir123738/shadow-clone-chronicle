@@ -1255,6 +1255,37 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
+    const s = stateRef.current;
+    if (s.playMode === "army") {
+      const mk = (id: string, name: string, desc: string, icon: string, apply: () => void): Upgrade =>
+        ({ id, name, desc, icon, apply: () => { apply(); return { name, redo: () => {} }; } } as unknown as Upgrade);
+      return [
+        mk("army_atk", "⚔️ Attacker Clone", "+1 big clone shooting fire arrows", upgBigclones, () => {
+          const st = stateRef.current;
+          st.specialClones.push({ kind: "big", angle: Math.random() * Math.PI * 2, radius: 58, orbitSpeed: 1.4, fireCd: 0.3 });
+          st.fireArrowTime = Math.max(st.fireArrowTime, 9999);
+        }),
+        mk("army_heal", "💚 Healer Clone", "+1 healer clone (lifetime 60s) + 25 max HP", upgHeal, () => {
+          const st = stateRef.current;
+          st.clones.push({ frames: [], idx: 0, trail: [], healer: true, life: 60 });
+          st.cloneFireCd.push(0);
+          st.player.maxHp += 25; st.player.hp = Math.min(st.player.maxHp, st.player.hp + 25);
+        }),
+        mk("army_tank", "🛡️ Tank Clone", "+50 max HP + 5s shield + 2 orbit clones", upgHp, () => {
+          const st = stateRef.current;
+          st.player.maxHp += 50; st.player.hp += 50;
+          st.shieldTime = Math.max(st.shieldTime, 5);
+          st.specialClones.push({ kind: "electric", angle: 0,       radius: 46, orbitSpeed: 2.2, life: 9999, fireCd: 0.2 });
+          st.specialClones.push({ kind: "electric", angle: Math.PI, radius: 46, orbitSpeed: 2.2, life: 9999, fireCd: 0.2 });
+        }),
+        mk("army_snipe", "🎯 Sniper Clone", "+1 big clone + 35% damage + faster bullets", upgDmg, () => {
+          const st = stateRef.current;
+          st.stats.bulletDmg *= 1.35;
+          st.stats.bulletSpeed *= 1.25;
+          st.specialClones.push({ kind: "big", angle: Math.random() * Math.PI * 2, radius: 70, orbitSpeed: 1.0, fireCd: 0.45 });
+        }),
+      ];
+    }
     const pool = [...allUpgrades];
     const out: Upgrade[] = [];
     while (out.length < 3 && pool.length > 0) {
