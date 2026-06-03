@@ -1007,6 +1007,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (s.wave >= 50) { hp = Math.round(hp * 1.5); dmg = Math.round(dmg * 2); }
     // Wave 75+ bosses: additional +250% HP, +150% damage, +50% speed
     if (s.wave >= 75) { hp = Math.round(hp * 3.5); dmg = Math.round(dmg * 2.5); sp = Math.round(sp * 1.5); }
+    // Difficulty multiplier (normal mode)
+    const dMult = s.difficulty === "easy" ? 0.55 : s.difficulty === "hard" ? 1.85 : 1;
+    hp = Math.round(hp * dMult); dmg = Math.round(dmg * dMult);
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -1017,6 +1020,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     let guardHp = s.wave >= 50 ? 280 * 6 : 280;
     let guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
     if (s.wave >= 75) { guardHp = Math.round(guardHp * 3.5); guardDmg = Math.round(guardDmg * 2.5); }
+    guardHp = Math.round(guardHp * dMult); guardDmg = Math.round(guardDmg * dMult);
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
