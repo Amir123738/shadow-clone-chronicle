@@ -1363,11 +1363,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   useEffect(() => {
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
       const i = stateRef.current.input;
+      const code = e.code;
       const k = e.key.toLowerCase();
-      if (k === "w" || k === "arrowup") i.up = down;
-      else if (k === "s" || k === "arrowdown") i.down = down;
-      else if (k === "a" || k === "arrowleft") i.left = down;
-      else if (k === "d" || k === "arrowright") i.right = down;
+      if (code === "KeyW" || code === "ArrowUp" || k === "w" || k === "arrowup" || k === "ц") i.up = down;
+      else if (code === "KeyS" || code === "ArrowDown" || k === "s" || k === "arrowdown" || k === "ы") i.down = down;
+      else if (code === "KeyA" || code === "ArrowLeft" || k === "a" || k === "arrowleft" || k === "ф") i.left = down;
+      else if (code === "KeyD" || code === "ArrowRight" || k === "d" || k === "arrowright" || k === "в") i.right = down;
+      else return;
+      e.preventDefault();
     };
     const kd = onKey(true), ku = onKey(false);
     window.addEventListener("keydown", kd);
