@@ -61,7 +61,7 @@ function GameRoute() {
 type Vec = { x: number; y: number };
 type Input = { up: boolean; down: boolean; left: boolean; right: boolean; shoot: boolean; aim: Vec };
 type Frame = { pos: Vec; aim: Vec; shoot: boolean };
-type Bullet = { pos: Vec; vel: Vec; life: number; dmg: number; from: "player" | "clone"; color: string };
+type Bullet = { pos: Vec; vel: Vec; life: number; dmg: number; from: "player" | "clone" | "boss"; color: string; r?: number };
 type BossId = "super" | "mega" | "hyper" | "plantium" | "final" | "plusplantium" | null;
 type Enemy = {
   pos: Vec; vel: Vec; hp: number; maxHp: number; r: number; speed: number; baseSpeed: number;
