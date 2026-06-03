@@ -4190,14 +4190,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                 <div className="w-8 h-8 rounded-full" style={{ background: sk.color, boxShadow: `0 0 14px ${sk.glow ?? sk.color}` }} />
                                 <div className="font-bold text-sm leading-tight">{sk.name}</div>
                               </div>
-                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? "Starter" : `◆ ${sk.price.toLocaleString()}`}</div>
+                              <div className="text-xs text-white/60 mb-2">{sk.price === 0 ? t("starter") : `◆ ${sk.price.toLocaleString()}`}</div>
                               {owned ? (
                                 <button
                                   disabled={selected}
                                   onClick={() => setShop((v) => ({ ...v, selected: sk.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
                                 >
-                                  {selected ? "Equipped" : "Equip"}
+                                  {selected ? t("equipped") : t("equip")}
                                 </button>
                               ) : (
                                 <button
@@ -4205,7 +4205,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - sk.price, owned: [...v.owned, sk.id], selected: sk.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
                                 >
-                                  {canBuy ? "Buy & Equip" : `Need ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
+                                  {canBuy ? t("buyEquip") : `${t("need")} ◆${(sk.price - shop.shadowCoins).toLocaleString()}`}
                                 </button>
                               )}
                             </div>
