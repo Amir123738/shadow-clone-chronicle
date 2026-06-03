@@ -3963,6 +3963,26 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
+          {uiState.started && uiState.playMode === "corruption" && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-[260px]">
+              <div className="text-[10px] font-black text-center text-[#b388ff] uppercase tracking-widest mb-0.5">Shadow Corruption {Math.floor(uiState.corruption)}%</div>
+              <div className="h-2 rounded-full bg-black/60 ring-1 ring-[#b388ff]/40 overflow-hidden">
+                <div className="h-full transition-all" style={{ width: `${uiState.corruption}%`, background: uiState.corruption >= 100 ? "linear-gradient(90deg,#ff2e88,#b388ff)" : "linear-gradient(90deg,#b388ff,#ff5d8a)" }} />
+              </div>
+            </div>
+          )}
+          {uiState.started && uiState.eventName && (
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="px-4 py-1.5 rounded-full bg-black/70 ring-1 ring-[#7cffb2]/50 text-[#7cffb2] font-black text-sm uppercase tracking-wider animate-pulse">
+                {uiState.eventName === "meteor" && "☄️ Meteor Shower"}
+                {uiState.eventName === "eclipse" && "🌑 Darkness Eclipse"}
+                {uiState.eventName === "freeze" && "❄️ Time Freeze"}
+                {uiState.eventName === "goblin" && "💰 Treasure Goblin"}
+                {uiState.eventName === "rebellion" && "⚡ Clone Rebellion"}
+              </div>
+            </div>
+          )}
+
 
           {uiState.waveWarning > 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
