@@ -4444,8 +4444,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
           {uiState.started && uiState.betweenWaves && uiState.upgrades.length > 0 && (
             <Overlay>
-              <h2 className="text-xl font-bold mb-1">Wave {uiState.wave} cleared!</h2>
-              <p className="text-white/60 text-sm mb-4">Pick an upgrade</p>
+              <h2 className="text-xl font-bold mb-1">{t("waveCleared", { n: uiState.wave })}</h2>
+              <p className="text-white/60 text-sm mb-4">{t("pickUpgrade")}</p>
               <div className="grid md:grid-cols-3 gap-3 w-full max-w-3xl px-4">
                 {uiState.upgrades.map((u, idx) => (
                   <button
