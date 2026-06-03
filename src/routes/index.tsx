@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
-import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
