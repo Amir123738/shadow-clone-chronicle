@@ -3924,7 +3924,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
               </div>
-              <button onClick={() => setDifficultyOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+              <button onClick={() => setModeOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 Play Again
               </button>
             </Overlay>
