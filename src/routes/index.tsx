@@ -3682,8 +3682,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           {modeOpen && (
             <Overlay>
               <div className="w-full max-w-md px-4 max-h-full overflow-y-auto">
-                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose a Game</h2>
-                <p className="text-center text-white/60 text-sm mb-5">Pick a mode, then a difficulty.</p>
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">{t("chooseGame")}</h2>
+                <p className="text-center text-white/60 text-sm mb-5">{t("pickModeDiff")}</p>
                 <div className="flex flex-col gap-2.5">
                   {PLAY_MODES.map(m => (
                     <button
@@ -3695,8 +3695,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       <div className="flex items-center gap-3">
                         <div className="text-2xl">{m.emoji}</div>
                         <div className="flex-1">
-                          <div className="font-black text-base" style={{ color: m.color }}>{m.name}</div>
-                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{m.desc}</div>
+                          <div className="font-black text-base" style={{ color: m.color }}>{t(`mode${m.id.charAt(0).toUpperCase()+m.id.slice(1)}`)}</div>
+                          <div className="text-xs text-white/60 mt-0.5 leading-snug">{t(`mode${m.id.charAt(0).toUpperCase()+m.id.slice(1)}Desc`)}</div>
                         </div>
                       </div>
                     </button>
@@ -3706,7 +3706,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   onClick={() => setModeOpen(false)}
                   className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
               </div>
             </Overlay>
