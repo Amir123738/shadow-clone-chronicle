@@ -4265,12 +4265,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                           onClick={skipWheel}
                           className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition"
                         >
-                          Skip ▶▶
+                          {t("skip")}
                         </button>
                       )}
                     </div>
                     <div className="flex-1 w-full">
-                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">{t("rewardsOdds")}</div>
                       <ul className="text-xs space-y-1">
                         {WHEEL_REWARDS.map(r => (
                           <li key={r.id} className="flex items-center gap-2">
