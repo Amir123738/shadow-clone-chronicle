@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Store, Backpack, ScrollText, Map, Settings, Play } from "lucide-react";
+import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
@@ -2927,7 +2927,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => setLevelsOpen(true)}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition"
                   >
-                    <Map className="w-4 h-4" />
+                    <MapIcon className="w-4 h-4" />
                     {t("levels")}
                   </button>
                   <button
@@ -2935,7 +2935,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#f472b6] text-black font-bold hover:scale-105 transition"
                     title={t("settings")}
                   >
-                    <Settings className="w-4 h-4" />
+                    <SettingsIcon className="w-4 h-4" />
                     {t("settings")}
                   </button>
                 </div>
