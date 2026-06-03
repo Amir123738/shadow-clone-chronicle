@@ -1651,7 +1651,50 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         case "THE ETERNAL SHADOWLORD":
           return ["judgment", "blackhole", "revive"];
       }
-      switch (boss.bossId) {
+      // Wave bosses: ability set depends on BOTH playMode and bossId,
+      // so no two modes share the same fingerprint for the same boss
+      // tier, and no boss within a mode reuses another's combo.
+      const mode = stateRef.current.playMode;
+      const id = boss.bossId;
+      if (mode === "echo") {
+        // Echo — deceptive, displacing
+        switch (id) {
+          case "super":        return ["blur", "swap"];
+          case "mega":         return ["doubleshot", "dash"];
+          case "hyper":        return ["vortex", "mines"];
+          case "plantium":     return ["spiral", "drain"];
+          case "plusplantium": return ["blackhole", "swap", "lasers", "blur"];
+        }
+      } else if (mode === "army") {
+        // Army — overwhelming numbers and salvos
+        switch (id) {
+          case "super":        return ["summonTanks", "barrage"];
+          case "mega":         return ["summonTanks", "doubleshot"];
+          case "hyper":        return ["summonTanks", "lasers", "quake"];
+          case "plantium":     return ["summonTanks", "mines", "empower"];
+          case "plusplantium": return ["summonTanks", "judgment", "lasers", "hasten"];
+        }
+      } else if (mode === "corruption") {
+        // Corruption — debuff, drain, attrition
+        switch (id) {
+          case "super":        return ["drain", "freeze"];
+          case "mega":         return ["drain", "mines"];
+          case "hyper":        return ["drain", "blur", "pull"];
+          case "plantium":     return ["drain", "revive", "thornring"];
+          case "plusplantium": return ["drain", "judgment", "blackhole", "steal"];
+        }
+      } else if (mode === "events") {
+        // Events — chaotic, mixed brutality
+        switch (id) {
+          case "super":        return ["spiral", "mines"];
+          case "mega":         return ["vortex", "thornring"];
+          case "hyper":        return ["judgment", "dash", "freeze"];
+          case "plantium":     return ["blackhole", "summonTanks", "swap"];
+          case "plusplantium": return ["judgment", "blackhole", "vortex", "mines"];
+        }
+      }
+      // Classic mode wave bosses (default)
+      switch (id) {
         case "super":         return ["barrage", "dash"];
         case "mega":          return ["pull", "quake"];
         case "hyper":         return ["freeze", "steal", "hasten"];
