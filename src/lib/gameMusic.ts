@@ -105,7 +105,92 @@ const TRACK3: Track = {
   padGain: 0.055,
 };
 
-const TRACKS: Track[] = [TRACK0, TRACK1, TRACK2, TRACK3];
+// Track 4 — Neon Pursuit (Em – Bm – G – D)
+const TRACK4: Track = {
+  bass: [28, 23, 31, 26],
+  chords: [
+    [52, 55, 59],
+    [47, 50, 54],
+    [55, 59, 62],
+    [50, 54, 57],
+  ],
+  lead: [
+    64, 67, 71, 74, 71, 67, 64, 67,
+    59, 62, 66, 69, 66, 62, 59, 62,
+    62, 67, 71, 74, 71, 67, 62, 67,
+    57, 62, 66, 69, 66, 62, 57, 62,
+  ],
+  leadType: "sawtooth",
+  padType: "square",
+  leadGain: 0.075,
+  padGain: 0.05,
+};
+
+// Track 5 — Boss Rage (Cm – Gm – Ab – Bb)
+const TRACK5: Track = {
+  bass: [24, 31, 32, 22],
+  chords: [
+    [48, 51, 55],
+    [43, 46, 50],
+    [44, 48, 51],
+    [46, 50, 53],
+  ],
+  lead: [
+    60, 63, 67, 70, 67, 63, 60, 63,
+    55, 58, 62, 65, 62, 58, 55, 58,
+    56, 60, 63, 68, 63, 60, 56, 60,
+    58, 62, 65, 70, 65, 62, 58, 62,
+  ],
+  leadType: "square",
+  padType: "sawtooth",
+  leadGain: 0.09,
+  padGain: 0.06,
+};
+
+// Track 6 — Crystal Dream (Gm – Eb – Bb – F)
+const TRACK6: Track = {
+  bass: [31, 27, 22, 29],
+  chords: [
+    [55, 58, 62],
+    [51, 55, 58],
+    [46, 50, 53],
+    [53, 57, 60],
+  ],
+  lead: [
+    67, 70, 74, 70, 67, 70, 74, 77,
+    63, 67, 70, 67, 63, 67, 70, 74,
+    58, 62, 65, 62, 58, 62, 65, 70,
+    60, 65, 69, 65, 60, 65, 69, 72,
+  ],
+  leadType: "triangle",
+  padType: "sine",
+  leadGain: 0.075,
+  padGain: 0.06,
+};
+
+// Track 7 — Shadow Hunt (Bm – G – D – A)
+const TRACK7: Track = {
+  bass: [23, 31, 26, 21],
+  chords: [
+    [47, 50, 54],
+    [55, 59, 62],
+    [50, 54, 57],
+    [45, 49, 52],
+  ],
+  lead: [
+    59, 62, 66, 62, 59, 62, 66, 69,
+    55, 59, 62, 59, 55, 59, 62, 66,
+    50, 54, 57, 54, 50, 54, 57, 62,
+    52, 57, 61, 57, 52, 57, 61, 64,
+  ],
+  leadType: "sawtooth",
+  padType: "triangle",
+  leadGain: 0.08,
+  padGain: 0.055,
+};
+
+const TRACKS: Track[] = [TRACK0, TRACK1, TRACK2, TRACK3, TRACK4, TRACK5, TRACK6, TRACK7];
+let forcedTrack: number | null = null;
 
 const BPM = 110;
 const SIXTEENTH = 60 / BPM / 4; // seconds per 16th note
