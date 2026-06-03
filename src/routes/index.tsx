@@ -4377,10 +4377,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">Accessory Shop</h2>
-                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">{t("accShopTitle")}</h2>
+                  <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
-                <p className="text-white/60 text-xs mb-3">Equip accessories on top of your skins. Only one accessory can be equipped at a time.</p>
+                <p className="text-white/60 text-xs mb-3">{t("accShopDesc")}</p>
                 {ACC_RARITY_ORDER.map((rar) => {
                   const items = ACCESSORIES.filter(a => a.rarity === rar);
                   if (items.length === 0) return null;
