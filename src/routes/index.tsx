@@ -4092,14 +4092,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">Inventory</h2>
-                  <div className="text-xs text-white/60">{shop.owned.length} skins · {shop.accessories.length} accessories</div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#b388ff] bg-clip-text text-transparent">{t("inventoryTitle")}</h2>
+                  <div className="text-xs text-white/60">{shop.owned.length} {t("skinsCount")} · {shop.accessories.length} {t("accessoriesCount")}</div>
                 </div>
 
                 <div className="mb-5">
-                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">Accessories</div>
+                  <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">{t("accessoriesHeader")}</div>
                   {shop.accessories.length === 0 ? (
-                    <div className="text-white/50 text-sm">No accessories yet. Try the Wheel of Fortune in the Shop!</div>
+                    <div className="text-white/50 text-sm">{t("noAccessoriesHint")}</div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {ACCESSORIES.filter(a => shop.accessories.includes(a.id)).map(a => {
@@ -4113,7 +4113,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                             <button
                               onClick={() => setShop(v => ({ ...v, equippedAccessory: eq ? null : a.id }))}
                               className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
-                            >{eq ? "Unequip" : "Equip"}</button>
+                            >{eq ? t("unequip") : t("equip")}</button>
                           </div>
                         );
                       })}
@@ -4143,7 +4143,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                 <div className="w-6 h-6 rounded-full" style={{ background: sk.color, boxShadow: `0 0 10px ${sk.glow ?? sk.color}` }} />
                                 <div className="text-[11px] font-bold truncate">{sk.name}</div>
                               </div>
-                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">Equipped</div>}
+                              {sel && <div className="text-[10px] text-[#ffe066] mt-1">{t("equipped")}</div>}
                             </button>
                           );
                         })}
@@ -4153,7 +4153,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 })}
 
                 <div className="flex justify-end mt-4">
-                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                  <button onClick={() => setInventoryOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
