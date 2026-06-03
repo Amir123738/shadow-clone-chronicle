@@ -4434,9 +4434,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     onClick={() => { setAccShopOpen(false); setShopOpen(true); }}
                     className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm"
                   >
-                    ← Back to Shop
+                    {t("backToShop")}
                   </button>
-                  <button onClick={() => setAccShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">Close</button>
+                  <button onClick={() => setAccShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
