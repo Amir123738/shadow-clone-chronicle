@@ -4569,7 +4569,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             >
               <div className="relative flex flex-col items-center animate-[scale-in_0.5s_ease-out]" onClick={(e) => e.stopPropagation()}>
                 <div className="absolute inset-0 -m-10 rounded-full opacity-40 animate-pulse pointer-events-none" style={{ background: `radial-gradient(circle, ${divineRevealReward.color} 0%, transparent 70%)` }} />
-                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-[#fb7185]">Divine Fortune</div>
+                <div className="mb-2 text-sm font-black uppercase tracking-[0.2em] text-[#fb7185]">{t("divineFortuneLabel")}</div>
                 <div className="text-4xl md:text-5xl font-black text-center mb-6 px-4" style={{ color: divineRevealReward.color, textShadow: `0 0 30px ${divineRevealReward.color}88, 0 0 60px ${divineRevealReward.color}44` }}>
                   {divineRevealReward.label}
                 </div>
