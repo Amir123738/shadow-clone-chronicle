@@ -3553,18 +3553,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
       <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
         <span className="text-white/70">
-          Player: <span className="font-bold text-white">{nickname || "…"}</span>
+          {t("player")}: <span className="font-bold text-white">{nickname || "…"}</span>
         </span>
         <button
           type="button"
           onClick={() => {
-            if (window.confirm("Log out? Your progress is saved to your account.")) {
+            if (window.confirm(t("logoutConfirm"))) {
               signOut();
             }
           }}
           className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
         >
-          Log out
+          {t("logout")}
         </button>
 
       </div>
@@ -3573,22 +3573,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           Shadow Clone Survivor
         </h1>
 
-        <p className="text-sm text-white/60">WASD · Mouse aim · Click to shoot · Survive 100 waves</p>
+        <p className="text-sm text-white/60">{t("controls")}</p>
       </header>
 
       <div className="relative" style={{ width: "min(96vw, 960px)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm font-mono">
-          <Stat label="Wave" value={`${uiState.wave}/${uiState.totalWaves}`} />
-          <Stat label="Score" value={uiState.score.toString()} />
-          <Stat label="Coins" value={uiState.coins.toString()} />
-          <Stat label="Shadow ◆" value={uiState.shadowCoins.toString()} />
-          <Stat label="Lvl" value={uiState.level.toString()} />
-          <Stat label="Clones" value={uiState.clones.toString()} />
-          <Stat label="Next Clone" value={`${uiState.cloneTimer.toFixed(1)}s`} />
-          <Stat label="Time" value={`${uiState.time.toFixed(1)}s`} />
-          <Stat label="Enemies" value={uiState.enemiesLeft.toString()} />
-          {uiState.stolen && <Stat label="STOLEN" value={`${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)`} />}
+          <Stat label={t("wave")} value={`${uiState.wave}/${uiState.totalWaves}`} />
+          <Stat label={t("score")} value={uiState.score.toString()} />
+          <Stat label={t("coins")} value={uiState.coins.toString()} />
+          <Stat label={t("shadowSym")} value={uiState.shadowCoins.toString()} />
+          <Stat label={t("lvl")} value={uiState.level.toString()} />
+          <Stat label={t("clones")} value={uiState.clones.toString()} />
+          <Stat label={t("nextClone")} value={`${uiState.cloneTimer.toFixed(1)}s`} />
+          <Stat label={t("time")} value={`${uiState.time.toFixed(1)}s`} />
+          <Stat label={t("enemies")} value={uiState.enemiesLeft.toString()} />
+          {uiState.stolen && <Stat label={t("stolen")} value={`${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)`} />}
         </div>
+
 
         <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-1">
           <div className="h-full bg-gradient-to-r from-[#ff5d5d] to-[#ffe066] transition-[width] duration-150"
