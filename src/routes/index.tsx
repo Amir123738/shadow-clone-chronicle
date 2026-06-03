@@ -954,6 +954,35 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     return { x: rand(60, W - 60), y: rand(60, H - 60) };
   }
 
+  // Per-playMode + level enemy palette so enemies look distinct in every mode
+  function modeEnemyPalette() {
+    const s = stateRef.current;
+    if (s.gameMode === "level") {
+      // Level mode rotates palette per level so it never matches the 5 play modes
+      const lp = [
+        { grunt: "#7cf24a", fast: "#bef264", tank: "#65a30d" }, // 1 verdant
+        { grunt: "#ff8a3d", fast: "#ffd54a", tank: "#b91c1c" }, // 2 ember
+        { grunt: "#ff2e88", fast: "#ff7ab8", tank: "#7f1d1d" }, // 3 crimson
+        { grunt: "#7dd3fc", fast: "#e0f2fe", tank: "#1e40af" }, // 4 glacier
+        { grunt: "#a000ff", fast: "#c084fc", tank: "#2e1065" }, // 5 void
+        { grunt: "#00e5ff", fast: "#a5f3fc", tank: "#0e7490" }, // 6 storm
+        { grunt: "#a3e635", fast: "#d9f99d", tank: "#365314" }, // 7 plague
+        { grunt: "#fde047", fast: "#fef08a", tank: "#713f12" }, // 8 obsidian
+        { grunt: "#c084fc", fast: "#e9d5ff", tank: "#581c87" }, // 9 nullking
+        { grunt: "#ff0033", fast: "#ff6b6b", tank: "#0a0a0a" }, // 10 eternal
+      ];
+      return lp[(s.levelId - 1 + lp.length) % lp.length];
+    }
+    switch (s.playMode) {
+      case "echo":       return { grunt: "#ff5d8a", fast: "#fda4af", tank: "#9f1239" }; // pink echoes
+      case "army":       return { grunt: "#7cdcff", fast: "#a5f3fc", tank: "#155e75" }; // cyan corps
+      case "corruption": return { grunt: "#b388ff", fast: "#c4b5fd", tank: "#4c1d95" }; // violet rot
+      case "events":     return { grunt: "#7cffb2", fast: "#bbf7d0", tank: "#14532d" }; // chaos green
+      case "classic":
+      default:           return { grunt: "#7cf24a", fast: "#4ad6ff", tank: "#ff8a3d" }; // original
+    }
+  }
+
   function spawnGrunt() {
     const s = stateRef.current;
     const waveBoost = 1 + s.wave * 0.15;
@@ -970,6 +999,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const megaDmg = isMega ? 5 : 1;
     const megaR = isMega ? 1.7 : 1;
     const r = Math.random();
+    const pal = modeEnemyPalette();
     let e: Enemy;
     if (r < 0.55) {
       const hp = 55 * waveBoost * hardHp * eliteHp * megaHp;
@@ -977,21 +1007,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 14 * megaR, speed: spd, baseSpeed: spd,
         dmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg, baseDmg: (16 + s.wave * 0.4) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#7cf24a", xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
+        color: isMega ? "#ff3df0" : pal.grunt, xp: isMega ? 5 : 1, coin: isMega ? 5 : 1, kind: "grunt" };
     } else if (r < 0.85) {
       const hp = 32 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (195 + s.wave * 1.5) * eliteSpd;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 10 * megaR, speed: spd, baseSpeed: spd,
         dmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg, baseDmg: (13 + s.wave * 0.3) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#4ad6ff", xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
+        color: isMega ? "#ff3df0" : pal.fast, xp: isMega ? 10 : 2, coin: isMega ? 5 : 1, kind: "fast" };
     } else {
       const hp = 170 * waveBoost * hardHp * eliteHp * megaHp;
       const spd = (75 + s.wave * 0.6) * eliteSpd;
       e = { pos: s.enemyFreezeTime > 0 ? visibleSpawn() : edgeSpawn(), vel: { x: 0, y: 0 },
         hp, maxHp: hp, r: 20 * megaR, speed: spd, baseSpeed: spd,
         dmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg, baseDmg: (28 + s.wave * 0.6) * hardDmg * eliteDmg * megaDmg,
-        color: isMega ? "#ff3df0" : "#ff8a3d", xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
+        color: isMega ? "#ff3df0" : pal.tank, xp: isMega ? 15 : 3, coin: isMega ? 15 : 3, kind: "tank" };
     }
     // Levels/Bosses mode: enemies scaled by level multiplier
     const lvlMult = s.levelMult || 1;
