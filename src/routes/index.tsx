@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
-import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm } from "@/lib/gameMusic";
+import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -1357,6 +1357,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   useEffect(() => { musicOnRef.current = settings.music; }, [settings.music]);
   useEffect(() => () => { stopMusic(); }, []);
 
+  // Switch the music track every wave so each round sounds different.
+  const lastMusicWave = useRef(-1);
+  useEffect(() => {
+    if (!uiState.started || uiState.wave <= 0) { lastMusicWave.current = -1; return; }
+    if (uiState.wave === lastMusicWave.current) return;
+    lastMusicWave.current = uiState.wave;
+    const s = stateRef.current;
+    const base = s.gameMode === "level" ? (s.levelId - 1) * 3 : 0;
+    setMusicTrack((base + uiState.wave) % getTrackCount());
+  }, [uiState.wave, uiState.started]);
+
   const toggleMusic = () => {
     setSettings((s) => {
       const next = !s.music;
@@ -1372,6 +1383,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     setDifficultyOpen(false);
     setModeOpen(false);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null, playMode: mode, corruption: 0, eventName: null }));
+    // Pick a random music track for variety on each game start
+    setMusicTrack(Math.floor(Math.random() * getTrackCount()));
     if (musicOnRef.current) startMusic();
     startWave();
   };
@@ -1471,6 +1484,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     setSuperPickOpen(false);
     setPendingSuperLevelId(null);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    // Each level gets its own track so the music feels distinct
+    setMusicTrack(((levelId - 1) % getTrackCount()));
     if (musicOnRef.current) startMusic();
     startWave();
     toast(`${su.name} activated! Defeat ${level.bossName}!`, { duration: 4000 });
@@ -2976,7 +2991,32 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const s = stateRef.current;
       setUiState((u) => {
         if (s.over) {
-          return { ...u, started: false, over: false, wave: s.wave, score: s.score };
+          // Reset run stats on the HUD when the player stops/dies — but keep
+          // shadowCoins and total time-played as the user requested.
+          return {
+            ...u,
+            started: false,
+            over: false,
+            won: false,
+            wave: 0,
+            score: 0,
+            level: 1,
+            xp: 0,
+            xpNext: 5,
+            hp: 100,
+            maxHp: 100,
+            clones: 0,
+            enemiesLeft: 0,
+            betweenWaves: false,
+            upgrades: [],
+            blur: 0,
+            frozen: false,
+            stolen: null,
+            bossName: null,
+            waveWarning: 0,
+            corruption: 0,
+            eventName: null,
+          };
         }
         const upg = s.pendingUpgrades ?? u.upgrades;
         const boss = s.enemies.find(e => e.kind === "boss");
