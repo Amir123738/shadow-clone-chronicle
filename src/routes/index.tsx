@@ -427,11 +427,18 @@ function rollShady(): ShadyReward {
 
 const SHADY_SPINS_KEY = "scs_shady_spins_v1";
 const LEVELS_CLEARED_KEY = "scs_levels_cleared_v1";
+const FREE_WHEEL_SPINS_KEY = "scs_free_wheel_spins_v1";
+const FREE_DIVINE_SPINS_KEY = "scs_free_divine_spins_v1";
 function loadShadySpins(): number {
   if (typeof window === "undefined") return 0;
   try { return Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0; } catch { return 0; }
 }
 function saveShadySpins(n: number) { try { localStorage.setItem(SHADY_SPINS_KEY, String(n)); } catch {} }
+function loadFreeSpins(key: string): number {
+  if (typeof window === "undefined") return 0;
+  try { return Number(localStorage.getItem(key) ?? 0) || 0; } catch { return 0; }
+}
+function saveFreeSpins(key: string, n: number) { try { localStorage.setItem(key, String(n)); } catch {} }
 function loadLevelsCleared(): number[] {
   if (typeof window === "undefined") return [];
   try { const raw = localStorage.getItem(LEVELS_CLEARED_KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v.filter(x => typeof x === "number") : []; } catch { return []; }
@@ -547,6 +554,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [superPickOpen, setSuperPickOpen] = useState(false);
   const [pendingSuperLevelId, setPendingSuperLevelId] = useState<number | null>(null);
   const [shadySpins, setShadySpins] = useState<number>(() => loadShadySpins());
+  const [freeWheelSpins, setFreeWheelSpins] = useState<number>(() => loadFreeSpins(FREE_WHEEL_SPINS_KEY));
+  const [freeDivineSpins, setFreeDivineSpins] = useState<number>(() => loadFreeSpins(FREE_DIVINE_SPINS_KEY));
+  const [difficultyOpen, setDifficultyOpen] = useState(false);
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
   const [shadyAngle, setShadyAngle] = useState(0);
@@ -644,7 +654,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const spinWheel = useCallback(() => {
     if (wheelSpinning) return;
     const sv = shopRef.current;
-    if (sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return; }
+    const freeAvail = loadFreeSpins(FREE_WHEEL_SPINS_KEY);
+    const useFree = freeAvail > 0;
+    if (!useFree && sv.shadowCoins < SPIN_COST) { setWheelMsg(`Need ◆${SPIN_COST - sv.shadowCoins} more`); return; }
     const reward = rollWheel();
     const idx = WHEEL_REWARDS.indexOf(reward);
     const slice = 360 / WHEEL_REWARDS.length;
@@ -659,9 +671,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (delta < 0) delta += 360;
       return prev + 360 * 6 + delta;
     });
-    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
-    shopRef.current = afterCost;
-    setShop(afterCost);
+    if (useFree) {
+      const remaining = freeAvail - 1;
+      saveFreeSpins(FREE_WHEEL_SPINS_KEY, remaining);
+      setFreeWheelSpins(remaining);
+    } else {
+      const afterCost = { ...sv, shadowCoins: sv.shadowCoins - SPIN_COST };
+      shopRef.current = afterCost;
+      setShop(afterCost);
+    }
     pendingRewardRef.current = reward;
     wheelTimeoutRef.current = window.setTimeout(() => {
       pendingRewardRef.current = null;
@@ -706,7 +724,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const spinDivine = useCallback(() => {
     if (divineSpinning) return;
     const sv = shopRef.current;
-    if (sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
+    const freeAvail = loadFreeSpins(FREE_DIVINE_SPINS_KEY);
+    const useFree = freeAvail > 0;
+    if (!useFree && sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
     const reward = rollDivine();
     const idx = DIVINE_REWARDS.indexOf(reward);
     const slice = 360 / DIVINE_REWARDS.length;
@@ -721,9 +741,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (delta < 0) delta += 360;
       return prev + 360 * 6 + delta;
     });
-    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
-    shopRef.current = afterCost;
-    setShop(afterCost);
+    if (useFree) {
+      const remaining = freeAvail - 1;
+      saveFreeSpins(FREE_DIVINE_SPINS_KEY, remaining);
+      setFreeDivineSpins(remaining);
+    } else {
+      const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
+      shopRef.current = afterCost;
+      setShop(afterCost);
+    }
     divinePendingRef.current = reward;
     divineTimeoutRef.current = window.setTimeout(() => {
       divinePendingRef.current = null;
@@ -860,6 +886,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     levelId: 0,
     levelMult: 1,
     levelTotalWaves: TOTAL_WAVES,
+    difficulty: "medium" as "easy" | "medium" | "hard",
   });
 
   const resetGame = useCallback(() => {
@@ -884,6 +911,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.bgColor = "#0b0d1a";
     s.waveWarningTimer = 0;
     s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
+    s.difficulty = "medium";
   }, []);
 
   function edgeSpawn(): Vec {
@@ -943,6 +971,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     e.dmg *= lvlMult; e.baseDmg *= lvlMult;
     e.speed *= Math.min(1.6, 1 + (lvlMult - 1) * 0.05);
     e.baseSpeed = e.speed;
+    // Difficulty multiplier (normal mode only)
+    if (s.gameMode === "normal") {
+      const dMult = s.difficulty === "easy" ? 0.55 : s.difficulty === "hard" ? 1.85 : 1;
+      e.hp *= dMult; e.maxHp *= dMult;
+      e.dmg *= dMult; e.baseDmg *= dMult;
+    }
     s.enemies.push(e);
   }
 
@@ -989,6 +1023,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     if (s.wave >= 50) { hp = Math.round(hp * 1.5); dmg = Math.round(dmg * 2); }
     // Wave 75+ bosses: additional +250% HP, +150% damage, +50% speed
     if (s.wave >= 75) { hp = Math.round(hp * 3.5); dmg = Math.round(dmg * 2.5); sp = Math.round(sp * 1.5); }
+    // Difficulty multiplier (normal mode)
+    const dMult = s.difficulty === "easy" ? 0.55 : s.difficulty === "hard" ? 1.85 : 1;
+    hp = Math.round(hp * dMult); dmg = Math.round(dmg * dMult);
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp, maxHp: hp, r, speed: sp, baseSpeed: sp, dmg, baseDmg: dmg,
@@ -999,6 +1036,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     let guardHp = s.wave >= 50 ? 280 * 6 : 280;
     let guardDmg = s.wave >= 50 ? 24 * 3.5 : 24;
     if (s.wave >= 75) { guardHp = Math.round(guardHp * 3.5); guardDmg = Math.round(guardDmg * 2.5); }
+    guardHp = Math.round(guardHp * dMult); guardDmg = Math.round(guardDmg * dMult);
     for (let k = 0; k < guards; k++) {
       s.enemies.push({
         pos: edgeSpawn(), vel: { x: 0, y: 0 },
@@ -1268,8 +1306,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     });
   };
 
-  const startGame = () => {
+  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium") => {
     resetGame();
+    stateRef.current.difficulty = difficulty;
+    setDifficultyOpen(false);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
@@ -1949,18 +1989,43 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 }
               } else {
                 const cur = shopRef.current;
-                const hadHat = cur.accessories.includes("bronze_hat");
-                const next: ShopSave = {
-                  ...cur,
-                  shadowCoins: cur.shadowCoins + 500,
-                  accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
-                };
-                shopRef.current = next;
-                setShop(next);
-                bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
-                toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
-                if (!hadHat) {
-                  toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                const diff = s.difficulty;
+                if (diff === "easy") {
+                  const next: ShopSave = { ...cur, shadowCoins: cur.shadowCoins + 250 };
+                  shopRef.current = next; setShop(next);
+                  bumpLifetime({ shadowEarned: 250, wins100Streak: 1 });
+                  toast.success("Easy Mode Cleared! +250 Shadow Coins", { duration: 5000 });
+                } else if (diff === "hard") {
+                  const next: ShopSave = { ...cur, shadowCoins: cur.shadowCoins + 2000 };
+                  shopRef.current = next; setShop(next);
+                  const newShady = loadShadySpins() + 2;
+                  saveShadySpins(newShady); setShadySpins(newShady);
+                  const newDivine = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 1;
+                  saveFreeSpins(FREE_DIVINE_SPINS_KEY, newDivine); setFreeDivineSpins(newDivine);
+                  bumpLifetime({ shadowEarned: 2000, wins100Streak: 1 });
+                  toast.success("HARD Mode Cleared! +2000 Shadow Coins", { duration: 5000 });
+                  toast.success("+2 Shady Spins & +1 Divine Spin!", { duration: 6000 });
+                } else {
+                  const hadHat = cur.accessories.includes("bronze_hat");
+                  if (!hadHat) {
+                    const next: ShopSave = {
+                      ...cur,
+                      shadowCoins: cur.shadowCoins + 500,
+                      accessories: [...cur.accessories, "bronze_hat"],
+                    };
+                    shopRef.current = next; setShop(next);
+                    bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
+                    toast.success("Medium Mode Cleared! +500 Shadow Coins", { duration: 5000 });
+                    toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                  } else {
+                    shopRef.current = cur;
+                    const newShady = loadShadySpins() + 1;
+                    saveShadySpins(newShady); setShadySpins(newShady);
+                    const newFreeWheel = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 1;
+                    saveFreeSpins(FREE_WHEEL_SPINS_KEY, newFreeWheel); setFreeWheelSpins(newFreeWheel);
+                    bumpLifetime({ wins100Streak: 1 });
+                    toast.success("Medium Mode Cleared! +1 Shady Spin & +1 Wheel Spin", { duration: 6000 });
+                  }
                 }
               }
             }
@@ -2894,7 +2959,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
-                  onClick={startGame}
+                  onClick={() => setDifficultyOpen(true)}
                   className="flex items-center gap-3 px-10 py-5 rounded-xl bg-[#ffe066] text-black font-black text-xl shadow-[0_0_40px_rgba(255,224,102,0.35)] hover:scale-105 transition"
                 >
                   <Play className="w-6 h-6" />
@@ -2941,6 +3006,53 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
               </div>
 
+            </Overlay>
+          )}
+
+          {difficultyOpen && (
+            <Overlay>
+              <div className="w-full max-w-md px-4">
+                <h2 className="text-3xl font-black text-center mb-2 bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Choose Difficulty</h2>
+                <p className="text-center text-white/60 text-sm mb-5">Beat all 100 waves to claim the reward.</p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => startGame("easy")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#4ade80]/30 to-transparent border border-[#4ade80]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#86efac]">EASY</div>
+                      <div className="text-xs text-[#86efac]/80">Reward: ◆ 250</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are weakened. Best for warming up.</div>
+                  </button>
+                  <button
+                    onClick={() => startGame("medium")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ffe066]/25 to-transparent border border-[#ffe066]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#ffe066]">MEDIUM</div>
+                      <div className="text-xs text-[#ffe066]/80">Reward: ◆ 500 + Bronze Hat</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Standard difficulty. Already own the Bronze Hat? You'll get +1 Shady Spin & +1 Wheel of Fortune spin instead.</div>
+                  </button>
+                  <button
+                    onClick={() => startGame("hard")}
+                    className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-[#ff2e88]/25 to-transparent border border-[#ff2e88]/50 hover:scale-[1.02] transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg text-[#ff5d8a]">HARD</div>
+                      <div className="text-xs text-[#ff5d8a]/80">◆ 2000 + 2 Shady + 1 Divine Spin</div>
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">Enemies and bosses are brutal. Only for veterans.</div>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setDifficultyOpen(false)}
+                  className="mt-4 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
+                >
+                  Cancel
+                </button>
+              </div>
             </Overlay>
           )}
 
@@ -3405,14 +3517,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-lg font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">Wheel of Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}</p>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {SPIN_COST.toLocaleString()}{freeWheelSpins > 0 ? ` · 🎟 ${freeWheelSpins} free` : ""}</p>
                     </div>
                     <button
                       onClick={spinWheel}
-                      disabled={wheelSpinning || shop.shadowCoins < SPIN_COST}
+                      disabled={wheelSpinning || (freeWheelSpins === 0 && shop.shadowCoins < SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-[#ffe066] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100"
                     >
-                      {wheelSpinning ? "Spinning…" : `SPIN (◆${SPIN_COST})`}
+                      {wheelSpinning ? "Spinning…" : freeWheelSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -3479,14 +3591,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">✨ Divine Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes</p>
+                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes{freeDivineSpins > 0 ? ` · 🎟 ${freeDivineSpins} free` : ""}</p>
                     </div>
                     <button
                       onClick={spinDivine}
-                      disabled={divineSpinning || shop.shadowCoins < DIVINE_SPIN_COST}
+                      disabled={divineSpinning || (freeDivineSpins === 0 && shop.shadowCoins < DIVINE_SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fb7185] to-[#f0abfc] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100 disabled:from-white/10 disabled:to-white/10"
                     >
-                      {divineSpinning ? "Spinning…" : `SPIN (◆${DIVINE_SPIN_COST})`}
+                      {divineSpinning ? "Spinning…" : freeDivineSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${DIVINE_SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -3677,7 +3789,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 Shadow Coins</div>
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">Bronze Hat Unlocked!</div>
               </div>
-              <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+              <button onClick={() => setDifficultyOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 Play Again
               </button>
             </Overlay>
