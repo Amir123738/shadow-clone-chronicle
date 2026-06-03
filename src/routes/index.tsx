@@ -1973,18 +1973,43 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 }
               } else {
                 const cur = shopRef.current;
-                const hadHat = cur.accessories.includes("bronze_hat");
-                const next: ShopSave = {
-                  ...cur,
-                  shadowCoins: cur.shadowCoins + 500,
-                  accessories: hadHat ? cur.accessories : [...cur.accessories, "bronze_hat"],
-                };
-                shopRef.current = next;
-                setShop(next);
-                bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
-                toast.success("Wave 100 Complete! +500 Shadow Coins", { duration: 5000 });
-                if (!hadHat) {
-                  toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                const diff = s.difficulty;
+                if (diff === "easy") {
+                  const next: ShopSave = { ...cur, shadowCoins: cur.shadowCoins + 250 };
+                  shopRef.current = next; setShop(next);
+                  bumpLifetime({ shadowEarned: 250, wins100Streak: 1 });
+                  toast.success("Easy Mode Cleared! +250 Shadow Coins", { duration: 5000 });
+                } else if (diff === "hard") {
+                  const next: ShopSave = { ...cur, shadowCoins: cur.shadowCoins + 2000 };
+                  shopRef.current = next; setShop(next);
+                  const newShady = loadShadySpins() + 2;
+                  saveShadySpins(newShady); setShadySpins(newShady);
+                  const newDivine = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 1;
+                  saveFreeSpins(FREE_DIVINE_SPINS_KEY, newDivine); setFreeDivineSpins(newDivine);
+                  bumpLifetime({ shadowEarned: 2000, wins100Streak: 1 });
+                  toast.success("HARD Mode Cleared! +2000 Shadow Coins", { duration: 5000 });
+                  toast.success("+2 Shady Spins & +1 Divine Spin!", { duration: 6000 });
+                } else {
+                  const hadHat = cur.accessories.includes("bronze_hat");
+                  if (!hadHat) {
+                    const next: ShopSave = {
+                      ...cur,
+                      shadowCoins: cur.shadowCoins + 500,
+                      accessories: [...cur.accessories, "bronze_hat"],
+                    };
+                    shopRef.current = next; setShop(next);
+                    bumpLifetime({ shadowEarned: 500, wins100Streak: 1 });
+                    toast.success("Medium Mode Cleared! +500 Shadow Coins", { duration: 5000 });
+                    toast.success("Reward Unlocked: Bronze Hat!", { duration: 5000 });
+                  } else {
+                    shopRef.current = cur;
+                    const newShady = loadShadySpins() + 1;
+                    saveShadySpins(newShady); setShadySpins(newShady);
+                    const newFreeWheel = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 1;
+                    saveFreeSpins(FREE_WHEEL_SPINS_KEY, newFreeWheel); setFreeWheelSpins(newFreeWheel);
+                    bumpLifetime({ wins100Streak: 1 });
+                    toast.success("Medium Mode Cleared! +1 Shady Spin & +1 Wheel Spin", { duration: 6000 });
+                  }
                 }
               }
             }
