@@ -517,6 +517,15 @@ function randomColor() {
   return `hsl(${h} ${s}% ${l}%)`;
 }
 
+type PlayMode = "classic" | "echo" | "army" | "corruption" | "events";
+const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; color: string }[] = [
+  { id: "classic",    name: "Classic",          emoji: "⚔️", desc: "The original shadow survival.",                                  color: "#ffe066" },
+  { id: "echo",       name: "Shadow Echoes",    emoji: "👤", desc: "Every 30s your past becomes a hostile clone that hunts you.",   color: "#ff5d8a" },
+  { id: "army",       name: "Clone Army",       emoji: "🛡️", desc: "On level-up, choose Attacker / Healer / Tank / Sniper clones.",  color: "#7cdcff" },
+  { id: "corruption", name: "Shadow Corruption",emoji: "🩸", desc: "Power grows over time. At 100% you become deadly but bleed HP.", color: "#b388ff" },
+  { id: "events",     name: "Random Events",    emoji: "🎲", desc: "Meteor Shower, Eclipse, Time Freeze, Treasure Goblin & more.",   color: "#7cffb2" },
+];
+
 function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
