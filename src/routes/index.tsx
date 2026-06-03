@@ -532,6 +532,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     waveWarning: number;
     totalWaves: number;
     gameMode: "normal" | "level";
+    playMode: PlayMode;
+    corruption: number;
+    eventName: string | null;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -543,6 +546,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     waveWarning: 0,
     totalWaves: TOTAL_WAVES,
     gameMode: "normal",
+    playMode: "classic",
+    corruption: 0,
+    eventName: null,
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
