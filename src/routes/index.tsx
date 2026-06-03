@@ -2892,29 +2892,53 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
                 100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
               </p>
-              <div className="flex gap-3 flex-wrap justify-center">
-                <button onClick={startGame} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+              <div className="flex flex-col items-center gap-5">
+                <button
+                  onClick={startGame}
+                  className="flex items-center gap-3 px-10 py-5 rounded-xl bg-[#ffe066] text-black font-black text-xl shadow-[0_0_40px_rgba(255,224,102,0.35)] hover:scale-105 transition"
+                >
+                  <Play className="w-6 h-6" />
                   {t("start")}
                 </button>
-                <button onClick={() => setShopOpen(true)} className="px-6 py-3 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition">
-                  {t("shop")} ◆ {shop.shadowCoins}
-                </button>
-                <button onClick={() => setInventoryOpen(true)} className="px-6 py-3 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition">
-                  {t("inventory")}
-                </button>
-                <button onClick={() => setTasksOpen(true)} className="px-6 py-3 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition">
-                  {t("tasks")}
-                </button>
-                <button onClick={() => setLevelsOpen(true)} className="px-6 py-3 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition">
-                  {t("levels")}
-                </button>
-                <button
-                  onClick={() => setSettingsOpen(true)}
-                  className="px-6 py-3 rounded-lg bg-[#f472b6] text-black font-bold hover:scale-105 transition"
-                  title={t("settings")}
-                >
-                  ⚙ {t("settings")}
-                </button>
+
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => setShopOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#b388ff] text-black font-bold hover:scale-105 transition"
+                  >
+                    <Store className="w-4 h-4" />
+                    {t("shop")} <span className="opacity-70 text-sm">◆ {shop.shadowCoins}</span>
+                  </button>
+                  <button
+                    onClick={() => setInventoryOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#7dd3fc] text-black font-bold hover:scale-105 transition"
+                  >
+                    <Backpack className="w-4 h-4" />
+                    {t("inventory")}
+                  </button>
+                  <button
+                    onClick={() => setTasksOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#34d399] text-black font-bold hover:scale-105 transition"
+                  >
+                    <ScrollText className="w-4 h-4" />
+                    {t("tasks")}
+                  </button>
+                  <button
+                    onClick={() => setLevelsOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition"
+                  >
+                    <Map className="w-4 h-4" />
+                    {t("levels")}
+                  </button>
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#f472b6] text-black font-bold hover:scale-105 transition"
+                    title={t("settings")}
+                  >
+                    <Settings className="w-4 h-4" />
+                    {t("settings")}
+                  </button>
+                </div>
               </div>
 
             </Overlay>
