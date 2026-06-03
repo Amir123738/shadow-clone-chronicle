@@ -2821,31 +2821,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             style={{ aspectRatio: `${W}/${H}`, filter: uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : undefined, transition: "filter 0.2s" }}
           />
 
-          {uiState.started && (() => {
-            const setDir = (dir: "up" | "down" | "left" | "right", v: boolean) => {
-              stateRef.current.input[dir] = v;
-            };
-            const btn = (label: string, dir: "up" | "down" | "left" | "right", cls: string) => (
-              <button
-                type="button"
-                onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); setDir(dir, true); }}
-                onPointerUp={(e) => { e.preventDefault(); setDir(dir, false); }}
-                onPointerCancel={() => setDir(dir, false)}
-                onPointerLeave={() => setDir(dir, false)}
-                onContextMenu={(e) => e.preventDefault()}
-                className={`absolute ${cls} w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-black/55 backdrop-blur text-white font-bold text-lg ring-1 ring-white/25 active:bg-white/20 active:scale-95 transition select-none touch-none pointer-events-auto`}
-                style={{ touchAction: "none" }}
-              >{label}</button>
-            );
-            return (
-              <div className="absolute left-3 bottom-3 w-40 h-40 sm:w-44 sm:h-44 pointer-events-none z-20 opacity-90">
-                {btn("W", "up",    "left-1/2 -translate-x-1/2 top-0")}
-                {btn("A", "left",  "left-0 top-1/2 -translate-y-1/2")}
-                {btn("S", "down",  "left-1/2 -translate-x-1/2 bottom-0")}
-                {btn("D", "right", "right-0 top-1/2 -translate-y-1/2")}
-              </div>
-            );
-          })()}
 
           {!uiState.started && !shopOpen && (
             <Overlay>
