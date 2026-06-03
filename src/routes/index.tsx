@@ -4411,7 +4411,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, equippedAccessory: equipped ? null : a.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
                                 >
-                                  {equipped ? "Unequip" : "Equip"}
+                                  {equipped ? t("unequip") : t("equip")}
                                 </button>
                               ) : (
                                 <button
@@ -4419,7 +4419,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                                   onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - price, accessories: [...v.accessories, a.id], equippedAccessory: a.id }))}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
                                 >
-                                  {canBuy ? "Buy & Equip" : `Need ◆${(price - shop.shadowCoins).toLocaleString()}`}
+                                  {canBuy ? t("buyEquip") : `${t("need")} ◆${(price - shop.shadowCoins).toLocaleString()}`}
                                 </button>
                               )}
                             </div>
