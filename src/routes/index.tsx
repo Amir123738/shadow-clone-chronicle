@@ -4163,10 +4163,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#b388ff] to-[#ffe066] bg-clip-text text-transparent">Shadow Shop</h2>
-                  <div className="text-sm font-mono">Shadow Coins: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#b388ff] to-[#ffe066] bg-clip-text text-transparent">{t("shopTitle")}</h2>
+                  <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
-                <p className="text-white/60 text-xs mb-3">Earn Shadow Coins by defeating enemies (bosses drop big). Skins change your shadow clones' look.</p>
+                <p className="text-white/60 text-xs mb-3">{t("shopDesc")}</p>
                 {RARITY_ORDER.map((rar) => {
                   const items = SKINS.filter(s => s.rarity === rar);
                   if (items.length === 0) return null;
