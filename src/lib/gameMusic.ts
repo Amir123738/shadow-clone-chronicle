@@ -222,9 +222,22 @@ function playNote(
 }
 
 function getTrackAtTime(time: number): Track {
+  if (forcedTrack !== null) return TRACKS[forcedTrack % TRACKS.length];
   const elapsed = Math.max(0, time - musicStartTime);
   const idx = Math.floor(elapsed / SWITCH_INTERVAL) % TRACKS.length;
   return TRACKS[idx];
+}
+
+export function setMusicTrack(idx: number | null) {
+  forcedTrack = idx === null ? null : ((idx % TRACKS.length) + TRACKS.length) % TRACKS.length;
+  if (ctx) {
+    musicStartTime = ctx.currentTime;
+    step = 0;
+  }
+}
+
+export function getTrackCount() {
+  return TRACKS.length;
 }
 
 function scheduleStep(s: number, time: number) {
