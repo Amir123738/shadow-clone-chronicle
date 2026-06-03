@@ -947,13 +947,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   function spawnLevelBossFor(level: LevelDef) {
     const s = stateRef.current;
+    // Tier scales with level so abilities ramp up
+    const tier: BossId =
+      level.id >= 10 ? "plusplantium" :
+      level.id >= 8  ? "final" :
+      level.id >= 6  ? "plantium" :
+      level.id >= 4  ? "hyper" :
+      level.id >= 2  ? "mega" : "super";
     s.enemies.push({
       pos: edgeSpawn(), vel: { x: 0, y: 0 },
       hp: level.bossHp, maxHp: level.bossHp, r: level.bossR,
       speed: level.bossSpd, baseSpeed: level.bossSpd,
       dmg: level.bossDmg, baseDmg: level.bossDmg,
-      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: "super", customBossName: level.bossName,
-      abilityCds: { pull: 4, freeze: 6, steal: 10, revive: 8, blur: 12, hasten: 16, empower: 20 },
+      color: level.bossColor, xp: 200, coin: 120, kind: "boss", bossId: tier, customBossName: level.bossName,
+      abilityCds: { pull: 4, freeze: 6, steal: 10, revive: 8, blur: 12, hasten: 16, empower: 20, barrage: 3, dash: 5, quake: 9 },
       abilityFlags: {},
     });
     const guardHp = Math.round(280 * level.gruntMult);
