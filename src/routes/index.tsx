@@ -1473,6 +1473,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     setSuperPickOpen(false);
     setPendingSuperLevelId(null);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
+    // Each level gets its own track so the music feels distinct
+    setMusicTrack(((levelId - 1) % getTrackCount()));
     if (musicOnRef.current) startMusic();
     startWave();
     toast(`${su.name} activated! Defeat ${level.bossName}!`, { duration: 4000 });
