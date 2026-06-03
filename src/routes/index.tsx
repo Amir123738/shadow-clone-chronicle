@@ -1290,8 +1290,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     });
   };
 
-  const startGame = () => {
+  const startGame = (difficulty: "easy" | "medium" | "hard" = "medium") => {
     resetGame();
+    stateRef.current.difficulty = difficulty;
+    setDifficultyOpen(false);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null }));
     if (musicOnRef.current) startMusic();
     startWave();
