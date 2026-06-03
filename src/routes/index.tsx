@@ -1744,10 +1744,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         b.pos.x += b.vel.x * dt;
         b.pos.y += b.vel.y * dt;
         b.life -= dt;
-        for (const e of s.enemies) {
-          if (e.hp <= 0) continue;
-          if (dist(b.pos, e.pos) < e.r + 3) {
-            e.hp -= b.dmg; b.life = 0; break;
+        if (b.from === "boss") {
+          if (dist(b.pos, s.player.pos) < s.player.r + (b.r ?? 5)) {
+            s.player.hp -= b.dmg * (s.shieldTime > 0 ? 0.55 : 1);
+            b.life = 0;
+          }
+        } else {
+          for (const e of s.enemies) {
+            if (e.hp <= 0) continue;
+            if (dist(b.pos, e.pos) < e.r + 3) {
+              e.hp -= b.dmg; b.life = 0; break;
+            }
           }
         }
       }
