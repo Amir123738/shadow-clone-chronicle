@@ -4004,21 +4004,21 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#34d399] to-[#ffe066] bg-clip-text text-transparent">Tasks</h2>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#34d399] to-[#ffe066] bg-clip-text text-transparent">{t("tasksTitle")}</h2>
                   <div className="text-xs text-white/60">◆ {shop.shadowCoins}</div>
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  {tasks.map(t => {
-                    const def = TASK_TEMPLATES.find(d => d.id === t.id);
+                  {tasks.map(tk => {
+                    const def = TASK_TEMPLATES.find(d => d.id === tk.id);
                     if (!def) return null;
-                    const current = Math.max(0, (lifetime[def.metric] ?? 0) - t.baseline);
+                    const current = Math.max(0, (lifetime[def.metric] ?? 0) - tk.baseline);
                     const pct = Math.min(100, (current / def.target) * 100);
                     const done = current >= def.target;
                     return (
-                      <div key={t.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
+                      <div key={tk.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold">{def.label}</div>
+                          <div className="font-bold">{t(`task_${def.id}`)}</div>
                           <div className="text-xs text-[#ffe066]">+{def.reward} ◆</div>
                         </div>
                         <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
@@ -4026,15 +4026,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/60">{Math.min(current, def.target)} / {def.target}</span>
-                          {t.claimed ? (
-                            <span className="text-white/40">Claimed</span>
+                          {tk.claimed ? (
+                            <span className="text-white/40">{t("claimed")}</span>
                           ) : (
                             <button
                               disabled={!done}
-                              onClick={() => claimTask(t.id)}
+                              onClick={() => claimTask(tk.id)}
                               className="px-3 py-1 rounded bg-[#34d399] text-black font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                              {done ? "Claim" : "In Progress"}
+                              {done ? t("claim") : t("inProgress")}
                             </button>
                           )}
                         </div>
@@ -4053,35 +4053,35 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   return (
                     <div className="p-4 rounded-lg ring-2 ring-[#ff0033] bg-gradient-to-br from-[#330011] to-[#1a0008] mb-4 shadow-[0_0_30px_rgba(255,0,51,0.5)]">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-black text-[#ff5577] tracking-wider">THE ELITE SHADOW GAMER</div>
-                        <div className="text-[10px] uppercase tracking-widest text-[#ff0033]">Impossible</div>
+                        <div className="font-black text-[#ff5577] tracking-wider">{t("eliteTitle")}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#ff0033]">{t("impossible")}</div>
                       </div>
-                      <div className="text-xs text-white/70 mb-2">Complete 100 waves 10 times in a row. Dying before wave 100 resets your streak.</div>
+                      <div className="text-xs text-white/70 mb-2">{t("eliteDesc")}</div>
                       <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
                         <div className="h-full bg-[#ff0033]" style={{ width: `${pct}%` }} />
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Streak: {streak} / {ELITE_TARGET}</span>
+                        <span className="text-white/60">{t("streak")}: {streak} / {ELITE_TARGET}</span>
                         {claimed ? (
-                          <span className="text-[#ff5577] font-bold">CLAIMED · Admin Unlocked</span>
+                          <span className="text-[#ff5577] font-bold">{t("claimedAdmin")}</span>
                         ) : (
                           <button
                             disabled={!done}
                             onClick={claimElite}
                             className="px-3 py-1 rounded bg-[#ff0033] text-white font-black text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            {done ? "Claim Admin Skin" : "Locked"}
+                            {done ? t("claimAdmin") : t("locked")}
                           </button>
                         )}
                       </div>
-                      <div className="mt-2 text-[10px] text-white/50">Reward: Admin skin, Admin Hat & Admin Jacket</div>
+                      <div className="mt-2 text-[10px] text-white/50">{t("eliteReward")}</div>
                     </div>
                   );
                 })()}
 
                 <div className="flex gap-3 justify-end">
-                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title="You can reroll 3 times each day." className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">Reroll Tasks ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
-                  <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">Close</button>
+                  <button onClick={rerollTasks} disabled={rerollState.count >= REROLL_LIMIT} title={t("rerollHint")} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">{t("rerollTasks")} ({Math.max(0, REROLL_LIMIT - rerollState.count)}/{REROLL_LIMIT})</button>
+                  <button onClick={() => setTasksOpen(false)} className="px-5 py-2 rounded-lg bg-[#ffe066] text-black font-bold text-sm">{t("close")}</button>
                 </div>
               </div>
             </Overlay>
