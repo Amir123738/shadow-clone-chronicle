@@ -1372,6 +1372,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     setDifficultyOpen(false);
     setModeOpen(false);
     setUiState((u) => ({ ...u, started: true, over: false, won: false, blur: 0, frozen: false, stolen: null, bossName: null, playMode: mode, corruption: 0, eventName: null }));
+    // Pick a random music track for variety on each game start
+    setMusicTrack(Math.floor(Math.random() * getTrackCount()));
     if (musicOnRef.current) startMusic();
     startWave();
   };
