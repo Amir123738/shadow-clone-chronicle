@@ -3619,13 +3619,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             <Overlay>
               {uiState.wave > 0 && (
                 <div className="text-center mb-4">
-                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">You fell.</h2>
-                  <p className="text-white/70 text-sm">Wave reached: {uiState.wave} · Score: {uiState.score}</p>
+                  <h2 className="text-3xl font-black text-[#ff5d5d] mb-1">{t("youFell")}</h2>
+                  <p className="text-white/70 text-sm">{t("waveReached")}: {uiState.wave} · {t("score")}: {uiState.score}</p>
                 </div>
               )}
               <h2 className="text-2xl font-bold mb-2">{t("ready")}</h2>
               <p className="text-white/70 mb-4 max-w-md text-center text-sm">
-                100 waves. Bosses at 15, 30, 50, 75, and 100 with brutal abilities. Every 15s your past becomes a clone that fights with you.
+                {t("intro100")}
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
