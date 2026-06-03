@@ -724,7 +724,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const spinDivine = useCallback(() => {
     if (divineSpinning) return;
     const sv = shopRef.current;
-    if (sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
+    const freeAvail = loadFreeSpins(FREE_DIVINE_SPINS_KEY);
+    const useFree = freeAvail > 0;
+    if (!useFree && sv.shadowCoins < DIVINE_SPIN_COST) { setDivineMsg(`Need ◆${DIVINE_SPIN_COST - sv.shadowCoins} more`); return; }
     const reward = rollDivine();
     const idx = DIVINE_REWARDS.indexOf(reward);
     const slice = 360 / DIVINE_REWARDS.length;
@@ -739,9 +741,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (delta < 0) delta += 360;
       return prev + 360 * 6 + delta;
     });
-    const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
-    shopRef.current = afterCost;
-    setShop(afterCost);
+    if (useFree) {
+      const remaining = freeAvail - 1;
+      saveFreeSpins(FREE_DIVINE_SPINS_KEY, remaining);
+      setFreeDivineSpins(remaining);
+    } else {
+      const afterCost = { ...sv, shadowCoins: sv.shadowCoins - DIVINE_SPIN_COST };
+      shopRef.current = afterCost;
+      setShop(afterCost);
+    }
     divinePendingRef.current = reward;
     divineTimeoutRef.current = window.setTimeout(() => {
       divinePendingRef.current = null;
