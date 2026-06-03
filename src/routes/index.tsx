@@ -1846,7 +1846,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (has("vortex")) {
         (cds as any).vortex = ((cds as any).vortex ?? 4) - dt;
         if ((cds as any).vortex <= 0) {
-          const ang = t * 1.5;
+          const ang = ((flags as any)._vortAng ?? 0) + 0.5; (flags as any)._vortAng = ang;
           for (let i = 0; i < 8; i++) {
             const a = ang + (i / 8) * Math.PI * 2;
             const r = 120;
