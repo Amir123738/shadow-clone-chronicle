@@ -4588,6 +4588,41 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </div>
             </div>
           )}
+
+          {langPickerOpen && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+              <div className="w-full max-w-md rounded-2xl bg-gradient-to-br from-[#1a0f2e] to-[#0b0d1a] ring-1 ring-white/15 p-6 shadow-2xl">
+                <div className="text-center mb-5">
+                  <div className="text-4xl mb-2">🌐</div>
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#ffe066] to-[#ff5dff] bg-clip-text text-transparent">
+                    {t("pickLangTitle")}
+                  </h2>
+                  <p className="text-xs text-white/60 mt-1">{t("pickLangDesc")}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4 max-h-[50vh] overflow-y-auto">
+                  {(Object.keys(LANG_NAMES) as Lang[]).map((code) => {
+                    const sel = settings.lang === code;
+                    return (
+                      <button
+                        key={code}
+                        onClick={() => updateSetting("lang", code)}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-bold transition ${sel ? "bg-[#ffe066] text-black ring-2 ring-[#ffe066]" : "bg-white/5 hover:bg-white/10 text-white ring-1 ring-white/10"}`}
+                      >
+                        <span className="text-lg">{LANG_FLAGS[code]}</span>
+                        <span className="truncate">{LANG_NAMES[code]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => acceptLanguage(settings.lang)}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-[#ffe066] to-[#ff5dff] text-black font-black hover:scale-[1.02] transition"
+                >
+                  {t("continueBtn")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
