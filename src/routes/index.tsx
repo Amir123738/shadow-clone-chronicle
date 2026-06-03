@@ -2153,8 +2153,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       }
 
       for (const b of s.bullets) {
+        const br = b.r ?? 4;
+        if (b.from === "boss") {
+          ctx.shadowColor = b.color; ctx.shadowBlur = 14;
+        }
         ctx.fillStyle = b.color;
-        ctx.beginPath(); ctx.arc(b.pos.x, b.pos.y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(b.pos.x, b.pos.y, br, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
       }
 
       // Fire trail (super speed)
