@@ -4293,15 +4293,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="mt-6 p-4 rounded-xl ring-1 ring-[#fb7185]/40 bg-gradient-to-br from-[#2a0a1a] via-[#1a0f2e] to-[#0b0d1a]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">✨ Divine Fortune</h3>
-                      <p className="text-[11px] text-white/50">1 spin = ◆ {DIVINE_SPIN_COST.toLocaleString()} — premium prizes{freeDivineSpins > 0 ? ` · 🎟 ${freeDivineSpins} free` : ""}</p>
+                      <h3 className="text-lg font-black bg-gradient-to-r from-[#fb7185] via-[#f0abfc] to-[#7dd3fc] bg-clip-text text-transparent">{t("divineTitle")}</h3>
+                      <p className="text-[11px] text-white/50">{t("wheelSpinCost")} = ◆ {DIVINE_SPIN_COST.toLocaleString()} — {t("divineDesc")}{freeDivineSpins > 0 ? ` · 🎟 ${freeDivineSpins} ${t("freeSpinLabel")}` : ""}</p>
                     </div>
                     <button
                       onClick={spinDivine}
                       disabled={divineSpinning || (freeDivineSpins === 0 && shop.shadowCoins < DIVINE_SPIN_COST)}
                       className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fb7185] to-[#f0abfc] text-black font-black hover:scale-105 transition disabled:bg-white/10 disabled:text-white/40 disabled:scale-100 disabled:from-white/10 disabled:to-white/10"
                     >
-                      {divineSpinning ? "Spinning…" : freeDivineSpins > 0 ? `SPIN (FREE)` : `SPIN (◆${DIVINE_SPIN_COST})`}
+                      {divineSpinning ? t("spinning") : freeDivineSpins > 0 ? t("spinFree") : `${t("spin")} (◆${DIVINE_SPIN_COST})`}
                     </button>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -4334,12 +4334,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       </div>
                       {divineSpinning && (
                         <button onClick={skipDivine} className="mt-3 px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-xs font-bold text-white/80 transition">
-                          Skip ▶▶
+                          {t("skip")}
                         </button>
                       )}
                     </div>
                     <div className="flex-1 w-full">
-                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">Rewards & Odds</div>
+                      <div className="text-[11px] text-white/60 mb-2 font-bold uppercase tracking-wider">{t("rewardsOdds")}</div>
                       <ul className="text-xs space-y-1">
                         {DIVINE_REWARDS.map(r => (
                           <li key={r.id} className="flex items-center gap-2">
