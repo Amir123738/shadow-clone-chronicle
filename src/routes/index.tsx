@@ -2387,6 +2387,51 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     toast.success("Medium Mode Cleared! +1 Shady Spin & +1 Wheel Spin", { duration: 6000 });
                   }
                 }
+                // ---- PER-PLAYMODE BONUS (each of the 4 new modes gets its own unique reward on top of classic) ----
+                if (s.playMode !== "classic") {
+                  const cur2 = shopRef.current;
+                  if (s.playMode === "echo") {
+                    // Shadow Echoes: bonus Shadow Coins + Wheel spins
+                    const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 400 };
+                    shopRef.current = next; setShop(next);
+                    const fw = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 2;
+                    saveFreeSpins(FREE_WHEEL_SPINS_KEY, fw); setFreeWheelSpins(fw);
+                    bumpLifetime({ shadowEarned: 400 });
+                    toast.success("Echoes Bonus: +400 Shadow Coins & +2 Wheel Spins", { duration: 5000 });
+                  } else if (s.playMode === "army") {
+                    // Clone Army: bonus Shady Spins (the strategic gambler reward)
+                    const ns = loadShadySpins() + 3;
+                    saveShadySpins(ns); setShadySpins(ns);
+                    toast.success("Army Bonus: +3 Shady Spins", { duration: 5000 });
+                  } else if (s.playMode === "corruption") {
+                    // Corruption: brutal mode → big coin bag + Divine spin
+                    const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 900 };
+                    shopRef.current = next; setShop(next);
+                    const nd = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 1;
+                    saveFreeSpins(FREE_DIVINE_SPINS_KEY, nd); setFreeDivineSpins(nd);
+                    bumpLifetime({ shadowEarned: 900 });
+                    toast.success("Corruption Bonus: +900 Shadow Coins & +1 Divine Spin", { duration: 5000 });
+                  } else if (s.playMode === "events") {
+                    // Random Events: chaotic, jackpot-style — random roll
+                    const roll = Math.random();
+                    if (roll < 0.5) {
+                      const next: ShopSave = { ...cur2, shadowCoins: cur2.shadowCoins + 1500 };
+                      shopRef.current = next; setShop(next);
+                      bumpLifetime({ shadowEarned: 1500 });
+                      toast.success("Lucky Event: +1500 Shadow Coins!", { duration: 5000 });
+                    } else if (roll < 0.85) {
+                      const fw = loadFreeSpins(FREE_WHEEL_SPINS_KEY) + 3;
+                      saveFreeSpins(FREE_WHEEL_SPINS_KEY, fw); setFreeWheelSpins(fw);
+                      const ns = loadShadySpins() + 1;
+                      saveShadySpins(ns); setShadySpins(ns);
+                      toast.success("Event Spin Jackpot: +3 Wheel & +1 Shady Spins", { duration: 5000 });
+                    } else {
+                      const nd = loadFreeSpins(FREE_DIVINE_SPINS_KEY) + 2;
+                      saveFreeSpins(FREE_DIVINE_SPINS_KEY, nd); setFreeDivineSpins(nd);
+                      toast.success("MYTHIC EVENT: +2 Divine Spins!", { duration: 6000 });
+                    }
+                  }
+                }
               }
             }
           } else {
