@@ -1419,8 +1419,61 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const cds = boss.abilityCds!;
       const flags = boss.abilityFlags!;
       const id = boss.bossId;
-      // shared: pull (mega, plantium, final)
       const isPP = id === "plusplantium";
+      // ===== BRUTAL ABILITIES (all bosses) =====
+      // Barrage: ring of 8 homing-ish projectiles. Can't just kite.
+      cds.barrage = (cds.barrage ?? 3) - dt;
+      if (cds.barrage <= 0) {
+        const count = isPP ? 14 : id === "final" ? 12 : id === "plantium" ? 10 : 8;
+        const speed = isPP ? 360 : 300;
+        const dmg = boss.dmg * (isPP ? 0.35 : 0.28);
+        const aimAng = Math.atan2(s.player.pos.y - boss.pos.y, s.player.pos.x - boss.pos.x);
+        for (let i = 0; i < count; i++) {
+          const a = aimAng + (i - (count - 1) / 2) * 0.18;
+          s.bullets.push({
+            pos: { x: boss.pos.x, y: boss.pos.y },
+            vel: { x: Math.cos(a) * speed, y: Math.sin(a) * speed },
+            life: 2.5, dmg, from: "boss", color: boss.color, r: 6,
+          });
+        }
+        cds.barrage = isPP ? 3 : id === "final" ? 4 : 5.5;
+      }
+      // Dash: boss charges at the player at 3x speed
+      cds.dash = (cds.dash ?? 5) - dt;
+      if ((boss.abilityFlags as any)._dashT === undefined) (boss.abilityFlags as any)._dashT = 0;
+      if (cds.dash <= 0 && !(boss.abilityFlags as any)._dashing) {
+        (boss.abilityFlags as any)._dashing = true;
+        (boss.abilityFlags as any)._dashT = isPP ? 0.9 : 0.7;
+        const d = norm({ x: s.player.pos.x - boss.pos.x, y: s.player.pos.y - boss.pos.y });
+        (boss.abilityFlags as any)._dashDx = d.x;
+        (boss.abilityFlags as any)._dashDy = d.y;
+        cds.dash = isPP ? 4.5 : id === "final" ? 6 : 8;
+      }
+      if ((boss.abilityFlags as any)._dashing) {
+        const t = ((boss.abilityFlags as any)._dashT as number) - dt;
+        (boss.abilityFlags as any)._dashT = t;
+        const dx = (boss.abilityFlags as any)._dashDx as number;
+        const dy = (boss.abilityFlags as any)._dashDy as number;
+        const ds = boss.baseSpeed * (isPP ? 4.5 : 3.5);
+        boss.pos.x += dx * ds * dt;
+        boss.pos.y += dy * ds * dt;
+        if (dist(boss.pos, s.player.pos) < boss.r + s.player.r + 6) {
+          s.player.hp -= boss.dmg * 0.9 * (s.shieldTime > 0 ? 0.55 : 1);
+          (boss.abilityFlags as any)._dashing = false;
+        }
+        if (t <= 0) (boss.abilityFlags as any)._dashing = false;
+      }
+      // Quake: AOE shockwave that hits player no matter the distance (within radius)
+      cds.quake = (cds.quake ?? 9) - dt;
+      if (cds.quake <= 0) {
+        const radius = isPP ? 380 : id === "final" ? 320 : id === "plantium" ? 280 : 230;
+        if (dist(boss.pos, s.player.pos) < radius) {
+          s.player.hp -= boss.dmg * (isPP ? 1.1 : 0.75) * (s.shieldTime > 0 ? 0.55 : 1);
+          s.blurTime = Math.max(s.blurTime, 1.5);
+        }
+        cds.quake = isPP ? 7 : id === "final" ? 9 : 12;
+      }
+      // ===== Original tiered abilities =====
       if (id === "mega" || id === "plantium" || id === "final" || isPP) {
         cds.pull -= dt;
         if (cds.pull <= 0) {
