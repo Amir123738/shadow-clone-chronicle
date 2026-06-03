@@ -1712,7 +1712,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           // damage random spot near player
           const mx = s.player.pos.x + rand(-180, 180);
           const my = s.player.pos.y + rand(-180, 180);
-          s.explosionFx.push({ pos: { x: mx, y: my }, r: 0, maxR: 60, life: 0.4, maxLife: 0.4 });
+          s.explosionFx.push({ x: mx, y: my, r: 0, maxR: 60, life: 0.4 });
           for (const e of s.enemies) {
             if (Math.hypot(e.pos.x - mx, e.pos.y - my) < 70) e.hp -= 40;
           }
