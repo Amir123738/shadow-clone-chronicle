@@ -427,11 +427,18 @@ function rollShady(): ShadyReward {
 
 const SHADY_SPINS_KEY = "scs_shady_spins_v1";
 const LEVELS_CLEARED_KEY = "scs_levels_cleared_v1";
+const FREE_WHEEL_SPINS_KEY = "scs_free_wheel_spins_v1";
+const FREE_DIVINE_SPINS_KEY = "scs_free_divine_spins_v1";
 function loadShadySpins(): number {
   if (typeof window === "undefined") return 0;
   try { return Number(localStorage.getItem(SHADY_SPINS_KEY) ?? 0) || 0; } catch { return 0; }
 }
 function saveShadySpins(n: number) { try { localStorage.setItem(SHADY_SPINS_KEY, String(n)); } catch {} }
+function loadFreeSpins(key: string): number {
+  if (typeof window === "undefined") return 0;
+  try { return Number(localStorage.getItem(key) ?? 0) || 0; } catch { return 0; }
+}
+function saveFreeSpins(key: string, n: number) { try { localStorage.setItem(key, String(n)); } catch {} }
 function loadLevelsCleared(): number[] {
   if (typeof window === "undefined") return [];
   try { const raw = localStorage.getItem(LEVELS_CLEARED_KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v.filter(x => typeof x === "number") : []; } catch { return []; }
