@@ -1292,10 +1292,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
       } },
-    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls; can hit one enemy twice", apply: () => {
-        const s = stateRef.current; const prev = s.stats.bounceShots;
-        s.stats.bounceShots = true;
-        return { id: "bouncing", name: "Bouncing Bullets", undo: () => { s.stats.bounceShots = prev; }, redo: () => { s.stats.bounceShots = true; } };
+    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls & hit enemies twice for 35s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.bounceShotsTime = Math.max(s.bounceShotsTime, 35); };
+        go();
+        return { id: "bouncing", name: "Bouncing Bullets", undo: () => {}, redo: go };
       } },
     { id: "aquaman", name: "Aquaman", desc: "+30% bullet damage & spawn a BIG water clone that shoots water", apply: () => {
         const s = stateRef.current; const prev = s.stats.bulletDmg;
@@ -1315,10 +1316,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           undo: () => { s.stats.cloneSpeedMult = prevSpd; s.stats.cloneDmgMult = prevDmg; },
           redo: () => { s.stats.cloneSpeedMult = nSpd; s.stats.cloneDmgMult = nDmg; } };
       } },
-    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s", apply: () => {
-        const s = stateRef.current; const prev = s.healGhost;
-        s.healGhost = true;
-        return { id: "healghost", name: "The Healing Ghost", undo: () => { s.healGhost = prev; }, redo: () => { s.healGhost = true; } };
+    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s for 5s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.healGhostTime = Math.max(s.healGhostTime, 5); };
+        go();
+        return { id: "healghost", name: "The Healing Ghost", undo: () => {}, redo: go };
       } },
   ];
 
