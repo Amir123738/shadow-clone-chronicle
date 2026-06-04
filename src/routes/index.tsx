@@ -2163,7 +2163,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           s.cloneFireCd.push(0);
         }
         s.recording = [];
-        s.cloneTimer = CLONE_INTERVAL;
+        s.cloneTimer = s.fastCloneSpawn ? 5 : CLONE_INTERVAL;
       }
 
       // Update clones (healer + normal)
