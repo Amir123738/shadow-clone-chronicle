@@ -930,7 +930,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const s = stateRef.current;
     s.player = { pos: { x: W / 2, y: H / 2 }, r: 14, hp: 100, maxHp: 100 };
     s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1, cloneSpeedMult: 1 };
-    s.bounceShotsTime = 0; s.healGhostTime = 0;
+    s.bounceShotsTime = 0; s.healGhostTime = 0; s.waterShot = false; s.fastCloneSpawn = false;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
