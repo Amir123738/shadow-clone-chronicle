@@ -2228,7 +2228,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       s.specialClones = s.specialClones.filter(sc => sc.life === undefined || sc.life > 0);
 
       // Healing Ghost passive
-      if (s.healGhost) {
+      if (s.healGhostTime > 0) {
         s.player.hp = Math.min(s.player.maxHp, s.player.hp + 10 * dt);
       }
 
