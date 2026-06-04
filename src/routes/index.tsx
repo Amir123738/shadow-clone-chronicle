@@ -1371,7 +1371,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   // First-launch language picker: shown once per browser until dismissed.
   const [langPickerOpen, setLangPickerOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    try { return !localStorage.getItem("sc_lang_chosen"); } catch { return false; }
+    try {
+      // Show picker only if the user has NEVER been here before.
+      // sc_lang_chosen is the explicit flag; sc_settings means they played before i18n.
+      return !localStorage.getItem("sc_lang_chosen") && !localStorage.getItem("sc_settings");
+    } catch { return false; }
   });
   const acceptLanguage = (l: Lang) => {
     updateSetting("lang", l);
