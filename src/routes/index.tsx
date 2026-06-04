@@ -1613,10 +1613,16 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
       const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff")));
       const speed = s.stats.bulletSpeed;
-      const make = (dx: number, dy: number) => s.bullets.push({
-        pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
-        life: 1.2, dmg, from, color,
-      });
+      const make = (dx: number, dy: number) => {
+        const b: Bullet = {
+          pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
+          life: 1.2, dmg, from, color,
+        };
+        if (from === "player" && s.stats.bounceShots) {
+          b.bounces = 3; b.hits = new Map(); b.life = 2.4;
+        }
+        s.bullets.push(b);
+      };
       if (s.stats.tripleBullets) {
         const ang = Math.atan2(dir.y, dir.x);
         const spread = 0.18;
