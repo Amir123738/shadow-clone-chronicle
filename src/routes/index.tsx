@@ -26,6 +26,10 @@ import upgBigexplosion from "@/assets/upgrades/bigexplosion.png";
 import upgRadiation from "@/assets/upgrades/radiation.png";
 import upgBlackhole from "@/assets/upgrades/blackhole.png";
 import upgSlowtime from "@/assets/upgrades/slowtime.png";
+import upgBouncing from "@/assets/upgrades/bouncing.png";
+import upgAquaman from "@/assets/upgrades/aquaman.png";
+import upgShadowflash from "@/assets/upgrades/shadowflash.png";
+import upgHealghost from "@/assets/upgrades/healghost.png";
 
 const UPGRADE_ICONS: Record<string, string> = {
   fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
@@ -34,6 +38,7 @@ const UPGRADE_ICONS: Record<string, string> = {
   tornado: upgTornado, darkness: upgDarkness, bigclones: upgBigclones,
   dragonbreath: upgDragonbreath, bigexplosion: upgBigexplosion,
   radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
+  bouncing: upgBouncing, aquaman: upgAquaman, shadowflash: upgShadowflash, healghost: upgHealghost,
 };
 
 export const Route = createFileRoute("/")({
