@@ -3420,6 +3420,28 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       const p = s.player;
       const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
+
+      // Healing Ghost companion
+      if (s.healGhost) {
+        const t = performance.now() / 1000;
+        const gx = p.pos.x - 22 + Math.cos(t * 1.6) * 4;
+        const gy = p.pos.y - 30 + Math.sin(t * 2.2) * 3;
+        ctx.save();
+        ctx.shadowColor = "rgba(180,255,210,0.9)"; ctx.shadowBlur = 18;
+        ctx.fillStyle = "rgba(220,255,235,0.85)";
+        ctx.beginPath(); ctx.arc(gx, gy, 8, Math.PI, 0); ctx.lineTo(gx + 8, gy + 8);
+        ctx.lineTo(gx + 4, gy + 5); ctx.lineTo(gx, gy + 8);
+        ctx.lineTo(gx - 4, gy + 5); ctx.lineTo(gx - 8, gy + 8);
+        ctx.closePath(); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#0b0d1a";
+        ctx.beginPath(); ctx.arc(gx - 2.5, gy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx + 2.5, gy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#7cffb2";
+        ctx.font = "bold 9px system-ui"; ctx.textAlign = "center";
+        ctx.fillText("+", gx, gy + 3);
+        ctx.restore();
+      }
       // Person: shadow on ground, legs, torso, arms, head
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y + p.r + 2, p.r * 0.9, p.r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
