@@ -2175,13 +2175,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (target) {
             const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
             const isElectric = sc.kind === "electric";
+            const isWater = sc.flag === "water";
             s.bullets.push({
               pos: { x: sx, y: sy },
               vel: { x: d.x * 620, y: d.y * 620 },
               life: 1.2,
               dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
               from: "clone",
-              color: isElectric ? "#7df9ff" : "#ff66ff",
+              color: isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff"),
+              r: isWater ? 7 : undefined,
             });
             sc.fireCd = isElectric ? 0.35 : 0.45;
           }
