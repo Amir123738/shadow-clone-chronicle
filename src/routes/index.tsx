@@ -4609,7 +4609,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     return (
                       <button
                         key={code}
-                        onClick={() => updateSetting("lang", code)}
+                        onClick={() => { updateSetting("lang", code); try { localStorage.setItem("sc_lang_chosen", "1"); } catch {} }}
                         className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-bold transition ${sel ? "bg-[#ffe066] text-black ring-2 ring-[#ffe066]" : "bg-white/5 hover:bg-white/10 text-white ring-1 ring-white/10"}`}
                       >
                         <span className="text-lg">{LANG_FLAGS[code]}</span>
