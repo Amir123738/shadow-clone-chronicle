@@ -1654,7 +1654,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
           life: 1.2, dmg, from, color,
         };
-        if (from === "player" && s.stats.bounceShots) {
+        if (from === "player" && s.bounceShotsTime > 0) {
           b.bounces = 3; b.hits = new Map(); b.life = 2.4;
         }
         s.bullets.push(b);
