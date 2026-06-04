@@ -2141,8 +2141,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               fireBullet(f.pos, f.aim, "clone");
               s.cloneFireCd[c] = 1 / (s.stats.fireRate * 0.4);
             }
-            cl.idx++;
-            if (cl.idx >= cl.frames.length) cl.idx = 0;
+            const step = Math.max(1, Math.round(s.stats.cloneSpeedMult));
+            cl.idx += step;
+            if (cl.idx >= cl.frames.length) cl.idx = cl.idx % cl.frames.length;
           }
           cloneSurvive.push(true);
         }
