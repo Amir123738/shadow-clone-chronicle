@@ -909,7 +909,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     playMode: "classic" as PlayMode,
     corruption: 0,
     corruptionApplied: false,
-    echoTimer: 30,
+    echoTimer: 15,
     eventTimer: 90,
     currentEvent: null as null | string,
     currentEventTimer: 0,
