@@ -909,7 +909,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     playMode: "classic" as PlayMode,
     corruption: 0,
     corruptionApplied: false,
-    echoTimer: 30,
+    echoTimer: 15,
     eventTimer: 90,
     currentEvent: null as null | string,
     currentEventTimer: 0,
@@ -940,7 +940,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     s.gameMode = "normal"; s.levelId = 0; s.levelMult = 1; s.levelTotalWaves = TOTAL_WAVES;
     s.difficulty = "medium";
     s.playMode = "classic"; s.corruption = 0; s.corruptionApplied = false;
-    s.echoTimer = 30; s.eventTimer = 12; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
+    s.echoTimer = 15; s.eventTimer = 12; s.currentEvent = null; s.currentEventTimer = 0; s.meteorCd = 0;
   }, []);
 
   function edgeSpawn(): Vec {
@@ -1957,13 +1957,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.playMode === "echo") {
         s.echoTimer -= dt;
         if (s.echoTimer <= 0) {
-          s.echoTimer = 30;
-          // spawn a hostile shadow clone enemy at edge that hunts player
-          const spawn = edgeSpawn();
-          s.enemies.push({
-            pos: spawn, vel: { x: 0, y: 0 }, r: 14, hp: 220, maxHp: 220, speed: 145, baseSpeed: 145,
-            dmg: 16, baseDmg: 16, color: "#1a0a2a", xp: 8, coin: 6, kind: "fast",
-          });
+          // first hostile echo at ~15s, then every 20s, spawning more over time
+          s.echoTimer = 20;
+          const count = 1 + Math.min(3, Math.floor(s.time / 60));
+          for (let i = 0; i < count; i++) {
+            const spawn = edgeSpawn();
+            s.enemies.push({
+              pos: spawn, vel: { x: 0, y: 0 }, r: 15, hp: 220, maxHp: 220, speed: 165, baseSpeed: 165,
+              dmg: 16, baseDmg: 16, color: "#ff5d8a", xp: 8, coin: 6, kind: "fast",
+            });
+            s.explosionFx.push({ x: spawn.x, y: spawn.y, r: 0, maxR: 50, life: 0.5 });
+          }
+          toast.warning(count > 1 ? `${count} Hostile Echoes spawned!` : "A Hostile Echo appeared!", { duration: 2500 });
         }
       }
       if (s.playMode === "corruption") {
