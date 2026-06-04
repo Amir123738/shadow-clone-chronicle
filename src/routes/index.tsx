@@ -2684,6 +2684,33 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       }
 
 
+      // Boss dash telegraph: red danger zone before charge
+      for (const e of s.enemies) {
+        if (e.kind !== "boss") continue;
+        const flags: any = e.abilityFlags;
+        if (!flags) continue;
+        const tele = flags._dashTele as number | undefined;
+        const dashing = flags._dashing as boolean | undefined;
+        if ((!tele || tele <= 0) && !dashing) continue;
+        const dx = flags._dashDx as number, dy = flags._dashDy as number;
+        const len = (flags._dashLen as number) ?? 600;
+        const width = (e.r + 12) * 2;
+        const ang = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.translate(e.pos.x, e.pos.y);
+        ctx.rotate(ang);
+        const pulse = 0.35 + 0.25 * Math.abs(Math.sin(performance.now() / 80));
+        const alpha = dashing ? 0.5 : pulse;
+        const grad = ctx.createLinearGradient(0, 0, len, 0);
+        grad.addColorStop(0, `rgba(255,40,40,${alpha})`);
+        grad.addColorStop(1, `rgba(255,40,40,0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, -width / 2, len, width);
+        ctx.strokeStyle = `rgba(255,80,80,${Math.min(1, alpha + 0.3)})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, -width / 2, len, width);
+        ctx.restore();
+      }
 
       for (const e of s.enemies) {
         const er = e.r;
