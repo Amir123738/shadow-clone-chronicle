@@ -1647,15 +1647,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
       const poisonMul = s.poisonArrowTime > 0 ? 1.5 : 1;
-      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1) * poisonMul;
+      const waterMul = s.waterShot ? 1.25 : 1;
+      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1) * poisonMul * waterMul;
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
-      const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff")));
+      const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (s.waterShot ? "#3da9fc" : (from === "player" ? "#ffe066" : "#b388ff"))));
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => {
         const b: Bullet = {
           pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
           life: 1.2, dmg, from, color,
         };
+        if (s.waterShot) b.r = 7;
         if (from === "player" && s.bounceShotsTime > 0) {
           b.bounces = 3; b.hits = new Map(); b.life = 2.4;
         }
