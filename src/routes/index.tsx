@@ -1286,6 +1286,34 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
       } },
+    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls; can hit one enemy twice", apply: () => {
+        const s = stateRef.current; const prev = s.stats.bounceShots;
+        s.stats.bounceShots = true;
+        return { id: "bouncing", name: "Bouncing Bullets", undo: () => { s.stats.bounceShots = prev; }, redo: () => { s.stats.bounceShots = true; } };
+      } },
+    { id: "aquaman", name: "Aquaman", desc: "+30% bullet damage & spawn a BIG water clone that shoots water", apply: () => {
+        const s = stateRef.current; const prev = s.stats.bulletDmg;
+        s.stats.bulletDmg *= 1.3;
+        s.specialClones.push({ kind: "big", flag: "water", angle: Math.random() * Math.PI * 2, radius: 64, orbitSpeed: 1.3, fireCd: 0.35 });
+        const n = s.stats.bulletDmg;
+        return { id: "aquaman", name: "Aquaman", undo: () => { s.stats.bulletDmg = prev; }, redo: () => { s.stats.bulletDmg = n; } };
+      } },
+    { id: "shadowflash", name: "Shadow of a Flash", desc: "Your clones are 50% faster & 15% stronger", apply: () => {
+        const s = stateRef.current;
+        const prevSpd = s.stats.cloneSpeedMult; const prevDmg = s.stats.cloneDmgMult;
+        s.stats.cloneSpeedMult *= 1.5;
+        s.stats.cloneDmgMult *= 1.15;
+        for (const sc of s.specialClones) sc.orbitSpeed *= 1.5;
+        const nSpd = s.stats.cloneSpeedMult; const nDmg = s.stats.cloneDmgMult;
+        return { id: "shadowflash", name: "Shadow of a Flash",
+          undo: () => { s.stats.cloneSpeedMult = prevSpd; s.stats.cloneDmgMult = prevDmg; },
+          redo: () => { s.stats.cloneSpeedMult = nSpd; s.stats.cloneDmgMult = nDmg; } };
+      } },
+    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s", apply: () => {
+        const s = stateRef.current; const prev = s.healGhost;
+        s.healGhost = true;
+        return { id: "healghost", name: "The Healing Ghost", undo: () => { s.healGhost = prev; }, redo: () => { s.healGhost = true; } };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
