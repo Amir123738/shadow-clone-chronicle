@@ -1539,6 +1539,27 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.stats.tripleBullets = true;
       },
     },
+    {
+      id: "lordseas", name: "Lord of Seven Seas", color: "#3da9fc",
+      desc: "Shoot water (+25% dmg) & spawn 2 BIG Aquaman clones that shoot water",
+      apply: () => {
+        const s = stateRef.current;
+        s.waterShot = true;
+        for (let k = 0; k < 2; k++) {
+          s.specialClones.push({ kind: "big", flag: "water", angle: (k * Math.PI), radius: 64, orbitSpeed: 1.3, fireCd: 0.35 });
+        }
+      },
+    },
+    {
+      id: "ultimateclone", name: "Ultimate Clone Spawner", color: "#b388ff",
+      desc: "Clones spawn every 5s & +35% move speed",
+      apply: () => {
+        const s = stateRef.current;
+        s.fastCloneSpawn = true;
+        s.cloneTimer = Math.min(s.cloneTimer, 5);
+        s.stats.moveSpeed *= 1.35;
+      },
+    },
   ];
 
   const startLevel = (levelId: number) => {
