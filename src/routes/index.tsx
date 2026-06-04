@@ -3430,7 +3430,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
 
       // Healing Ghost companion
-      if (s.healGhost) {
+      if (s.healGhostTime > 0) {
         const t = performance.now() / 1000;
         const gx = p.pos.x - 22 + Math.cos(t * 1.6) * 4;
         const gy = p.pos.y - 30 + Math.sin(t * 2.2) * 3;
