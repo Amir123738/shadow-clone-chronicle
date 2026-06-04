@@ -849,6 +849,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     },
     bounceShotsTime: 0,
     healGhostTime: 0,
+    waterShot: false,
+    fastCloneSpawn: false,
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
     enemies: [] as Enemy[],
@@ -928,7 +930,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const s = stateRef.current;
     s.player = { pos: { x: W / 2, y: H / 2 }, r: 14, hp: 100, maxHp: 100 };
     s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1, cloneSpeedMult: 1 };
-    s.bounceShotsTime = 0; s.healGhostTime = 0;
+    s.bounceShotsTime = 0; s.healGhostTime = 0; s.waterShot = false; s.fastCloneSpawn = false;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
@@ -1537,6 +1539,27 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.stats.tripleBullets = true;
       },
     },
+    {
+      id: "lordseas", name: "Lord of Seven Seas", color: "#3da9fc",
+      desc: "Shoot water (+25% dmg) & spawn 2 BIG Aquaman clones that shoot water",
+      apply: () => {
+        const s = stateRef.current;
+        s.waterShot = true;
+        for (let k = 0; k < 2; k++) {
+          s.specialClones.push({ kind: "big", flag: "water", angle: (k * Math.PI), radius: 64, orbitSpeed: 1.3, fireCd: 0.35 });
+        }
+      },
+    },
+    {
+      id: "ultimateclone", name: "Ultimate Clone Spawner", color: "#b388ff",
+      desc: "Clones spawn every 5s & +35% move speed",
+      apply: () => {
+        const s = stateRef.current;
+        s.fastCloneSpawn = true;
+        s.cloneTimer = Math.min(s.cloneTimer, 5);
+        s.stats.moveSpeed *= 1.35;
+      },
+    },
   ];
 
   const startLevel = (levelId: number) => {
@@ -1645,15 +1668,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
       if (dir.x === 0 && dir.y === 0) return;
       const poisonMul = s.poisonArrowTime > 0 ? 1.5 : 1;
-      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1) * poisonMul;
+      const waterMul = s.waterShot ? 1.25 : 1;
+      const fireMul = (s.fireArrowTime > 0 ? 1.5 : 1) * (s.hyperTime > 0 ? 2 : 1) * poisonMul * waterMul;
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
-      const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff")));
+      const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (s.waterShot ? "#3da9fc" : (from === "player" ? "#ffe066" : "#b388ff"))));
       const speed = s.stats.bulletSpeed;
       const make = (dx: number, dy: number) => {
         const b: Bullet = {
           pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
           life: 1.2, dmg, from, color,
         };
+        if (s.waterShot) b.r = 7;
         if (from === "player" && s.bounceShotsTime > 0) {
           b.bounces = 3; b.hits = new Map(); b.life = 2.4;
         }
@@ -2159,7 +2184,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           s.cloneFireCd.push(0);
         }
         s.recording = [];
-        s.cloneTimer = CLONE_INTERVAL;
+        s.cloneTimer = s.fastCloneSpawn ? 5 : CLONE_INTERVAL;
       }
 
       // Update clones (healer + normal)
