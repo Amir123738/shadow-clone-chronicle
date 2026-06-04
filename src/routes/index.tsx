@@ -2101,6 +2101,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.waveWarningTimer > 0) s.waveWarningTimer = Math.max(0, s.waveWarningTimer - dt);
       if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
       if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
+      if (s.bounceShotsTime > 0) s.bounceShotsTime = Math.max(0, s.bounceShotsTime - dt);
+      if (s.healGhostTime > 0) s.healGhostTime = Math.max(0, s.healGhostTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
