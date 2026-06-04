@@ -2325,6 +2325,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         b.pos.x += b.vel.x * dt;
         b.pos.y += b.vel.y * dt;
         b.life -= dt;
+        // Bouncing bullets: reflect off walls
+        if (b.bounces !== undefined && b.bounces > 0) {
+          if (b.pos.x < 4) { b.pos.x = 4; b.vel.x = Math.abs(b.vel.x); b.bounces--; }
+          else if (b.pos.x > W - 4) { b.pos.x = W - 4; b.vel.x = -Math.abs(b.vel.x); b.bounces--; }
+          if (b.pos.y < 4) { b.pos.y = 4; b.vel.y = Math.abs(b.vel.y); b.bounces--; }
+          else if (b.pos.y > H - 4) { b.pos.y = H - 4; b.vel.y = -Math.abs(b.vel.y); b.bounces--; }
+        }
         if (b.from === "boss") {
           if (dist(b.pos, s.player.pos) < s.player.r + (b.r ?? 5)) {
             s.player.hp -= b.dmg * (s.shieldTime > 0 ? 0.55 : 1);
@@ -2334,7 +2341,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           for (const e of s.enemies) {
             if (e.hp <= 0) continue;
             if (dist(b.pos, e.pos) < e.r + 3) {
-              e.hp -= b.dmg; b.life = 0; break;
+              if (b.hits) {
+                const n = b.hits.get(e) ?? 0;
+                if (n >= 2) continue;
+                e.hp -= b.dmg;
+                b.hits.set(e, n + 1);
+                // brief nudge so we don't re-hit same frame
+                b.pos.x += b.vel.x * dt * 2;
+                b.pos.y += b.vel.y * dt * 2;
+                break;
+              } else {
+                e.hp -= b.dmg; b.life = 0; break;
+              }
             }
           }
         }
