@@ -26,6 +26,10 @@ import upgBigexplosion from "@/assets/upgrades/bigexplosion.png";
 import upgRadiation from "@/assets/upgrades/radiation.png";
 import upgBlackhole from "@/assets/upgrades/blackhole.png";
 import upgSlowtime from "@/assets/upgrades/slowtime.png";
+import upgBouncing from "@/assets/upgrades/bouncing.png";
+import upgAquaman from "@/assets/upgrades/aquaman.png";
+import upgShadowflash from "@/assets/upgrades/shadowflash.png";
+import upgHealghost from "@/assets/upgrades/healghost.png";
 
 const UPGRADE_ICONS: Record<string, string> = {
   fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
@@ -34,6 +38,7 @@ const UPGRADE_ICONS: Record<string, string> = {
   tornado: upgTornado, darkness: upgDarkness, bigclones: upgBigclones,
   dragonbreath: upgDragonbreath, bigexplosion: upgBigexplosion,
   radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
+  bouncing: upgBouncing, aquaman: upgAquaman, shadowflash: upgShadowflash, healghost: upgHealghost,
 };
 
 export const Route = createFileRoute("/")({
@@ -840,9 +845,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     stats: {
       moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520,
       doubleBullets: false, tripleBullets: false, cloneDmgMult: 1,
-      bounceShots: false, cloneSpeedMult: 1,
+      cloneSpeedMult: 1,
     },
-    healGhost: false,
+    bounceShotsTime: 0,
+    healGhostTime: 0,
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
     enemies: [] as Enemy[],
@@ -921,8 +927,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const resetGame = useCallback(() => {
     const s = stateRef.current;
     s.player = { pos: { x: W / 2, y: H / 2 }, r: 14, hp: 100, maxHp: 100 };
-    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1, bounceShots: false, cloneSpeedMult: 1 };
-    s.healGhost = false;
+    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1, cloneSpeedMult: 1 };
+    s.bounceShotsTime = 0; s.healGhostTime = 0;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
@@ -1286,10 +1292,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
       } },
-    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls; can hit one enemy twice", apply: () => {
-        const s = stateRef.current; const prev = s.stats.bounceShots;
-        s.stats.bounceShots = true;
-        return { id: "bouncing", name: "Bouncing Bullets", undo: () => { s.stats.bounceShots = prev; }, redo: () => { s.stats.bounceShots = true; } };
+    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls & hit enemies twice for 35s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.bounceShotsTime = Math.max(s.bounceShotsTime, 35); };
+        go();
+        return { id: "bouncing", name: "Bouncing Bullets", undo: () => {}, redo: go };
       } },
     { id: "aquaman", name: "Aquaman", desc: "+30% bullet damage & spawn a BIG water clone that shoots water", apply: () => {
         const s = stateRef.current; const prev = s.stats.bulletDmg;
@@ -1309,10 +1316,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           undo: () => { s.stats.cloneSpeedMult = prevSpd; s.stats.cloneDmgMult = prevDmg; },
           redo: () => { s.stats.cloneSpeedMult = nSpd; s.stats.cloneDmgMult = nDmg; } };
       } },
-    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s", apply: () => {
-        const s = stateRef.current; const prev = s.healGhost;
-        s.healGhost = true;
-        return { id: "healghost", name: "The Healing Ghost", undo: () => { s.healGhost = prev; }, redo: () => { s.healGhost = true; } };
+    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s for 5s", apply: () => {
+        const s = stateRef.current;
+        const go = () => { s.healGhostTime = Math.max(s.healGhostTime, 5); };
+        go();
+        return { id: "healghost", name: "The Healing Ghost", undo: () => {}, redo: go };
       } },
   ];
 
@@ -1646,7 +1654,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
           life: 1.2, dmg, from, color,
         };
-        if (from === "player" && s.stats.bounceShots) {
+        if (from === "player" && s.bounceShotsTime > 0) {
           b.bounces = 3; b.hits = new Map(); b.life = 2.4;
         }
         s.bullets.push(b);
@@ -2093,6 +2101,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (s.waveWarningTimer > 0) s.waveWarningTimer = Math.max(0, s.waveWarningTimer - dt);
       if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
       if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
+      if (s.bounceShotsTime > 0) s.bounceShotsTime = Math.max(0, s.bounceShotsTime - dt);
+      if (s.healGhostTime > 0) s.healGhostTime = Math.max(0, s.healGhostTime - dt);
       // age fire trail
       for (const t of s.fireTrail) t.life -= dt;
       s.fireTrail = s.fireTrail.filter(t => t.life > 0);
@@ -2220,7 +2230,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       s.specialClones = s.specialClones.filter(sc => sc.life === undefined || sc.life > 0);
 
       // Healing Ghost passive
-      if (s.healGhost) {
+      if (s.healGhostTime > 0) {
         s.player.hp = Math.min(s.player.maxHp, s.player.hp + 10 * dt);
       }
 
@@ -3422,7 +3432,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
 
       // Healing Ghost companion
-      if (s.healGhost) {
+      if (s.healGhostTime > 0) {
         const t = performance.now() / 1000;
         const gx = p.pos.x - 22 + Math.cos(t * 1.6) * 4;
         const gy = p.pos.y - 30 + Math.sin(t * 2.2) * 3;
