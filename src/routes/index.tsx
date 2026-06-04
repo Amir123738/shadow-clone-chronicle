@@ -1371,7 +1371,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   // First-launch language picker: shown once per browser until dismissed.
   const [langPickerOpen, setLangPickerOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    try { return !localStorage.getItem("sc_lang_chosen"); } catch { return false; }
+    try {
+      // Show picker only if the user has NEVER been here before.
+      // sc_lang_chosen is the explicit flag; sc_settings means they played before i18n.
+      return !localStorage.getItem("sc_lang_chosen") && !localStorage.getItem("sc_settings");
+    } catch { return false; }
   });
   const acceptLanguage = (l: Lang) => {
     updateSetting("lang", l);
@@ -4605,7 +4609,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     return (
                       <button
                         key={code}
-                        onClick={() => updateSetting("lang", code)}
+                        onClick={() => { updateSetting("lang", code); try { localStorage.setItem("sc_lang_chosen", "1"); } catch {} }}
                         className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-bold transition ${sel ? "bg-[#ffe066] text-black ring-2 ring-[#ffe066]" : "bg-white/5 hover:bg-white/10 text-white ring-1 ring-white/10"}`}
                       >
                         <span className="text-lg">{LANG_FLAGS[code]}</span>
