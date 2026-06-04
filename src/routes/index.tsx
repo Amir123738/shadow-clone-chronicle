@@ -845,9 +845,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     stats: {
       moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520,
       doubleBullets: false, tripleBullets: false, cloneDmgMult: 1,
-      bounceShots: false, cloneSpeedMult: 1,
+      cloneSpeedMult: 1,
     },
-    healGhost: false,
+    bounceShotsTime: 0,
+    healGhostTime: 0,
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
     enemies: [] as Enemy[],
