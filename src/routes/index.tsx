@@ -63,7 +63,7 @@ function GameRoute() {
 type Vec = { x: number; y: number };
 type Input = { up: boolean; down: boolean; left: boolean; right: boolean; shoot: boolean; aim: Vec };
 type Frame = { pos: Vec; aim: Vec; shoot: boolean };
-type Bullet = { pos: Vec; vel: Vec; life: number; dmg: number; from: "player" | "clone" | "boss"; color: string; r?: number };
+type Bullet = { pos: Vec; vel: Vec; life: number; dmg: number; from: "player" | "clone" | "boss"; color: string; r?: number; bounces?: number; hits?: Map<unknown, number> };
 type BossId = "super" | "mega" | "hyper" | "plantium" | "final" | "plusplantium" | null;
 type Enemy = {
   pos: Vec; vel: Vec; hp: number; maxHp: number; r: number; speed: number; baseSpeed: number;
@@ -75,7 +75,7 @@ type Enemy = {
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
-type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number };
+type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" };
 type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
@@ -840,7 +840,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     stats: {
       moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520,
       doubleBullets: false, tripleBullets: false, cloneDmgMult: 1,
+      bounceShots: false, cloneSpeedMult: 1,
     },
+    healGhost: false,
     input: { up: false, down: false, left: false, right: false, shoot: false, aim: { x: W / 2, y: H / 2 } as Vec } as Input,
     bullets: [] as Bullet[],
     enemies: [] as Enemy[],
@@ -919,7 +921,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const resetGame = useCallback(() => {
     const s = stateRef.current;
     s.player = { pos: { x: W / 2, y: H / 2 }, r: 14, hp: 100, maxHp: 100 };
-    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1 };
+    s.stats = { moveSpeed: 220, fireRate: 4, bulletDmg: 18, bulletSpeed: 520, doubleBullets: false, tripleBullets: false, cloneDmgMult: 1, bounceShots: false, cloneSpeedMult: 1 };
+    s.healGhost = false;
     s.bullets = []; s.enemies = []; s.pickups = []; s.clones = []; s.recording = [];
     s.fireCd = 0; s.cloneFireCd = []; s.spawnQueue = 0; s.waveActive = false; s.bossSpawned = false;
     s.time = 0; s.cloneTimer = CLONE_INTERVAL; s.wave = 0; s.score = 0; s.coins = 0;
@@ -1283,6 +1286,34 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "slowtime", name: "Slowed-Down Time", undo: () => {}, redo: go };
       } },
+    { id: "bouncing", name: "Bouncing Bullets", desc: "Bullets bounce off walls; can hit one enemy twice", apply: () => {
+        const s = stateRef.current; const prev = s.stats.bounceShots;
+        s.stats.bounceShots = true;
+        return { id: "bouncing", name: "Bouncing Bullets", undo: () => { s.stats.bounceShots = prev; }, redo: () => { s.stats.bounceShots = true; } };
+      } },
+    { id: "aquaman", name: "Aquaman", desc: "+30% bullet damage & spawn a BIG water clone that shoots water", apply: () => {
+        const s = stateRef.current; const prev = s.stats.bulletDmg;
+        s.stats.bulletDmg *= 1.3;
+        s.specialClones.push({ kind: "big", flag: "water", angle: Math.random() * Math.PI * 2, radius: 64, orbitSpeed: 1.3, fireCd: 0.35 });
+        const n = s.stats.bulletDmg;
+        return { id: "aquaman", name: "Aquaman", undo: () => { s.stats.bulletDmg = prev; }, redo: () => { s.stats.bulletDmg = n; } };
+      } },
+    { id: "shadowflash", name: "Shadow of a Flash", desc: "Your clones are 50% faster & 15% stronger", apply: () => {
+        const s = stateRef.current;
+        const prevSpd = s.stats.cloneSpeedMult; const prevDmg = s.stats.cloneDmgMult;
+        s.stats.cloneSpeedMult *= 1.5;
+        s.stats.cloneDmgMult *= 1.15;
+        for (const sc of s.specialClones) sc.orbitSpeed *= 1.5;
+        const nSpd = s.stats.cloneSpeedMult; const nDmg = s.stats.cloneDmgMult;
+        return { id: "shadowflash", name: "Shadow of a Flash",
+          undo: () => { s.stats.cloneSpeedMult = prevSpd; s.stats.cloneDmgMult = prevDmg; },
+          redo: () => { s.stats.cloneSpeedMult = nSpd; s.stats.cloneDmgMult = nDmg; } };
+      } },
+    { id: "healghost", name: "The Healing Ghost", desc: "A ghost follows you, healing 10 HP/s", apply: () => {
+        const s = stateRef.current; const prev = s.healGhost;
+        s.healGhost = true;
+        return { id: "healghost", name: "The Healing Ghost", undo: () => { s.healGhost = prev; }, redo: () => { s.healGhost = true; } };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -1610,10 +1641,16 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       const dmg = (from === "player" ? s.stats.bulletDmg * fireMul : s.stats.bulletDmg * 0.45 * s.stats.cloneDmgMult * fireMul);
       const color = s.poisonArrowTime > 0 ? "#7cffb2" : (s.hyperTime > 0 ? "#ff2e88" : (s.fireArrowTime > 0 ? "#ff7a18" : (from === "player" ? "#ffe066" : "#b388ff")));
       const speed = s.stats.bulletSpeed;
-      const make = (dx: number, dy: number) => s.bullets.push({
-        pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
-        life: 1.2, dmg, from, color,
-      });
+      const make = (dx: number, dy: number) => {
+        const b: Bullet = {
+          pos: { x: origin.x, y: origin.y }, vel: { x: dx * speed, y: dy * speed },
+          life: 1.2, dmg, from, color,
+        };
+        if (from === "player" && s.stats.bounceShots) {
+          b.bounces = 3; b.hits = new Map(); b.life = 2.4;
+        }
+        s.bullets.push(b);
+      };
       if (s.stats.tripleBullets) {
         const ang = Math.atan2(dir.y, dir.x);
         const spread = 0.18;
@@ -2132,8 +2169,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               fireBullet(f.pos, f.aim, "clone");
               s.cloneFireCd[c] = 1 / (s.stats.fireRate * 0.4);
             }
-            cl.idx++;
-            if (cl.idx >= cl.frames.length) cl.idx = 0;
+            const step = Math.max(1, Math.round(s.stats.cloneSpeedMult));
+            cl.idx += step;
+            if (cl.idx >= cl.frames.length) cl.idx = cl.idx % cl.frames.length;
           }
           cloneSurvive.push(true);
         }
@@ -2165,19 +2203,26 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (target) {
             const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
             const isElectric = sc.kind === "electric";
+            const isWater = sc.flag === "water";
             s.bullets.push({
               pos: { x: sx, y: sy },
               vel: { x: d.x * 620, y: d.y * 620 },
               life: 1.2,
               dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
               from: "clone",
-              color: isElectric ? "#7df9ff" : "#ff66ff",
+              color: isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff"),
+              r: isWater ? 7 : undefined,
             });
             sc.fireCd = isElectric ? 0.35 : 0.45;
           }
         }
       }
       s.specialClones = s.specialClones.filter(sc => sc.life === undefined || sc.life > 0);
+
+      // Healing Ghost passive
+      if (s.healGhost) {
+        s.player.hp = Math.min(s.player.maxHp, s.player.hp + 10 * dt);
+      }
 
       // Tornado: push enemies & heal
       if (s.tornadoTime > 0) {
@@ -2316,6 +2361,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         b.pos.x += b.vel.x * dt;
         b.pos.y += b.vel.y * dt;
         b.life -= dt;
+        // Bouncing bullets: reflect off walls
+        if (b.bounces !== undefined && b.bounces > 0) {
+          if (b.pos.x < 4) { b.pos.x = 4; b.vel.x = Math.abs(b.vel.x); b.bounces--; }
+          else if (b.pos.x > W - 4) { b.pos.x = W - 4; b.vel.x = -Math.abs(b.vel.x); b.bounces--; }
+          if (b.pos.y < 4) { b.pos.y = 4; b.vel.y = Math.abs(b.vel.y); b.bounces--; }
+          else if (b.pos.y > H - 4) { b.pos.y = H - 4; b.vel.y = -Math.abs(b.vel.y); b.bounces--; }
+        }
         if (b.from === "boss") {
           if (dist(b.pos, s.player.pos) < s.player.r + (b.r ?? 5)) {
             s.player.hp -= b.dmg * (s.shieldTime > 0 ? 0.55 : 1);
@@ -2325,7 +2377,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           for (const e of s.enemies) {
             if (e.hp <= 0) continue;
             if (dist(b.pos, e.pos) < e.r + 3) {
-              e.hp -= b.dmg; b.life = 0; break;
+              if (b.hits) {
+                const n = b.hits.get(e) ?? 0;
+                if (n >= 2) continue;
+                e.hp -= b.dmg;
+                b.hits.set(e, n + 1);
+                // brief nudge so we don't re-hit same frame
+                b.pos.x += b.vel.x * dt * 2;
+                b.pos.y += b.vel.y * dt * 2;
+                break;
+              } else {
+                e.hp -= b.dmg; b.life = 0; break;
+              }
             }
           }
         }
@@ -3357,6 +3420,28 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
       const p = s.player;
       const pang = Math.atan2(s.input.aim.y - p.pos.y, s.input.aim.x - p.pos.x);
+
+      // Healing Ghost companion
+      if (s.healGhost) {
+        const t = performance.now() / 1000;
+        const gx = p.pos.x - 22 + Math.cos(t * 1.6) * 4;
+        const gy = p.pos.y - 30 + Math.sin(t * 2.2) * 3;
+        ctx.save();
+        ctx.shadowColor = "rgba(180,255,210,0.9)"; ctx.shadowBlur = 18;
+        ctx.fillStyle = "rgba(220,255,235,0.85)";
+        ctx.beginPath(); ctx.arc(gx, gy, 8, Math.PI, 0); ctx.lineTo(gx + 8, gy + 8);
+        ctx.lineTo(gx + 4, gy + 5); ctx.lineTo(gx, gy + 8);
+        ctx.lineTo(gx - 4, gy + 5); ctx.lineTo(gx - 8, gy + 8);
+        ctx.closePath(); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#0b0d1a";
+        ctx.beginPath(); ctx.arc(gx - 2.5, gy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx + 2.5, gy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#7cffb2";
+        ctx.font = "bold 9px system-ui"; ctx.textAlign = "center";
+        ctx.fillText("+", gx, gy + 3);
+        ctx.restore();
+      }
       // Person: shadow on ground, legs, torso, arms, head
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y + p.r + 2, p.r * 0.9, p.r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
