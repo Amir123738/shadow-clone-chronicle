@@ -1737,15 +1737,25 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           cds.barrage = 5.5;
         }
       }
-      // ---------- DASH: charges player at high speed ----------
+      // ---------- DASH: telegraphs a danger zone, then charges player ----------
       if (has("dash")) {
         cds.dash = (cds.dash ?? 5) - dt;
-        if (cds.dash <= 0 && !(flags as any)._dashing) {
-          (flags as any)._dashing = true;
-          (flags as any)._dashT = 0.7;
+        if (cds.dash <= 0 && !(flags as any)._dashing && !(flags as any)._dashTele) {
+          // begin telegraph
+          (flags as any)._dashTele = 0.7;
           const d = norm({ x: s.player.pos.x - boss.pos.x, y: s.player.pos.y - boss.pos.y });
           (flags as any)._dashDx = d.x; (flags as any)._dashDy = d.y;
+          (flags as any)._dashLen = boss.baseSpeed * 3.5 * 0.7;
           cds.dash = 7;
+        }
+        if ((flags as any)._dashTele && !(flags as any)._dashing) {
+          const t = ((flags as any)._dashTele as number) - dt;
+          (flags as any)._dashTele = t;
+          if (t <= 0) {
+            (flags as any)._dashTele = 0;
+            (flags as any)._dashing = true;
+            (flags as any)._dashT = 0.7;
+          }
         }
         if ((flags as any)._dashing) {
           const t = ((flags as any)._dashT as number) - dt;
