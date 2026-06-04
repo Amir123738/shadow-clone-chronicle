@@ -2684,6 +2684,134 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
         const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
         const isElec = sc.kind === "electric";
+
+        // ===== AQUAMAN variant: unique design, skip generic warrior render =====
+        if (sc.flag === "water") {
+          const scale = 1.7;
+          const facing = Math.atan2(s.player.pos.y - sy, s.player.pos.x - sx);
+          const t = performance.now() / 1000;
+
+          // ocean aura with ripples
+          const aura = ctx.createRadialGradient(sx, sy, 4, sx, sy, 30 * scale);
+          aura.addColorStop(0, "rgba(125,211,252,0.55)");
+          aura.addColorStop(1, "rgba(14,116,144,0)");
+          ctx.fillStyle = aura;
+          ctx.beginPath(); ctx.arc(sx, sy, 30 * scale, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "rgba(186,230,253,0.45)"; ctx.lineWidth = 1;
+          for (let i = 0; i < 2; i++) {
+            const rr = ((t * 18 + i * 14) % 28) + 6;
+            ctx.globalAlpha = Math.max(0, 1 - rr / 34);
+            ctx.beginPath(); ctx.arc(sx, sy, rr, 0, Math.PI * 2); ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+
+          // flowing green cape
+          ctx.fillStyle = "#15803d";
+          ctx.beginPath();
+          ctx.moveTo(sx - 7 * scale, sy - 2 * scale);
+          ctx.quadraticCurveTo(sx - 11 * scale, sy + 6 * scale, sx - 9 * scale, sy + 14 * scale);
+          ctx.lineTo(sx + 9 * scale, sy + 14 * scale);
+          ctx.quadraticCurveTo(sx + 11 * scale, sy + 6 * scale, sx + 7 * scale, sy - 2 * scale);
+          ctx.closePath(); ctx.fill();
+
+          // golden scale-mail torso
+          const torso = ctx.createLinearGradient(sx, sy - 4 * scale, sx, sy + 12 * scale);
+          torso.addColorStop(0, "#fde047");
+          torso.addColorStop(1, "#a16207");
+          ctx.fillStyle = torso;
+          ctx.beginPath(); ctx.ellipse(sx, sy + 3 * scale, 7.5 * scale, 10.5 * scale, 0, 0, Math.PI * 2); ctx.fill();
+          // scale pattern dots
+          ctx.fillStyle = "rgba(255,255,255,0.35)";
+          for (let r = 0; r < 3; r++) for (let c = -1; c <= 1; c++) {
+            ctx.beginPath(); ctx.arc(sx + c * 2.4 * scale, sy + (r * 2.4 - 1) * scale, 0.7 * scale, 0, Math.PI * 2); ctx.fill();
+          }
+
+          // green leggings
+          ctx.fillStyle = "#166534";
+          ctx.fillRect(sx - 4 * scale, sy + 10 * scale, 3 * scale, 6 * scale);
+          ctx.fillRect(sx + 1 * scale, sy + 10 * scale, 3 * scale, 6 * scale);
+
+          // head (tanned skin)
+          ctx.fillStyle = "#f5cba7";
+          ctx.beginPath(); ctx.arc(sx, sy - 7 * scale, 4.6 * scale, 0, Math.PI * 2); ctx.fill();
+
+          // blond flowing hair
+          ctx.fillStyle = "#facc15";
+          ctx.beginPath();
+          ctx.arc(sx, sy - 9 * scale, 5 * scale, Math.PI, 0);
+          ctx.lineTo(sx + 5 * scale, sy - 4 * scale);
+          ctx.quadraticCurveTo(sx + 3 * scale, sy - 6 * scale, sx + 4.5 * scale, sy - 8 * scale);
+          ctx.lineTo(sx - 4.5 * scale, sy - 8 * scale);
+          ctx.quadraticCurveTo(sx - 3 * scale, sy - 6 * scale, sx - 5 * scale, sy - 4 * scale);
+          ctx.closePath(); ctx.fill();
+
+          // beard
+          ctx.fillStyle = "#ca8a04";
+          ctx.beginPath();
+          ctx.moveTo(sx - 3 * scale, sy - 5 * scale);
+          ctx.quadraticCurveTo(sx, sy - 1 * scale, sx + 3 * scale, sy - 5 * scale);
+          ctx.lineTo(sx + 2 * scale, sy - 3 * scale);
+          ctx.lineTo(sx - 2 * scale, sy - 3 * scale);
+          ctx.closePath(); ctx.fill();
+
+          // glowing cyan eyes
+          ctx.fillStyle = "#67e8f9";
+          ctx.beginPath(); ctx.arc(sx - 1.7 * scale, sy - 7.2 * scale, 1 * scale, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(sx + 1.7 * scale, sy - 7.2 * scale, 1 * scale, 0, Math.PI * 2); ctx.fill();
+
+          // ===== TRIDENT =====
+          const tipX = sx + Math.cos(facing) * 26 * scale;
+          const tipY = sy + Math.sin(facing) * 26 * scale;
+          const baseX = sx - Math.cos(facing) * 6 * scale;
+          const baseY = sy - Math.sin(facing) * 6 * scale;
+          // shaft
+          ctx.strokeStyle = "#78350f"; ctx.lineWidth = 2.2 * scale; ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(tipX, tipY); ctx.stroke();
+          // golden bindings
+          ctx.strokeStyle = "#facc15"; ctx.lineWidth = 1.2 * scale;
+          for (let i = 1; i <= 3; i++) {
+            const px = baseX + (tipX - baseX) * (i / 4);
+            const py = baseY + (tipY - baseY) * (i / 4);
+            const nx = -Math.sin(facing) * 2 * scale, ny = Math.cos(facing) * 2 * scale;
+            ctx.beginPath(); ctx.moveTo(px - nx, py - ny); ctx.lineTo(px + nx, py + ny); ctx.stroke();
+          }
+          // three-pronged head
+          const px = Math.cos(facing), py = Math.sin(facing);
+          const nx = -py, ny = px;
+          const headBaseX = tipX, headBaseY = tipY;
+          ctx.fillStyle = "#fde047";
+          ctx.strokeStyle = "#a16207"; ctx.lineWidth = 0.8 * scale;
+          // center prong
+          ctx.beginPath();
+          ctx.moveTo(headBaseX + px * 9 * scale, headBaseY + py * 9 * scale);
+          ctx.lineTo(headBaseX + nx * 1.4 * scale, headBaseY + ny * 1.4 * scale);
+          ctx.lineTo(headBaseX - nx * 1.4 * scale, headBaseY - ny * 1.4 * scale);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          // side prongs
+          for (const side of [-1, 1]) {
+            const baseSx = headBaseX + nx * side * 4 * scale;
+            const baseSy = headBaseY + ny * side * 4 * scale;
+            ctx.beginPath();
+            ctx.moveTo(baseSx + px * 7 * scale + nx * side * 1.5 * scale, baseSy + py * 7 * scale + ny * side * 1.5 * scale);
+            ctx.lineTo(baseSx + nx * side * 0.6 * scale, baseSy + ny * side * 0.6 * scale);
+            ctx.lineTo(baseSx - nx * side * 1 * scale - px * 0.5 * scale, baseSy - ny * side * 1 * scale - py * 0.5 * scale);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+          }
+          // crossguard between prongs and shaft
+          ctx.fillStyle = "#ca8a04";
+          ctx.beginPath();
+          ctx.ellipse(headBaseX, headBaseY, 2 * scale, 3.2 * scale, facing, 0, Math.PI * 2);
+          ctx.fill();
+          // trident tip sparkle
+          const sparkle = 0.5 + 0.5 * Math.sin(t * 6);
+          ctx.fillStyle = `rgba(186,230,253,${sparkle})`;
+          ctx.beginPath();
+          ctx.arc(headBaseX + px * 9 * scale, headBaseY + py * 9 * scale, 1.6 * scale, 0, Math.PI * 2);
+          ctx.fill();
+
+          continue;
+        }
+
         const pal = isElec ? elecPalette[(_elecIdx++) % elecPalette.length]
                            : bigPalette[(_bigIdx++) % bigPalette.length];
         const scale = isElec ? 1.0 : 1.55;
