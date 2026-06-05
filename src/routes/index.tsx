@@ -4871,21 +4871,59 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               <h2 className="text-xl font-bold mb-1">{t("waveCleared", { n: uiState.wave })}</h2>
               <p className="text-white/60 text-sm mb-4">{t("pickUpgrade")}</p>
               <div className="grid md:grid-cols-3 gap-3 w-full max-w-3xl px-4">
-                {uiState.upgrades.map((u, idx) => (
-                  <button
-                    key={`${uiState.wave}-${idx}-${u.id}`}
-                    onClick={() => pickUpgrade(u)}
-                    className="p-4 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 hover:ring-[#ffe066] text-left transition flex gap-3 items-start"
-                  >
-                    {UPGRADE_ICONS[u.id] && (
-                      <img src={UPGRADE_ICONS[u.id]} alt={u.name} loading="lazy" width={56} height={56} className="w-14 h-14 object-contain shrink-0 drop-shadow-[0_0_8px_rgba(255,224,102,0.35)]" />
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-bold text-[#ffe066]">{u.name}</div>
-                      <div className="text-sm text-white/70 mt-1">{u.desc}</div>
-                    </div>
-                  </button>
-                ))}
+                {uiState.upgrades.map((u, idx) => {
+                  const accent = UPGRADE_COLORS[u.id] || "#ffe066";
+                  return (
+                    <button
+                      key={`${uiState.wave}-${idx}-${u.id}`}
+                      onClick={() => pickUpgrade(u)}
+                      className="upgrade-card upgrade-card-enter group relative p-4 rounded-xl text-left flex gap-3 items-start cursor-pointer"
+                      style={{
+                        background: "linear-gradient(145deg, rgba(15,23,42,0.92) 0%, rgba(2,6,23,0.96) 100%)",
+                        borderTop: `3px solid ${accent}`,
+                        boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 4px 24px -6px rgba(0,0,0,0.6), 0 0 16px -8px ${accent}40`,
+                        animationDelay: `${idx * 0.12}s`,
+                        "--glow-color": `${accent}60`,
+                      } as React.CSSProperties}
+                    >
+                      {UPGRADE_ICONS[u.id] && (
+                        <div
+                          className="shrink-0 w-16 h-16 rounded-xl flex items-center justify-center"
+                          style={{
+                            background: `radial-gradient(circle at 30% 30%, ${accent}22, transparent 70%)`,
+                            boxShadow: `inset 0 0 0 1px ${accent}30, 0 0 20px -6px ${accent}50`,
+                          }}
+                        >
+                          <img
+                            src={UPGRADE_ICONS[u.id]}
+                            alt={u.name}
+                            loading="lazy"
+                            width={56}
+                            height={56}
+                            className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.25)] group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0 pt-0.5">
+                        <div
+                          className="font-black text-base tracking-tight"
+                          style={{ color: accent, textShadow: `0 0 18px ${accent}50` }}
+                        >
+                          {u.name}
+                        </div>
+                        <div className="text-sm text-white/60 mt-1 leading-relaxed">
+                          {u.desc}
+                        </div>
+                      </div>
+                      <style>{`
+                        .upgrade-card:hover {
+                          transform: translateY(-3px) scale(1.02);
+                          box-shadow: 0 0 0 1px ${accent}40, 0 8px 32px -6px rgba(0,0,0,0.5), 0 0 28px -8px ${accent}60 !important;
+                        }
+                      `}</style>
+                    </button>
+                  );
+                })}
               </div>
             </Overlay>
           )}
