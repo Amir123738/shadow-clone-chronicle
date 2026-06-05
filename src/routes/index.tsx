@@ -4916,12 +4916,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                           {u.desc}
                         </div>
                       </div>
-                      <style>{`
-                        .upgrade-card:hover {
-                          transform: translateY(-3px) scale(1.02);
-                          box-shadow: 0 0 0 1px ${accent}40, 0 8px 32px -6px rgba(0,0,0,0.5), 0 0 28px -8px ${accent}60 !important;
-                        }
-                      `}</style>
                     </button>
                   );
                 })}
