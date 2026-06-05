@@ -223,6 +223,7 @@
 
 .upgrade-card:hover {
   transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent), 0 8px 32px -6px rgba(0,0,0,0.5), 0 0 28px -8px color-mix(in srgb, var(--accent) 40%, transparent) !important;
 }
 
 .upgrade-card-enter {
