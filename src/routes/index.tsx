@@ -1326,6 +1326,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "healghost", name: "The Healing Ghost", undo: () => {}, redo: go };
       } },
+    { id: "firewater", name: "Fire Boy & Water Girl", desc: "Summon Fire Boy & Water Girl to fight beside you for 20s", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,       radius: 60, orbitSpeed: 1.4, fireCd: 0.3, life: 20 });
+          s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI, radius: 60, orbitSpeed: 1.4, fireCd: 0.3, life: 20 });
+        };
+        go();
+        return { id: "firewater", name: "Fire Boy & Water Girl", undo: () => {}, redo: go };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -1560,15 +1569,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.fastCloneSpawn = true;
         s.cloneTimer = Math.min(s.cloneTimer, 5);
         s.stats.moveSpeed *= 1.35;
-      },
-    },
-    {
-      id: "firewater", name: "Fire Boy & Water Girl", color: "#ff7a18",
-      desc: "Summon a blazing Fire Boy and a flowing Water Girl that fight at your side",
-      apply: () => {
-        const s = stateRef.current;
-        s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,        radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
-        s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI,  radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
       },
     },
   ];
