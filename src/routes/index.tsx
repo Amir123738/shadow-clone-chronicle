@@ -30,6 +30,7 @@ import upgBouncing from "@/assets/upgrades/bouncing.png";
 import upgAquaman from "@/assets/upgrades/aquaman.png";
 import upgShadowflash from "@/assets/upgrades/shadowflash.png";
 import upgHealghost from "@/assets/upgrades/healghost.png";
+import upgFirewater from "@/assets/upgrades/firewater.png";
 
 const UPGRADE_ICONS: Record<string, string> = {
   fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
@@ -39,6 +40,7 @@ const UPGRADE_ICONS: Record<string, string> = {
   dragonbreath: upgDragonbreath, bigexplosion: upgBigexplosion,
   radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
   bouncing: upgBouncing, aquaman: upgAquaman, shadowflash: upgShadowflash, healghost: upgHealghost,
+  firewater: upgFirewater,
 };
 
 export const Route = createFileRoute("/")({
@@ -80,7 +82,7 @@ type Enemy = {
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
-type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" };
+type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" | "fireboy" | "watergirl" };
 type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
@@ -1560,6 +1562,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.stats.moveSpeed *= 1.35;
       },
     },
+    {
+      id: "firewater", name: "Fire Boy & Water Girl", color: "#ff7a18",
+      desc: "Summon a blazing Fire Boy and a flowing Water Girl that fight at your side",
+      apply: () => {
+        const s = stateRef.current;
+        s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,        radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
+        s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI,  radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
+      },
+    },
   ];
 
   const startLevel = (levelId: number) => {
@@ -2238,17 +2249,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (target) {
             const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
             const isElectric = sc.kind === "electric";
-            const isWater = sc.flag === "water";
+            const isWater = sc.flag === "water" || sc.flag === "watergirl";
+            const isFire = sc.flag === "fireboy";
             s.bullets.push({
               pos: { x: sx, y: sy },
               vel: { x: d.x * 620, y: d.y * 620 },
               life: 1.2,
               dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
               from: "clone",
-              color: isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff"),
-              r: isWater ? 7 : undefined,
+              color: isFire ? "#ff5a1f" : (isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff")),
+              r: (isWater || isFire) ? 6 : undefined,
             });
-            sc.fireCd = isElectric ? 0.35 : 0.45;
+            sc.fireCd = isElectric ? 0.35 : 0.4;
           }
         }
       }
