@@ -180,6 +180,7 @@
     text-transform: uppercase;
     letter-spacing: 0.35px;
     font-size: 14px;
+  }
 }
 
 @keyframes glow-pulse {
@@ -201,6 +202,7 @@
   --glow-color: #ffe066;
   position: relative;
   overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .upgrade-card::before {
@@ -217,6 +219,10 @@
 .upgrade-card:hover::before {
   opacity: 1;
   animation: card-shine 1.2s ease-in-out;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-3px) scale(1.02);
 }
 
 .upgrade-card-enter {
