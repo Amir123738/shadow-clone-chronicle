@@ -1326,6 +1326,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         go();
         return { id: "healghost", name: "The Healing Ghost", undo: () => {}, redo: go };
       } },
+    { id: "firewater", name: "Fire Boy & Water Girl", desc: "Summon Fire Boy & Water Girl to fight beside you for 20s", apply: () => {
+        const s = stateRef.current;
+        const go = () => {
+          s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,       radius: 60, orbitSpeed: 1.4, fireCd: 0.3, life: 20 });
+          s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI, radius: 60, orbitSpeed: 1.4, fireCd: 0.3, life: 20 });
+        };
+        go();
+        return { id: "firewater", name: "Fire Boy & Water Girl", undo: () => {}, redo: go };
+      } },
   ];
 
   const rollUpgrades = useCallback((): Upgrade[] => {
@@ -1560,15 +1569,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.fastCloneSpawn = true;
         s.cloneTimer = Math.min(s.cloneTimer, 5);
         s.stats.moveSpeed *= 1.35;
-      },
-    },
-    {
-      id: "firewater", name: "Fire Boy & Water Girl", color: "#ff7a18",
-      desc: "Summon a blazing Fire Boy and a flowing Water Girl that fight at your side",
-      apply: () => {
-        const s = stateRef.current;
-        s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,        radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
-        s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI,  radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
       },
     },
   ];
@@ -4386,26 +4386,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {SUPER_UPGRADES.map(su => {
-                    if (su.id === "firewater") {
-                      return (
-                        <button
-                          key={su.id}
-                          onClick={() => pickSuperUpgrade(su.id)}
-                          className="relative overflow-hidden text-left p-4 rounded-lg ring-2 ring-white/20 hover:scale-[1.03] transition group"
-                          style={{ background: "linear-gradient(90deg, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0.55) 45%, rgba(59,130,246,0.55) 55%, rgba(59,130,246,0.35) 100%)", boxShadow: "0 0 24px -4px #ef4444, 0 0 24px -4px #3b82f6" }}
-                        >
-                          <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen" style={{ background: "radial-gradient(circle at 20% 60%, rgba(255,122,24,0.6), transparent 45%), radial-gradient(circle at 80% 40%, rgba(96,165,250,0.6), transparent 45%)" }} />
-                          <div className="absolute inset-y-0 left-1/2 w-px bg-white/40 -translate-x-1/2 animate-pulse" />
-                          <div className="relative flex items-center gap-3">
-                            <img src={UPGRADE_ICONS.firewater} alt={su.name} loading="lazy" width={56} height={56} className="w-14 h-14 object-contain shrink-0 rounded-md drop-shadow-[0_0_10px_rgba(255,224,102,0.6)]" />
-                            <div>
-                              <div className="font-black text-lg mb-1 bg-gradient-to-r from-[#fde047] via-white to-[#bae6fd] bg-clip-text text-transparent drop-shadow">{su.name}</div>
-                              <div className="text-xs text-white/90">{su.desc}</div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    }
                     return (
                       <button
                         key={su.id}
