@@ -30,6 +30,7 @@ import upgBouncing from "@/assets/upgrades/bouncing.png";
 import upgAquaman from "@/assets/upgrades/aquaman.png";
 import upgShadowflash from "@/assets/upgrades/shadowflash.png";
 import upgHealghost from "@/assets/upgrades/healghost.png";
+import upgFirewater from "@/assets/upgrades/firewater.png";
 
 const UPGRADE_ICONS: Record<string, string> = {
   fire: upgFire, dmg: upgDmg, spd: upgSpd, hp: upgHp, double: upgDouble,
@@ -39,6 +40,7 @@ const UPGRADE_ICONS: Record<string, string> = {
   dragonbreath: upgDragonbreath, bigexplosion: upgBigexplosion,
   radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
   bouncing: upgBouncing, aquaman: upgAquaman, shadowflash: upgShadowflash, healghost: upgHealghost,
+  firewater: upgFirewater,
 };
 
 export const Route = createFileRoute("/")({
@@ -80,7 +82,7 @@ type Enemy = {
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
 type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
-type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" };
+type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" | "fireboy" | "watergirl" };
 type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
 
@@ -1560,6 +1562,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         s.stats.moveSpeed *= 1.35;
       },
     },
+    {
+      id: "firewater", name: "Fire Boy & Water Girl", color: "#ff7a18",
+      desc: "Summon a blazing Fire Boy and a flowing Water Girl that fight at your side",
+      apply: () => {
+        const s = stateRef.current;
+        s.specialClones.push({ kind: "big", flag: "fireboy",   angle: 0,        radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
+        s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI,  radius: 60, orbitSpeed: 1.4, fireCd: 0.3 });
+      },
+    },
   ];
 
   const startLevel = (levelId: number) => {
@@ -2238,17 +2249,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           if (target) {
             const d = norm({ x: target.pos.x - sx, y: target.pos.y - sy });
             const isElectric = sc.kind === "electric";
-            const isWater = sc.flag === "water";
+            const isWater = sc.flag === "water" || sc.flag === "watergirl";
+            const isFire = sc.flag === "fireboy";
             s.bullets.push({
               pos: { x: sx, y: sy },
               vel: { x: d.x * 620, y: d.y * 620 },
               life: 1.2,
               dmg: isElectric ? 42 : s.stats.bulletDmg * 1.5 * s.stats.cloneDmgMult,
               from: "clone",
-              color: isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff"),
-              r: isWater ? 7 : undefined,
+              color: isFire ? "#ff5a1f" : (isWater ? "#3da9fc" : (isElectric ? "#7df9ff" : "#ff66ff")),
+              r: (isWater || isFire) ? 6 : undefined,
             });
-            sc.fireCd = isElectric ? 0.35 : 0.45;
+            sc.fireCd = isElectric ? 0.35 : 0.4;
           }
         }
       }
@@ -2709,6 +2721,111 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         const sx = s.player.pos.x + Math.cos(sc.angle) * sc.radius;
         const sy = s.player.pos.y + Math.sin(sc.angle) * sc.radius;
         const isElec = sc.kind === "electric";
+
+        // ===== FIRE BOY & WATER GIRL variants =====
+        if (sc.flag === "fireboy" || sc.flag === "watergirl") {
+          const isFireBoy = sc.flag === "fireboy";
+          const scale = 1.4;
+          const facing = Math.atan2(s.player.pos.y - sy, s.player.pos.x - sx);
+          const t = performance.now() / 1000;
+          const main = isFireBoy ? "#ef4444" : "#3b82f6";
+          const glow = isFireBoy ? "#ff7a18" : "#60a5fa";
+          const auraCol = isFireBoy ? "rgba(255,122,24,0.55)" : "rgba(96,165,250,0.55)";
+          const hairCol = isFireBoy ? "#fb923c" : "#bae6fd";
+          const skin = "#fde2c4";
+
+          // elemental aura
+          const aura = ctx.createRadialGradient(sx, sy, 4, sx, sy, 28 * scale);
+          aura.addColorStop(0, auraCol);
+          aura.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = aura;
+          ctx.beginPath(); ctx.arc(sx, sy, 28 * scale, 0, Math.PI * 2); ctx.fill();
+
+          // elemental pool under feet (flames or water ripple)
+          ctx.fillStyle = isFireBoy ? "rgba(239,68,68,0.55)" : "rgba(59,130,246,0.55)";
+          for (let i = 0; i < 5; i++) {
+            const off = Math.sin(t * 6 + i) * 1.5;
+            ctx.beginPath();
+            ctx.arc(sx + (i - 2) * 3 * scale, sy + 16 * scale + off, 2.2 * scale, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // body / tunic
+          const body = ctx.createLinearGradient(sx, sy - 4 * scale, sx, sy + 14 * scale);
+          body.addColorStop(0, glow);
+          body.addColorStop(1, main);
+          ctx.fillStyle = body;
+          ctx.beginPath(); ctx.ellipse(sx, sy + 3 * scale, 6.5 * scale, 10 * scale, 0, 0, Math.PI * 2); ctx.fill();
+
+          // skirt for water girl
+          if (!isFireBoy) {
+            ctx.fillStyle = main;
+            ctx.beginPath();
+            ctx.moveTo(sx - 7 * scale, sy + 8 * scale);
+            ctx.lineTo(sx + 7 * scale, sy + 8 * scale);
+            ctx.lineTo(sx + 9 * scale, sy + 15 * scale);
+            ctx.lineTo(sx - 9 * scale, sy + 15 * scale);
+            ctx.closePath(); ctx.fill();
+          }
+
+          // legs
+          ctx.fillStyle = skin;
+          ctx.fillRect(sx - 3.5 * scale, sy + 13 * scale, 2.5 * scale, 5 * scale);
+          ctx.fillRect(sx + 1 * scale, sy + 13 * scale, 2.5 * scale, 5 * scale);
+
+          // head
+          ctx.fillStyle = skin;
+          ctx.beginPath(); ctx.arc(sx, sy - 7 * scale, 4.5 * scale, 0, Math.PI * 2); ctx.fill();
+
+          // hair — fire boy flame spikes, water girl ponytail
+          ctx.fillStyle = hairCol;
+          if (isFireBoy) {
+            // flame spikes
+            ctx.beginPath();
+            ctx.moveTo(sx - 5 * scale, sy - 7 * scale);
+            ctx.quadraticCurveTo(sx - 3 * scale, sy - 14 * scale, sx - 1 * scale, sy - 9 * scale);
+            ctx.quadraticCurveTo(sx, sy - 16 * scale, sx + 1 * scale, sy - 9 * scale);
+            ctx.quadraticCurveTo(sx + 3 * scale, sy - 14 * scale, sx + 5 * scale, sy - 7 * scale);
+            ctx.closePath(); ctx.fill();
+            // animated flame on top
+            ctx.fillStyle = "#fde047";
+            const f = Math.sin(t * 8) * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(sx - 2 * scale, sy - 9 * scale);
+            ctx.quadraticCurveTo(sx, sy - (14 + f) * scale, sx + 2 * scale, sy - 9 * scale);
+            ctx.closePath(); ctx.fill();
+          } else {
+            // ponytail bun
+            ctx.beginPath(); ctx.arc(sx, sy - 10 * scale, 5 * scale, Math.PI, 0); ctx.fill();
+            // long flowing ponytail to the side
+            ctx.beginPath();
+            ctx.moveTo(sx + 3 * scale, sy - 8 * scale);
+            ctx.quadraticCurveTo(sx + 10 * scale, sy - 2 * scale, sx + 8 * scale, sy + 6 * scale);
+            ctx.quadraticCurveTo(sx + 6 * scale, sy + 2 * scale, sx + 3 * scale, sy - 4 * scale);
+            ctx.closePath(); ctx.fill();
+          }
+
+          // eyes — glowing element color
+          ctx.fillStyle = isFireBoy ? "#fde047" : "#e0f2fe";
+          ctx.beginPath(); ctx.arc(sx - 1.6 * scale, sy - 7 * scale, 0.9 * scale, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(sx + 1.6 * scale, sy - 7 * scale, 0.9 * scale, 0, Math.PI * 2); ctx.fill();
+
+          // outstretched arm holding elemental orb
+          ctx.strokeStyle = skin; ctx.lineWidth = 2 * scale; ctx.lineCap = "round";
+          const handX = sx + Math.cos(facing) * 12 * scale;
+          const handY = sy + Math.sin(facing) * 12 * scale;
+          ctx.beginPath(); ctx.moveTo(sx, sy + 2 * scale); ctx.lineTo(handX, handY); ctx.stroke();
+
+          // elemental orb in hand
+          const orb = ctx.createRadialGradient(handX, handY, 0, handX, handY, 5 * scale);
+          orb.addColorStop(0, "#ffffff");
+          orb.addColorStop(0.4, glow);
+          orb.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = orb;
+          ctx.beginPath(); ctx.arc(handX, handY, 5 * scale, 0, Math.PI * 2); ctx.fill();
+
+          continue;
+        }
 
         // ===== AQUAMAN variant: unique design, skip generic warrior render =====
         if (sc.flag === "water") {
@@ -4268,17 +4385,39 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {SUPER_UPGRADES.map(su => (
-                    <button
-                      key={su.id}
-                      onClick={() => pickSuperUpgrade(su.id)}
-                      className="text-left p-4 rounded-lg ring-2 bg-white/5 hover:bg-white/10 hover:scale-[1.02] transition"
-                      style={{ borderColor: su.color, boxShadow: `0 0 18px -6px ${su.color}` }}
-                    >
-                      <div className="font-black text-lg mb-1" style={{ color: su.color }}>{su.name}</div>
-                      <div className="text-xs text-white/80">{su.desc}</div>
-                    </button>
-                  ))}
+                  {SUPER_UPGRADES.map(su => {
+                    if (su.id === "firewater") {
+                      return (
+                        <button
+                          key={su.id}
+                          onClick={() => pickSuperUpgrade(su.id)}
+                          className="relative overflow-hidden text-left p-4 rounded-lg ring-2 ring-white/20 hover:scale-[1.03] transition group"
+                          style={{ background: "linear-gradient(90deg, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0.55) 45%, rgba(59,130,246,0.55) 55%, rgba(59,130,246,0.35) 100%)", boxShadow: "0 0 24px -4px #ef4444, 0 0 24px -4px #3b82f6" }}
+                        >
+                          <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen" style={{ background: "radial-gradient(circle at 20% 60%, rgba(255,122,24,0.6), transparent 45%), radial-gradient(circle at 80% 40%, rgba(96,165,250,0.6), transparent 45%)" }} />
+                          <div className="absolute inset-y-0 left-1/2 w-px bg-white/40 -translate-x-1/2 animate-pulse" />
+                          <div className="relative flex items-center gap-3">
+                            <img src={UPGRADE_ICONS.firewater} alt={su.name} loading="lazy" width={56} height={56} className="w-14 h-14 object-contain shrink-0 rounded-md drop-shadow-[0_0_10px_rgba(255,224,102,0.6)]" />
+                            <div>
+                              <div className="font-black text-lg mb-1 bg-gradient-to-r from-[#fde047] via-white to-[#bae6fd] bg-clip-text text-transparent drop-shadow">{su.name}</div>
+                              <div className="text-xs text-white/90">{su.desc}</div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        key={su.id}
+                        onClick={() => pickSuperUpgrade(su.id)}
+                        className="text-left p-4 rounded-lg ring-2 bg-white/5 hover:bg-white/10 hover:scale-[1.02] transition"
+                        style={{ borderColor: su.color, boxShadow: `0 0 18px -6px ${su.color}` }}
+                      >
+                        <div className="font-black text-lg mb-1" style={{ color: su.color }}>{su.name}</div>
+                        <div className="text-xs text-white/80">{su.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex justify-end mt-4">
                   <button
