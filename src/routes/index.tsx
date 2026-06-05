@@ -4884,6 +4884,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                         boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 4px 24px -6px rgba(0,0,0,0.6), 0 0 16px -8px ${accent}40`,
                         animationDelay: `${idx * 0.12}s`,
                         "--glow-color": `${accent}60`,
+                        "--accent": accent,
                       } as React.CSSProperties}
                     >
                       {UPGRADE_ICONS[u.id] && (
