@@ -43,6 +43,17 @@ const UPGRADE_ICONS: Record<string, string> = {
   firewater: upgFirewater,
 };
 
+const UPGRADE_COLORS: Record<string, string> = {
+  fire: "#ff7a18", dmg: "#ef4444", spd: "#38bdf8", hp: "#22c55e", double: "#fbbf24",
+  clone: "#a855f7", heal: "#34d399", bronze: "#cd7f32", superspeed: "#f97316",
+  firearrows: "#ff5722", kingshadows: "#8b5cf6", hypersonic: "#ec4899",
+  tornado: "#06b6d4", darkness: "#6366f1", bigclones: "#b388ff",
+  dragonbreath: "#dc2626", bigexplosion: "#f59e0b", radiation: "#84cc16",
+  blackhole: "#7c3aed", slowtime: "#60a5fa", bouncing: "#fbbf24",
+  aquaman: "#0ea5e9", shadowflash: "#c084fc", healghost: "#a7f3d0",
+  firewater: "#ff7a18",
+};
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
