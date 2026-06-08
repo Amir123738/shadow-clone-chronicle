@@ -5326,15 +5326,25 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     const current = Math.max(0, (lifetime[def.metric] ?? 0) - tk.baseline);
                     const pct = Math.min(100, (current / def.target) * 100);
                     const done = current >= def.target;
+                    const meta = TASK_DIFFICULTY_META[def.difficulty];
                     return (
-                      <div key={tk.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold">{t(`task_${def.id}`)}</div>
-                          <div className="text-xs text-[#ffe066]">+{def.reward} ◆</div>
+                      <div key={tk.id} className={`p-4 rounded-lg ring-1 ${meta.ring} bg-white/5`}>
+                        <div className="flex items-center justify-between mb-2 gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="px-2 py-0.5 rounded text-[10px] font-black tracking-widest shrink-0"
+                              style={{ background: `${meta.color}22`, color: meta.color, border: `1px solid ${meta.color}66` }}
+                            >
+                              {meta.label}
+                            </span>
+                            <div className="font-bold truncate">{t(`task_${def.id}`) === `task_${def.id}` ? def.label : t(`task_${def.id}`)}</div>
+                          </div>
+                          <div className="text-xs text-[#ffe066] shrink-0">+{def.reward} ◆</div>
                         </div>
                         <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
-                          <div className="h-full bg-gradient-to-r from-[#34d399] to-[#ffe066]" style={{ width: `${pct}%` }} />
+                          <div className="h-full" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${meta.color}, #ffe066)` }} />
                         </div>
+
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/60">{Math.min(current, def.target)} / {def.target}</span>
                           {tk.claimed ? (
