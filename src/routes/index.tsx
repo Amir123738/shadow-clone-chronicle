@@ -4110,6 +4110,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             className="block w-full h-auto cursor-crosshair bg-[#0b0d1a]"
             style={{
               aspectRatio: `${W}/${H}`,
+              touchAction: "none",
               filter: [
                 uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : "",
                 `brightness(${settings.brightness}%)`,
@@ -4118,6 +4119,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               transition: "filter 0.2s",
             }}
           />
+          {isTouchDevice && uiState.started && (
+            <div className="absolute bottom-2 right-2 text-[10px] text-white/50 pointer-events-none select-none">
+              Left: move · Right: aim & shoot
+            </div>
+          )}
 
 
           {!uiState.started && !shopOpen && (
