@@ -547,6 +547,9 @@ const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; col
 
 function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const joyBaseRef = useRef<HTMLDivElement>(null);
+  const joyKnobRef = useRef<HTMLDivElement>(null);
+  const isTouchDevice = typeof window !== "undefined" && (("ontouchstart" in window) || (navigator.maxTouchPoints || 0) > 0);
 
   const [uiState, setUiState] = useState<{
     started: boolean; over: boolean; won: boolean;
