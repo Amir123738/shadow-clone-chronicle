@@ -4047,6 +4047,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mousedown", onDown);
       window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
     };
   }, [rollUpgrades]);
 
