@@ -547,6 +547,9 @@ const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; col
 
 function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const joyBaseRef = useRef<HTMLDivElement>(null);
+  const joyKnobRef = useRef<HTMLDivElement>(null);
+  const isTouchDevice = typeof window !== "undefined" && (("ontouchstart" in window) || (navigator.maxTouchPoints || 0) > 0);
 
   const [uiState, setUiState] = useState<{
     started: boolean; over: boolean; won: boolean;
@@ -1684,6 +1687,82 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mousedown", onDown);
     window.addEventListener("mouseup", onUp);
+
+    // ---------- Touch controls: left half = virtual joystick, right half = aim + auto-shoot ----------
+    const touches: { move: number | null; aim: number | null; joyStart: { x: number; y: number } } = {
+      move: null, aim: null, joyStart: { x: 0, y: 0 },
+    };
+    const JOY_R = 55;
+    const DEAD = 0.22;
+    const showJoy = (cx: number, cy: number, kx: number, ky: number) => {
+      const base = joyBaseRef.current, knob = joyKnobRef.current;
+      if (!base || !knob) return;
+      base.style.display = "block";
+      base.style.left = `${cx - JOY_R}px`;
+      base.style.top = `${cy - JOY_R}px`;
+      knob.style.transform = `translate(${kx}px, ${ky}px)`;
+    };
+    const hideJoy = () => { if (joyBaseRef.current) joyBaseRef.current.style.display = "none"; };
+    const canvasCoords = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = canvas.width / rect.width;
+      const sy = canvas.height / rect.height;
+      return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy, rect };
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (const t of Array.from(e.changedTouches)) {
+        const localX = t.clientX - rect.left;
+        const isLeft = localX < rect.width / 2;
+        if (isLeft && touches.move === null) {
+          touches.move = t.identifier;
+          touches.joyStart = { x: t.clientX, y: t.clientY };
+          showJoy(t.clientX, t.clientY, 0, 0);
+        } else if (!isLeft && touches.aim === null) {
+          touches.aim = t.identifier;
+          const c = canvasCoords(t.clientX, t.clientY);
+          stateRef.current.input.aim = { x: c.x, y: c.y };
+          stateRef.current.input.shoot = true;
+        }
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const i = stateRef.current.input;
+      for (const t of Array.from(e.changedTouches)) {
+        if (t.identifier === touches.move) {
+          let dx = t.clientX - touches.joyStart.x;
+          let dy = t.clientY - touches.joyStart.y;
+          const mag = Math.hypot(dx, dy);
+          if (mag > JOY_R) { dx = dx * JOY_R / mag; dy = dy * JOY_R / mag; }
+          showJoy(touches.joyStart.x, touches.joyStart.y, dx, dy);
+          const nx = dx / JOY_R, ny = dy / JOY_R;
+          i.left = nx < -DEAD; i.right = nx > DEAD;
+          i.up = ny < -DEAD; i.down = ny > DEAD;
+        } else if (t.identifier === touches.aim) {
+          const c = canvasCoords(t.clientX, t.clientY);
+          i.aim = { x: c.x, y: c.y };
+        }
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const i = stateRef.current.input;
+      for (const t of Array.from(e.changedTouches)) {
+        if (t.identifier === touches.move) {
+          touches.move = null;
+          i.up = i.down = i.left = i.right = false;
+          hideJoy();
+        } else if (t.identifier === touches.aim) {
+          touches.aim = null;
+          i.shoot = false;
+        }
+      }
+    };
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
 
     const fireBullet = (origin: Vec, aim: Vec, from: "player" | "clone") => {
       const s = stateRef.current;
@@ -3968,12 +4047,29 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mousedown", onDown);
       window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
     };
   }, [rollUpgrades]);
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
+      {/* Touch joystick overlay (fixed; positioned via JS) */}
+      <div
+        ref={joyBaseRef}
+        className="fixed z-50 pointer-events-none rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-sm"
+        style={{ width: 110, height: 110, display: "none", boxShadow: "0 0 24px rgba(255,255,255,0.15)" }}
+      >
+        <div
+          ref={joyKnobRef}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/80"
+          style={{ width: 46, height: 46, boxShadow: "0 0 16px rgba(255,255,255,0.5)" }}
+        />
+      </div>
       <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
+
         <span className="text-white/70">
           {t("player")}: <span className="font-bold text-white">{nickname || "…"}</span>
         </span>
@@ -4027,6 +4123,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             className="block w-full h-auto cursor-crosshair bg-[#0b0d1a]"
             style={{
               aspectRatio: `${W}/${H}`,
+              touchAction: "none",
               filter: [
                 uiState.blur > 0 ? `blur(${Math.min(8, uiState.blur * 1.4)}px)` : "",
                 `brightness(${settings.brightness}%)`,
@@ -4035,6 +4132,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               transition: "filter 0.2s",
             }}
           />
+          {isTouchDevice && uiState.started && (
+            <div className="absolute bottom-2 right-2 text-[10px] text-white/50 pointer-events-none select-none">
+              Left: move · Right: aim & shoot
+            </div>
+          )}
 
 
           {!uiState.started && !shopOpen && (
