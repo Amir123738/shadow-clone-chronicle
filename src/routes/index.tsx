@@ -4056,7 +4056,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
+      {/* Touch joystick overlay (fixed; positioned via JS) */}
+      <div
+        ref={joyBaseRef}
+        className="fixed z-50 pointer-events-none rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-sm"
+        style={{ width: 110, height: 110, display: "none", boxShadow: "0 0 24px rgba(255,255,255,0.15)" }}
+      >
+        <div
+          ref={joyKnobRef}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/80"
+          style={{ width: 46, height: 46, boxShadow: "0 0 16px rgba(255,255,255,0.5)" }}
+        />
+      </div>
       <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
+
         <span className="text-white/70">
           {t("player")}: <span className="font-bold text-white">{nickname || "…"}</span>
         </span>
