@@ -576,9 +576,27 @@ function loadReroll(): { date: string; count: number } {
 }
 function saveReroll(v: { date: string; count: number }) { try { localStorage.setItem(REROLL_KEY, JSON.stringify(v)); } catch {} }
 function rollTasks(lt: LifetimeStats): ActiveTask[] {
-  const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
-  return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
+  const picked: TaskTemplate[] = [];
+  const usedIds = new Set<string>();
+  for (let i = 0; i < 3; i++) {
+    let diff = pickTaskDifficulty();
+    let pool = TASK_TEMPLATES.filter(t => t.difficulty === diff && !usedIds.has(t.id));
+    // fallback if pool empty (e.g. exhausted that tier) — try other tiers
+    if (pool.length === 0) {
+      const order: TaskDifficulty[] = diff === "hard" ? ["hard","medium","easy"] : diff === "medium" ? ["medium","hard","easy"] : ["easy","medium","hard"];
+      for (const d of order) {
+        pool = TASK_TEMPLATES.filter(t => t.difficulty === d && !usedIds.has(t.id));
+        if (pool.length > 0) { diff = d; break; }
+      }
+    }
+    if (pool.length === 0) break;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    picked.push(pick);
+    usedIds.add(pick.id);
+  }
+  return picked.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
 }
+
 
 
 
