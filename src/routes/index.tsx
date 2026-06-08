@@ -262,7 +262,7 @@ const SKINS: Skin[] = [
   { id: "admin",        name: "Admin",              rarity: "admin", price: 1000000000, color: "#ff0033", glow: "rgba(255,0,51,1)" },
 ];
 
-type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond";
+type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond" | "cosmic" | "galactic" | "quasaric" | "admin";
 type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
 const ACCESSORIES: Accessory[] = [
   { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
@@ -273,19 +273,42 @@ const ACCESSORIES: Accessory[] = [
   { id: "red_hat",        name: "Red Hat",        color: "#ef4444", glow: "rgba(239,68,68,0.85)",   rarity: "super_rare", price: 25000 },
   { id: "blue_hat",       name: "Blue Hat",       color: "#3b82f6", glow: "rgba(59,130,246,0.85)",  rarity: "super_rare", price: 25000 },
   { id: "gold_hat",       name: "Gold Hat",       color: "#fbbf24", glow: "rgba(251,191,36,0.9)",   rarity: "epic",       price: 100000 },
+  { id: "scarf",          name: "Scarf",          color: "#f87171", glow: "rgba(248,113,113,0.9)",  rarity: "epic",       price: 150000 },
   { id: "diamond_hat",    name: "Diamond Hat",    color: "#67e8f9", glow: "rgba(103,232,249,0.95)", rarity: "mythical",   price: 500000 },
   { id: "jacket",         name: "Jacket",         color: "#a78bfa", glow: "rgba(167,139,250,0.85)", rarity: "legendary",  price: 1000000 },
   { id: "gold_jacket",    name: "Gold Jacket",    color: "#f59e0b", glow: "rgba(245,158,11,0.95)",  rarity: "legendary",  price: 2500000 },
+  { id: "gold_scarf",     name: "Gold Scarf",     color: "#fbbf24", glow: "rgba(251,191,36,1)",     rarity: "legendary",  price: 3000000 },
   { id: "diamond_jacket", name: "Diamond Jacket", color: "#22d3ee", glow: "rgba(34,211,238,1)",     rarity: "secret",     price: 10000000 },
+  { id: "diamond_scarf",  name: "Diamond Scarf",  color: "#7dd3fc", glow: "rgba(125,211,252,1)",    rarity: "secret",     price: 12000000 },
   { id: "crystal_hat",    name: "Crystal Hat",    color: "#e0e7ff", glow: "rgba(224,231,255,1)",    rarity: "ultra",      price: 25000000 },
+  { id: "crystal_scarf",  name: "Crystal Scarf",  color: "#c4b5fd", glow: "rgba(196,181,253,1)",    rarity: "ultra",      price: 30000000 },
+  { id: "crystal_jacket", name: "Crystal Jacket", color: "#a5f3fc", glow: "rgba(165,243,252,1)",    rarity: "ultra",      price: 40000000 },
   { id: "vip_jacket",     name: "VIP Jacket",     color: "#ff5dff", glow: "rgba(255,93,255,1)",     rarity: "diamond",    price: 100000000 },
+  { id: "vip_hat",        name: "VIP Hat",        color: "#ff7dff", glow: "rgba(255,125,255,1)",    rarity: "diamond",    price: 120000000 },
+  { id: "vip_scarf",      name: "VIP Scarf",      color: "#ff9dff", glow: "rgba(255,157,255,1)",    rarity: "diamond",    price: 140000000 },
+
+  // Cosmic sneakers
+  { id: "sport_sneakers",  name: "Sport Sneakers",  color: "#f1f5f9", glow: "rgba(241,245,249,1)", rarity: "cosmic",   price: 250000000 },
+  { id: "runner_sneakers", name: "Runner Sneakers", color: "#1e293b", glow: "rgba(148,163,184,1)", rarity: "cosmic",   price: 250000000 },
+
+  // Galactic sneakers
+  { id: "gold_sport_sneakers",    name: "Gold Sport Sneakers",    color: "#fde047", glow: "rgba(253,224,71,1)",  rarity: "galactic", price: 600000000 },
+  { id: "gold_runner_sneakers",   name: "Gold Runner Sneakers",   color: "#f59e0b", glow: "rgba(245,158,11,1)",  rarity: "galactic", price: 650000000 },
+  { id: "diamond_sport_sneakers", name: "Diamond Sport Sneakers", color: "#67e8f9", glow: "rgba(103,232,249,1)", rarity: "galactic", price: 800000000 },
+
+  // Quasaric sneakers
+  { id: "shiny_sport_sneakers",  name: "Shiny Sport Sneakers",  color: "#fef9c3", glow: "rgba(254,249,195,1)", rarity: "quasaric", price: 1500000000 },
+  { id: "shiny_runner_sneakers", name: "Shiny Runner Sneakers", color: "#fbcfe8", glow: "rgba(251,207,232,1)", rarity: "quasaric", price: 1800000000 },
+
+  // Admin sneakers
+  { id: "admin_sneakers", name: "Admin Sneakers", color: "#ff0033", glow: "rgba(255,0,51,1)", rarity: "admin", price: 5000000000 },
 
   // Divine Fortune exclusives (no rarity → only obtainable via Divine Fortune)
   { id: "silver_hat",     name: "Silver Hat",     color: "#d1d5db", glow: "rgba(209,213,219,0.9)" },
   { id: "black_jacket",   name: "Black Jacket",   color: "#0a0a0a", glow: "rgba(139,92,246,0.9)" },
   { id: "crimson_jacket", name: "Crimson Jacket", color: "#dc2626", glow: "rgba(220,38,38,1)" },
 ];
-const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond"];
+const ACC_RARITY_ORDER: AccessoryRarity[] = ["super_rare", "epic", "mythical", "legendary", "secret", "ultra", "diamond", "cosmic", "galactic", "quasaric", "admin"];
 const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }> = {
   super_rare: { label: "Super Rare", color: "#60a5fa" },
   epic:       { label: "Epic",       color: "#a855f7" },
@@ -294,6 +317,10 @@ const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }>
   secret:     { label: "Secret",     color: "#22d3ee" },
   ultra:      { label: "Ultra",      color: "#ffffff" },
   diamond:    { label: "Diamond",    color: "#ff5dff" },
+  cosmic:     { label: "Cosmic",     color: "#818cf8" },
+  galactic:   { label: "Galactic",   color: "#facc15" },
+  quasaric:   { label: "Quasaric",   color: "#fb7185" },
+  admin:      { label: "Admin",      color: "#ff0033" },
 };
 
 const SHOP_KEY = "scs_shop_v2";
