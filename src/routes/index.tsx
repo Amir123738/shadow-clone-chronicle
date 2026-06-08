@@ -1688,6 +1688,82 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     canvas.addEventListener("mousedown", onDown);
     window.addEventListener("mouseup", onUp);
 
+    // ---------- Touch controls: left half = virtual joystick, right half = aim + auto-shoot ----------
+    const touches: { move: number | null; aim: number | null; joyStart: { x: number; y: number } } = {
+      move: null, aim: null, joyStart: { x: 0, y: 0 },
+    };
+    const JOY_R = 55;
+    const DEAD = 0.22;
+    const showJoy = (cx: number, cy: number, kx: number, ky: number) => {
+      const base = joyBaseRef.current, knob = joyKnobRef.current;
+      if (!base || !knob) return;
+      base.style.display = "block";
+      base.style.left = `${cx - JOY_R}px`;
+      base.style.top = `${cy - JOY_R}px`;
+      knob.style.transform = `translate(${kx}px, ${ky}px)`;
+    };
+    const hideJoy = () => { if (joyBaseRef.current) joyBaseRef.current.style.display = "none"; };
+    const canvasCoords = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = canvas.width / rect.width;
+      const sy = canvas.height / rect.height;
+      return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy, rect };
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (const t of Array.from(e.changedTouches)) {
+        const localX = t.clientX - rect.left;
+        const isLeft = localX < rect.width / 2;
+        if (isLeft && touches.move === null) {
+          touches.move = t.identifier;
+          touches.joyStart = { x: t.clientX, y: t.clientY };
+          showJoy(t.clientX, t.clientY, 0, 0);
+        } else if (!isLeft && touches.aim === null) {
+          touches.aim = t.identifier;
+          const c = canvasCoords(t.clientX, t.clientY);
+          stateRef.current.input.aim = { x: c.x, y: c.y };
+          stateRef.current.input.shoot = true;
+        }
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const i = stateRef.current.input;
+      for (const t of Array.from(e.changedTouches)) {
+        if (t.identifier === touches.move) {
+          let dx = t.clientX - touches.joyStart.x;
+          let dy = t.clientY - touches.joyStart.y;
+          const mag = Math.hypot(dx, dy);
+          if (mag > JOY_R) { dx = dx * JOY_R / mag; dy = dy * JOY_R / mag; }
+          showJoy(touches.joyStart.x, touches.joyStart.y, dx, dy);
+          const nx = dx / JOY_R, ny = dy / JOY_R;
+          i.left = nx < -DEAD; i.right = nx > DEAD;
+          i.up = ny < -DEAD; i.down = ny > DEAD;
+        } else if (t.identifier === touches.aim) {
+          const c = canvasCoords(t.clientX, t.clientY);
+          i.aim = { x: c.x, y: c.y };
+        }
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const i = stateRef.current.input;
+      for (const t of Array.from(e.changedTouches)) {
+        if (t.identifier === touches.move) {
+          touches.move = null;
+          i.up = i.down = i.left = i.right = false;
+          hideJoy();
+        } else if (t.identifier === touches.aim) {
+          touches.aim = null;
+          i.shoot = false;
+        }
+      }
+    };
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
+
     const fireBullet = (origin: Vec, aim: Vec, from: "player" | "clone") => {
       const s = stateRef.current;
       const dir = norm({ x: aim.x - origin.x, y: aim.y - origin.y });
