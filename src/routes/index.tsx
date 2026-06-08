@@ -515,18 +515,40 @@ type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpg
 
 // ---------- Tasks ----------
 type TaskMetric = "kills" | "wavesCleared" | "shadowEarned";
-type TaskTemplate = { id: string; metric: TaskMetric; target: number; reward: number; label: string };
+type TaskDifficulty = "easy" | "medium" | "hard";
+type TaskTemplate = { id: string; metric: TaskMetric; target: number; reward: number; label: string; difficulty: TaskDifficulty };
 const TASK_TEMPLATES: TaskTemplate[] = [
-  { id: "kill_50",   metric: "kills",        target: 50,   reward: 150,  label: "Kill 50 enemies" },
-  { id: "kill_200",  metric: "kills",        target: 200,  reward: 400,  label: "Kill 200 enemies" },
-  { id: "kill_500",  metric: "kills",        target: 500,  reward: 900,  label: "Kill 500 enemies" },
-  { id: "clear_5",   metric: "wavesCleared", target: 5,    reward: 200,  label: "Clear 5 waves" },
-  { id: "clear_20",  metric: "wavesCleared", target: 20,   reward: 600,  label: "Clear 20 waves" },
-  { id: "clear_50",  metric: "wavesCleared", target: 50,   reward: 1500, label: "Clear 50 waves" },
-  { id: "shadow_500",  metric: "shadowEarned", target: 500,  reward: 300,  label: "Earn 500 Shadow Coins" },
-  { id: "shadow_2000", metric: "shadowEarned", target: 2000, reward: 1000, label: "Earn 2,000 Shadow Coins" },
+  // Easy (30% chance) — quick & light rewards
+  { id: "kill_50",     metric: "kills",        target: 50,    reward: 150,   label: "Kill 50 enemies",            difficulty: "easy" },
+  { id: "clear_5",     metric: "wavesCleared", target: 5,     reward: 200,   label: "Clear 5 waves",              difficulty: "easy" },
+  { id: "shadow_500",  metric: "shadowEarned", target: 500,   reward: 300,   label: "Earn 500 Shadow Coins",      difficulty: "easy" },
+  // Medium (50% chance) — solid grind, fair rewards
+  { id: "kill_200",    metric: "kills",        target: 200,   reward: 600,   label: "Kill 200 enemies",           difficulty: "medium" },
+  { id: "kill_500",    metric: "kills",        target: 500,   reward: 1400,  label: "Kill 500 enemies",           difficulty: "medium" },
+  { id: "clear_20",    metric: "wavesCleared", target: 20,    reward: 900,   label: "Clear 20 waves",             difficulty: "medium" },
+  { id: "clear_50",    metric: "wavesCleared", target: 50,    reward: 2200,  label: "Clear 50 waves",             difficulty: "medium" },
+  { id: "shadow_2000", metric: "shadowEarned", target: 2000,  reward: 1500,  label: "Earn 2,000 Shadow Coins",    difficulty: "medium" },
+  // Hard (20% chance) — long-haul, big rewards
+  { id: "kill_2000",   metric: "kills",        target: 2000,  reward: 6000,  label: "Kill 2,000 enemies",         difficulty: "hard" },
+  { id: "kill_5000",   metric: "kills",        target: 5000,  reward: 14000, label: "Kill 5,000 enemies",         difficulty: "hard" },
+  { id: "clear_100",   metric: "wavesCleared", target: 100,   reward: 8000,  label: "Clear 100 waves",            difficulty: "hard" },
+  { id: "clear_250",   metric: "wavesCleared", target: 250,   reward: 18000, label: "Clear 250 waves",            difficulty: "hard" },
+  { id: "shadow_10000",metric: "shadowEarned", target: 10000, reward: 9000,  label: "Earn 10,000 Shadow Coins",   difficulty: "hard" },
+  { id: "shadow_25000",metric: "shadowEarned", target: 25000, reward: 20000, label: "Earn 25,000 Shadow Coins",   difficulty: "hard" },
 ];
+const TASK_DIFFICULTY_META: Record<TaskDifficulty, { weight: number; label: string; color: string; ring: string }> = {
+  easy:   { weight: 0.30, label: "EASY",   color: "#34d399", ring: "ring-[#34d399]/40" },
+  medium: { weight: 0.50, label: "MEDIUM", color: "#60a5fa", ring: "ring-[#60a5fa]/50" },
+  hard:   { weight: 0.20, label: "HARD",   color: "#ff5d8a", ring: "ring-[#ff5d8a]/60" },
+};
+function pickTaskDifficulty(): TaskDifficulty {
+  const r = Math.random();
+  if (r < TASK_DIFFICULTY_META.easy.weight) return "easy";
+  if (r < TASK_DIFFICULTY_META.easy.weight + TASK_DIFFICULTY_META.medium.weight) return "medium";
+  return "hard";
+}
 type ActiveTask = { id: string; baseline: number; claimed: boolean };
+
 type LifetimeStats = { kills: number; wavesCleared: number; shadowEarned: number; wins100Streak: number };
 const DEFAULT_LIFETIME: LifetimeStats = { kills: 0, wavesCleared: 0, shadowEarned: 0, wins100Streak: 0 };
 const LIFETIME_KEY = "scs_lifetime_v1";
@@ -554,9 +576,27 @@ function loadReroll(): { date: string; count: number } {
 }
 function saveReroll(v: { date: string; count: number }) { try { localStorage.setItem(REROLL_KEY, JSON.stringify(v)); } catch {} }
 function rollTasks(lt: LifetimeStats): ActiveTask[] {
-  const shuffled = [...TASK_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 3);
-  return shuffled.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
+  const picked: TaskTemplate[] = [];
+  const usedIds = new Set<string>();
+  for (let i = 0; i < 3; i++) {
+    let diff = pickTaskDifficulty();
+    let pool = TASK_TEMPLATES.filter(t => t.difficulty === diff && !usedIds.has(t.id));
+    // fallback if pool empty (e.g. exhausted that tier) — try other tiers
+    if (pool.length === 0) {
+      const order: TaskDifficulty[] = diff === "hard" ? ["hard","medium","easy"] : diff === "medium" ? ["medium","hard","easy"] : ["easy","medium","hard"];
+      for (const d of order) {
+        pool = TASK_TEMPLATES.filter(t => t.difficulty === d && !usedIds.has(t.id));
+        if (pool.length > 0) { diff = d; break; }
+      }
+    }
+    if (pool.length === 0) break;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    picked.push(pick);
+    usedIds.add(pick.id);
+  }
+  return picked.map(t => ({ id: t.id, baseline: lt[t.metric], claimed: false }));
 }
+
 
 
 
@@ -5286,15 +5326,25 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     const current = Math.max(0, (lifetime[def.metric] ?? 0) - tk.baseline);
                     const pct = Math.min(100, (current / def.target) * 100);
                     const done = current >= def.target;
+                    const meta = TASK_DIFFICULTY_META[def.difficulty];
                     return (
-                      <div key={tk.id} className="p-4 rounded-lg ring-1 ring-white/10 bg-white/5">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold">{t(`task_${def.id}`)}</div>
-                          <div className="text-xs text-[#ffe066]">+{def.reward} ◆</div>
+                      <div key={tk.id} className={`p-4 rounded-lg ring-1 ${meta.ring} bg-white/5`}>
+                        <div className="flex items-center justify-between mb-2 gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="px-2 py-0.5 rounded text-[10px] font-black tracking-widest shrink-0"
+                              style={{ background: `${meta.color}22`, color: meta.color, border: `1px solid ${meta.color}66` }}
+                            >
+                              {meta.label}
+                            </span>
+                            <div className="font-bold truncate">{t(`task_${def.id}`) === `task_${def.id}` ? def.label : t(`task_${def.id}`)}</div>
+                          </div>
+                          <div className="text-xs text-[#ffe066] shrink-0">+{def.reward} ◆</div>
                         </div>
                         <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-2">
-                          <div className="h-full bg-gradient-to-r from-[#34d399] to-[#ffe066]" style={{ width: `${pct}%` }} />
+                          <div className="h-full" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${meta.color}, #ffe066)` }} />
                         </div>
+
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/60">{Math.min(current, def.target)} / {def.target}</span>
                           {tk.claimed ? (
