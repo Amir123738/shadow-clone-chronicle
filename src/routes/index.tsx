@@ -1845,6 +1845,26 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         case "NULLKING VORATH":     return ["swap", "steal"];
         case "THE ETERNAL SHADOWLORD":
           return ["judgment", "blackhole", "revive"];
+        case "MAGMA TITAN":         return ["lasers", "quake", "empower"];
+        case "FROSTLICH":           return ["freeze", "mines", "summonTanks"];
+        case "DUNE WORM":           return ["pull", "dash", "spiral"];
+        case "GHOULBANE":           return ["drain", "thornring", "revive"];
+        case "RAIJIN ORACLE":       return ["lasers", "hasten", "doubleshot"];
+        case "CRIMSON GLADIATOR":   return ["dash", "summonTanks", "barrage"];
+        case "ASTRAL HERALD":       return ["vortex", "blur", "judgment"];
+        case "IRON LEVIATHAN":      return ["doubleshot", "mines", "lasers"];
+        case "VENOM MATRIARCH":     return ["pull", "summonTanks", "drain"];
+        case "LICH KING MORTIS":    return ["revive", "swap", "blackhole"];
+        case "KRAKEN ABYSSAL":      return ["vortex", "drain", "mines"];
+        case "TWIN ECHO":           return ["swap", "blur", "doubleshot"];
+        case "PYROCLASM":           return ["quake", "spiral", "empower"];
+        case "IDOL OF SHA":         return ["judgment", "steal", "freeze"];
+        case "TREEFATHER":          return ["thornring", "summonTanks", "drain"];
+        case "ELDERWYRM":           return ["barrage", "lasers", "dash"];
+        case "SPECTRAL TSAR":       return ["freeze", "blur", "revive"];
+        case "CHRONO REACTOR":      return ["hasten", "blackhole", "lasers"];
+        case "EMPRESS OF NULL":     return ["vortex", "judgment", "steal", "swap"];
+        case "OMEGA DEVOURER":      return ["judgment", "blackhole", "lasers", "summonTanks", "revive"];
       }
       // Wave bosses: ability set depends on BOTH playMode and bossId,
       // so no two modes share the same fingerprint for the same boss
