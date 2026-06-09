@@ -69,8 +69,8 @@ export const Route = createFileRoute("/")({
 function GameRoute() {
   return (
     <AuthGate>
-      {({ user, signOut, nickname }) => (
-        <Game userId={user.id} nickname={nickname} signOut={signOut} />
+      {({ user, signOut, email }) => (
+        <Game userId={user.id} email={email} signOut={signOut} />
       )}
     </AuthGate>
   );
@@ -632,7 +632,7 @@ const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; col
   { id: "events",     name: "Random Events",    emoji: "🎲", desc: "Meteor Shower, Eclipse, Time Freeze, Treasure Goblin & more.",   color: "#7cffb2" },
 ];
 
-function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
+function Game({ userId, email, signOut }: { userId: string; email: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const joyBaseRef = useRef<HTMLDivElement>(null);
   const joyKnobRef = useRef<HTMLDivElement>(null);
@@ -4856,7 +4856,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
 
         <span className="text-white/70">
-          {t("player")}: <span className="font-bold text-white">{nickname || "…"}</span>
+          {t("player")}: <span className="font-bold text-white">{email || "..."}</span>
         </span>
         <button
           type="button"

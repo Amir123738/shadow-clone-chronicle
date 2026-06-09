@@ -1,11 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-
-const EMAIL_DOMAIN = "shadowclone.local";
-const NICK_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 export type PlayerProfile = {
   user_id: string;
@@ -16,10 +12,6 @@ export type PlayerProfile = {
   accessories: string[];
   equipped_accessory: string | null;
 };
-
-function nickToEmail(nick: string) {
-  return `${nick.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
-}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -36,48 +28,53 @@ export function useAuth() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (nickname: string, password: string) => {
-    if (!NICK_RE.test(nickname)) {
-      throw new Error("Nickname must be 3–20 letters, numbers or underscores.");
-    }
+  const signUp = useCallback(async (email: string, password: string) => {
     if (password.length < 6) {
       throw new Error("Password must be at least 6 characters.");
     }
     const { error } = await supabase.auth.signUp({
-      email: nickToEmail(nickname),
+      email: email.trim(),
       password,
       options: {
-        data: { nickname },
         emailRedirectTo: `${window.location.origin}/`,
       },
     });
     if (error) {
       if (/registered|exists/i.test(error.message)) {
-        throw new Error("That nickname is already taken.");
+        throw new Error("That email is already registered.");
       }
       throw error;
     }
   }, []);
 
-  const signIn = useCallback(async (nickname: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
-      email: nickToEmail(nickname),
+      email: email.trim(),
       password,
     });
     if (error) {
       if (/invalid/i.test(error.message)) {
-        throw new Error("Wrong nickname or password.");
+        throw new Error("Wrong email or password.");
       }
       throw error;
     }
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
   }, []);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut({ scope: "local" });
   }, []);
 
-
-  return { user, loading, signUp, signIn, signOut };
+  return { user, loading, signUp, signIn, signInWithGoogle, signOut };
 }
 
 export async function loadProfile(userId: string): Promise<PlayerProfile | null> {
@@ -122,36 +119,25 @@ export async function saveProfile(
 export function AuthGate({
   children,
 }: {
-  children: (ctx: { user: User; signOut: () => Promise<void>; nickname: string }) => React.ReactNode;
+  children: (ctx: { user: User; signOut: () => Promise<void>; email: string }) => React.ReactNode;
 }) {
-  const { user, loading, signIn, signUp, signOut } = useAuth();
+  const { user, loading, signIn, signUp, signInWithGoogle, signOut } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [nick, setNick] = useState<string>("");
-
-  useEffect(() => {
-    if (!user) { setNick(""); return; }
-    const n = (user.user_metadata as { nickname?: string } | null)?.nickname;
-    if (n) setNick(n);
-    else {
-      supabase.from("player_profiles").select("nickname").eq("user_id", user.id).maybeSingle()
-        .then(({ data }) => setNick(data?.nickname ?? "Player"));
-    }
-  }, [user]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0b0d1a] text-white">
-        Loading…
+        Loading...
       </div>
     );
   }
 
   if (user) {
-    return <>{children({ user, signOut, nickname: nick })}</>;
+    return <>{children({ user, signOut, email: user.email ?? "Signed in" })}</>;
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -159,8 +145,8 @@ export function AuthGate({
     setErr(null);
     setBusy(true);
     try {
-      if (mode === "signup") await signUp(nickname, password);
-      else await signIn(nickname, password);
+      if (mode === "signup") await signUp(email, password);
+      else await signIn(email, password);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -181,17 +167,15 @@ export function AuthGate({
           {mode === "signup" ? "Create your player account" : "Welcome back"}
         </p>
 
-        <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Nickname</label>
+        <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Email</label>
         <input
-          type="text"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          autoComplete="username"
-          minLength={3}
-          maxLength={20}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           required
           className="w-full mb-4 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 outline-none"
-          placeholder="ShadowHero"
+          placeholder="player@example.com"
         />
 
         <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Password</label>
@@ -203,7 +187,7 @@ export function AuthGate({
           minLength={6}
           required
           className="w-full mb-4 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 outline-none"
-          placeholder="••••••"
+          placeholder="******"
         />
 
         {err && <div className="mb-3 text-sm text-red-400">{err}</div>}
@@ -229,15 +213,7 @@ export function AuthGate({
             setErr(null);
             setBusy(true);
             try {
-              const result = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
-              });
-              if (result.error) {
-                setErr(result.error.message ?? "Google sign-in failed.");
-                setBusy(false);
-                return;
-              }
-              if (result.redirected) return;
+              await signInWithGoogle();
             } catch (e: unknown) {
               setErr(e instanceof Error ? e.message : "Google sign-in failed.");
               setBusy(false);
@@ -246,17 +222,20 @@ export function AuthGate({
           className="w-full py-2.5 rounded-lg bg-white text-gray-800 font-semibold hover:bg-gray-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
-            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/>
-            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.8 35.7 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/>
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.8 35.7 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z" />
           </svg>
           Continue with Google
         </button>
 
         <button
           type="button"
-          onClick={() => { setErr(null); setMode(mode === "signup" ? "login" : "signup"); }}
+          onClick={() => {
+            setErr(null);
+            setMode(mode === "signup" ? "login" : "signup");
+          }}
           className="w-full mt-3 text-sm text-white/70 hover:text-white"
         >
           {mode === "signup" ? "Already have an account? Log in" : "New player? Create an account"}
