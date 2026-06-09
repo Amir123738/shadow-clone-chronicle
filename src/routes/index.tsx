@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play } from "lucide-react";
+import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play, Bot } from "lucide-react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
+import { getAiCoachTip } from "@/lib/api/aiCoach.functions";
 import { LANG_NAMES, LANG_FLAGS, makeT, type Lang } from "@/lib/i18n";
 
 import upgFire from "@/assets/upgrades/fire.png";
@@ -682,6 +683,10 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
   const [freeDivineSpins, setFreeDivineSpins] = useState<number>(() => loadFreeSpins(FREE_DIVINE_SPINS_KEY));
   const [difficultyOpen, setDifficultyOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
+  const [aiCoachOpen, setAiCoachOpen] = useState(false);
+  const [aiCoachTip, setAiCoachTip] = useState<string | null>(null);
+  const [aiCoachError, setAiCoachError] = useState<string | null>(null);
+  const [aiCoachBusy, setAiCoachBusy] = useState(false);
   const [pendingMode, setPendingMode] = useState<PlayMode>("classic");
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
@@ -756,6 +761,37 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     shopRef.current = next; setShop(next);
     toast.success("THE Elite Shadow Gamer! Admin skin, Admin Hat & Admin Jacket unlocked!", { duration: 8000 });
   }, []);
+
+  const askAiCoach = useCallback(async () => {
+    setAiCoachOpen(true);
+    setAiCoachTip(null);
+    setAiCoachError(null);
+    setAiCoachBusy(true);
+    try {
+      const result = await getAiCoachTip({
+        data: {
+          wave: uiState.wave,
+          totalWaves: uiState.totalWaves,
+          hp: uiState.hp,
+          maxHp: uiState.maxHp,
+          level: uiState.level,
+          clones: uiState.clones,
+          enemiesLeft: uiState.enemiesLeft,
+          coins: uiState.coins,
+          shadowCoins: uiState.shadowCoins,
+          gameMode: uiState.gameMode,
+          playMode: uiState.playMode,
+          bossName: uiState.bossName,
+          eventName: uiState.eventName,
+        },
+      });
+      setAiCoachTip(result.tip);
+    } catch (error) {
+      setAiCoachError(error instanceof Error ? error.message : "AI Coach is unavailable.");
+    } finally {
+      setAiCoachBusy(false);
+    }
+  }, [uiState]);
 
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
@@ -4968,6 +5004,13 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
                     {t("tasks")}
                   </button>
                   <button
+                    onClick={askAiCoach}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#fef08a] text-black font-bold hover:scale-105 transition"
+                  >
+                    <Bot className="w-4 h-4" />
+                    AI Coach
+                  </button>
+                  <button
                     onClick={() => setLevelsOpen(true)}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#ff7a18] text-black font-bold hover:scale-105 transition"
                   >
@@ -4985,6 +5028,46 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
                 </div>
               </div>
 
+            </Overlay>
+          )}
+
+          {aiCoachOpen && (
+            <Overlay>
+              <div className="w-full max-w-md px-4">
+                <div className="rounded-xl border border-[#fef08a]/40 bg-black/50 p-5 shadow-[0_0_35px_rgba(254,240,138,0.18)]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#fef08a] text-black flex items-center justify-center">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-[#fef08a]">AI Coach</h2>
+                      <p className="text-xs text-white/50">Tactical shadow advice</p>
+                    </div>
+                  </div>
+                  <div className="min-h-20 rounded-lg bg-white/5 border border-white/10 p-4 text-sm text-white/80 leading-relaxed">
+                    {aiCoachBusy && "Thinking..."}
+                    {!aiCoachBusy && aiCoachError && <span className="text-red-300">{aiCoachError}</span>}
+                    {!aiCoachBusy && !aiCoachError && (aiCoachTip ?? "No tip yet.")}
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={askAiCoach}
+                      disabled={aiCoachBusy}
+                      className="flex-1 py-2 rounded-lg bg-[#fef08a] text-black font-black disabled:opacity-50"
+                    >
+                      Ask Again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAiCoachOpen(false)}
+                      className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20"
+                    >
+                      {t("close")}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </Overlay>
           )}
 
