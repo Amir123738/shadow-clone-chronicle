@@ -22,14 +22,32 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
-    supabase.auth.getSession().then(({ data }) => {
+
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (cancelled) return;
+
+      if (error) {
+        await supabase.auth.signOut({ scope: "local" });
+        if (!cancelled) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
