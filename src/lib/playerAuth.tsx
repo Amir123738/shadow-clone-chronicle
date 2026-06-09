@@ -17,6 +17,39 @@ function getAuthRedirectUrl() {
   return `${window.location.origin}/`;
 }
 
+function clearAuthUrlFragment() {
+  window.history.replaceState(
+    null,
+    document.title,
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
+async function recoverOAuthSessionFromUrl() {
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+
+  if (!accessToken || !refreshToken) {
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+  clearAuthUrlFragment();
+
+  if (error) {
+    throw error;
+  }
+
+  return data.session;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +61,28 @@ export function useAuth() {
       setUser(session?.user ?? null);
     });
 
-    supabase.auth.getSession().then(async ({ data, error }) => {
+    const initAuth = async () => {
+      if (cancelled) return;
+
+      try {
+        const recoveredSession = await recoverOAuthSessionFromUrl();
+        if (cancelled) return;
+        if (recoveredSession) {
+          setUser(recoveredSession.user);
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("OAuth session recovery failed:", error);
+        await supabase.auth.signOut({ scope: "local" });
+        if (!cancelled) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const { data, error } = await supabase.auth.getSession();
       if (cancelled) return;
 
       if (error) {
@@ -42,7 +96,9 @@ export function useAuth() {
 
       setUser(data.session?.user ?? null);
       setLoading(false);
-    });
+    };
+
+    void initAuth();
 
     return () => {
       cancelled = true;
