@@ -13,6 +13,10 @@ export type PlayerProfile = {
   equipped_accessory: string | null;
 };
 
+function getAuthRedirectUrl() {
+  return `${window.location.origin}/`;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +40,7 @@ export function useAuth() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: getAuthRedirectUrl(),
       },
     });
     if (error) {
@@ -64,7 +68,7 @@ export function useAuth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: getAuthRedirectUrl(),
       },
     });
     if (error) throw error;
