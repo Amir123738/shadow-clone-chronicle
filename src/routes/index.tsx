@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play, Bot } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play, Bot, Shield, BadgePlus } from "lucide-react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 import { getAiCoachTip } from "@/lib/api/aiCoach.functions";
@@ -372,9 +371,88 @@ const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }>
   admin:      { label: "Admin",      color: "#ff0033" },
 };
 
+type ProfileIcon = { id: string; name: string; symbol: string; color: string; bg: string; rarity: Rarity; price: number };
+const PROFILE_ICONS: ProfileIcon[] = [
+  { id: "shadow_rookie", name: "Shadow Rookie", symbol: "S", color: "#0b0d1a", bg: "#b388ff", rarity: "common", price: 0 },
+  { id: "ember_eye", name: "Ember Eye", symbol: "E", color: "#111827", bg: "#fb923c", rarity: "common", price: 250 },
+  { id: "aqua_mark", name: "Aqua Mark", symbol: "A", color: "#082f49", bg: "#7dd3fc", rarity: "common", price: 300 },
+  { id: "lime_core", name: "Lime Core", symbol: "L", color: "#13240a", bg: "#bef264", rarity: "common", price: 350 },
+  { id: "crimson_star", name: "Crimson Star", symbol: "*", color: "#fff1f2", bg: "#e11d48", rarity: "rare", price: 1200 },
+  { id: "storm_bolt", name: "Storm Bolt", symbol: "B", color: "#eff6ff", bg: "#2563eb", rarity: "rare", price: 1500 },
+  { id: "jade_moon", name: "Jade Moon", symbol: "J", color: "#052e16", bg: "#4ade80", rarity: "rare", price: 1800 },
+  { id: "gold_crown", name: "Gold Crown", symbol: "G", color: "#271700", bg: "#facc15", rarity: "superrare", price: 4500 },
+  { id: "void_orb", name: "Void Orb", symbol: "V", color: "#ede9fe", bg: "#4c1d95", rarity: "superrare", price: 6000 },
+  { id: "phoenix_mark", name: "Phoenix Mark", symbol: "P", color: "#fff7ed", bg: "#ea580c", rarity: "epic", price: 12000 },
+  { id: "frost_king", name: "Frost King", symbol: "F", color: "#083344", bg: "#a5f3fc", rarity: "epic", price: 15000 },
+  { id: "mythic_dragon", name: "Mythic Dragon", symbol: "D", color: "#fdf2f8", bg: "#db2777", rarity: "mythical", price: 30000 },
+  { id: "omega_skull", name: "Omega Skull", symbol: "O", color: "#fee2e2", bg: "#7f1d1d", rarity: "legendary", price: 75000 },
+  { id: "hidden_null", name: "Hidden Null", symbol: "N", color: "#e5e7eb", bg: "#020617", rarity: "secret", price: 150000 },
+  { id: "ultra_sun", name: "Ultra Sun", symbol: "U", color: "#431407", bg: "#ff7a18", rarity: "ultra", price: 300000 },
+  { id: "diamond_shard", name: "Diamond Shard", symbol: "I", color: "#082f49", bg: "#67e8f9", rarity: "diamond", price: 600000 },
+  { id: "rainbow_sigil", name: "Rainbow Sigil", symbol: "R", color: "#ffffff", bg: "#ff5dff", rarity: "rainbow", price: 1000000 },
+  { id: "prism_gate", name: "Prism Gate", symbol: "Q", color: "#faf5ff", bg: "#7c3aed", rarity: "prismatic", price: 2000000 },
+  { id: "nebula_eye", name: "Nebula Eye", symbol: "Z", color: "#eef2ff", bg: "#312e81", rarity: "nebula", price: 5000000 },
+  { id: "galactic_admin", name: "Admin Flame", symbol: "!", color: "#ffffff", bg: "#ff0033", rarity: "admin", price: 0 },
+];
+const PROFILE_NAME_COST = 2500;
+
 const SHOP_KEY = "scs_shop_v2";
-type ShopSave = { shadowCoins: number; owned: string[]; selected: string; accessories: string[]; equippedAccessory: string | null };
-const DEFAULT_SHOP: ShopSave = { shadowCoins: 0, owned: ["violet"], selected: "violet", accessories: [], equippedAccessory: null };
+type ShopSave = {
+  shadowCoins: number;
+  owned: string[];
+  selected: string;
+  accessories: string[];
+  equippedAccessory: string | null;
+  profileName: string | null;
+  profileIcon: string | null;
+  profileIcons: string[];
+  customSkins: Skin[];
+  customAccessories: Accessory[];
+  customProfileIcons: ProfileIcon[];
+};
+const DEFAULT_SHOP: ShopSave = {
+  shadowCoins: 0,
+  owned: ["violet"],
+  selected: "violet",
+  accessories: [],
+  equippedAccessory: null,
+  profileName: null,
+  profileIcon: "shadow_rookie",
+  profileIcons: ["shadow_rookie"],
+  customSkins: [],
+  customAccessories: [],
+  customProfileIcons: [],
+};
+function isRarity(value: unknown): value is Rarity {
+  return typeof value === "string" && RARITY_ORDER.includes(value as Rarity);
+}
+function isAccessoryRarity(value: unknown): value is AccessoryRarity {
+  return typeof value === "string" && ACC_RARITY_ORDER.includes(value as AccessoryRarity);
+}
+function sanitizeCustomSkins(value: unknown): Skin[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const v = item as Partial<Skin>;
+    if (!v || typeof v.id !== "string" || typeof v.name !== "string" || !isRarity(v.rarity)) return [];
+    return [{ id: v.id, name: v.name, price: Number(v.price) || 0, color: v.color || "#b388ff", glow: v.glow, rainbow: !!v.rainbow, rarity: v.rarity }];
+  });
+}
+function sanitizeCustomAccessories(value: unknown): Accessory[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const v = item as Partial<Accessory>;
+    if (!v || typeof v.id !== "string" || typeof v.name !== "string" || !isAccessoryRarity(v.rarity)) return [];
+    return [{ id: v.id, name: v.name, price: Number(v.price) || 0, color: v.color || "#facc15", glow: v.glow || "rgba(250,204,21,1)", rarity: v.rarity }];
+  });
+}
+function sanitizeCustomProfileIcons(value: unknown): ProfileIcon[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const v = item as Partial<ProfileIcon>;
+    if (!v || typeof v.id !== "string" || typeof v.name !== "string" || !isRarity(v.rarity)) return [];
+    return [{ id: v.id, name: v.name, price: Number(v.price) || 0, symbol: (v.symbol || "?").slice(0, 2), color: v.color || "#ffffff", bg: v.bg || "#7c3aed", rarity: v.rarity }];
+  });
+}
 function loadShop(): ShopSave {
   if (typeof window === "undefined") return { ...DEFAULT_SHOP };
   try {
@@ -387,13 +465,19 @@ function loadShop(): ShopSave {
         selected: v.selected || "violet",
         accessories: Array.isArray(v.accessories) ? v.accessories : [],
         equippedAccessory: v.equippedAccessory ?? null,
+        profileName: typeof v.profileName === "string" ? v.profileName : null,
+        profileIcon: typeof v.profileIcon === "string" ? v.profileIcon : "shadow_rookie",
+        profileIcons: Array.isArray(v.profileIcons) ? v.profileIcons : ["shadow_rookie"],
+        customSkins: sanitizeCustomSkins(v.customSkins),
+        customAccessories: sanitizeCustomAccessories(v.customAccessories),
+        customProfileIcons: sanitizeCustomProfileIcons(v.customProfileIcons),
       };
     }
     // migrate legacy
     const legacy = localStorage.getItem("scs_shop_v1");
     if (legacy) {
       const v = JSON.parse(legacy);
-      if (v && Array.isArray(v.owned)) return { shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null };
+      if (v && Array.isArray(v.owned)) return { ...DEFAULT_SHOP, shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null };
     }
   } catch {}
   return { ...DEFAULT_SHOP };
@@ -688,6 +772,40 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const joyKnobRef = useRef<HTMLDivElement>(null);
   const isTouchDevice = typeof window !== "undefined" && (("ontouchstart" in window) || (navigator.maxTouchPoints || 0) > 0);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const removeInjectedQrWidget = () => {
+      const candidates = Array.from(document.body.querySelectorAll<HTMLElement>("body *"));
+
+      for (const candidate of candidates) {
+        const text = candidate.textContent?.replace(/\s+/g, " ").trim().toLowerCase() || "";
+        if (!text.includes("scan me")) continue;
+
+        let target: HTMLElement | null = candidate;
+        for (let i = 0; i < 6 && target && target !== document.body; i += 1) {
+          const style = window.getComputedStyle(target);
+          const rect = target.getBoundingClientRect();
+          const overlayPosition = ["fixed", "absolute", "sticky"].includes(style.position);
+          const likelyWidgetSize = rect.width > 80 && rect.width < 420 && rect.height > 80 && rect.height < 520;
+
+          if (overlayPosition && likelyWidgetSize) {
+            target.remove();
+            return;
+          }
+
+          target = target.parentElement;
+        }
+      }
+    };
+
+    removeInjectedQrWidget();
+    const observer = new MutationObserver(removeInjectedQrWidget);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
   const [uiState, setUiState] = useState<{
     started: boolean; over: boolean; won: boolean;
     wave: number; score: number; hp: number; maxHp: number;
@@ -726,6 +844,17 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
   const [shopOpen, setShopOpen] = useState(false);
   const [accShopOpen, setAccShopOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileIconShopOpen, setProfileIconShopOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [profileNameInput, setProfileNameInput] = useState(nickname || "Player");
+  const [adminCoinsInput, setAdminCoinsInput] = useState("100000");
+  const [adminSpinInput, setAdminSpinInput] = useState("10");
+  const [adminItemName, setAdminItemName] = useState("");
+  const [adminItemColor, setAdminItemColor] = useState("#ff0033");
+  const [adminSkinRarity, setAdminSkinRarity] = useState<Rarity>("quasaric");
+  const [adminAccessoryRarity, setAdminAccessoryRarity] = useState<AccessoryRarity>("quasaric");
+  const [adminIconRarity, setAdminIconRarity] = useState<Rarity>("quasaric");
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
@@ -741,7 +870,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [aiCoachInput, setAiCoachInput] = useState("");
   const [aiCoachError, setAiCoachError] = useState<string | null>(null);
   const [aiCoachBusy, setAiCoachBusy] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
   const [pendingMode, setPendingMode] = useState<PlayMode>("classic");
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
@@ -759,9 +887,6 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   });
   useEffect(() => { lifetimeRef.current = lifetime; saveLifetime(lifetime); }, [lifetime]);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
-  useEffect(() => {
-    setShareUrl(window.location.origin);
-  }, []);
 
   const bumpLifetime = useCallback((patch: Partial<LifetimeStats>) => {
     setLifetime((lt) => {
@@ -971,11 +1096,18 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       if (cancelled) return;
       if (p) {
         const next: ShopSave = {
+          ...DEFAULT_SHOP,
           shadowCoins: p.shadow_coins,
           owned: p.owned.length ? p.owned : ["violet"],
           selected: p.selected || "violet",
           accessories: p.accessories,
           equippedAccessory: p.equipped_accessory,
+          profileName: p.profile_name,
+          profileIcon: p.profile_icon || "shadow_rookie",
+          profileIcons: p.profile_icons.length ? p.profile_icons : ["shadow_rookie"],
+          customSkins: sanitizeCustomSkins(p.custom_skins),
+          customAccessories: sanitizeCustomAccessories(p.custom_accessories),
+          customProfileIcons: sanitizeCustomProfileIcons(p.custom_profile_icons),
         };
         shopRef.current = next;
         setShop(next);
@@ -996,6 +1128,12 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     saveTimerRef.current = window.setTimeout(() => {
       saveProfile(userId, {
         shadow_coins: shop.shadowCoins,
+        profile_name: shop.profileName,
+        profile_icon: shop.profileIcon,
+        profile_icons: shop.profileIcons,
+        custom_skins: shop.customSkins,
+        custom_accessories: shop.customAccessories,
+        custom_profile_icons: shop.customProfileIcons,
         owned: shop.owned,
         selected: shop.selected,
         accessories: shop.accessories,
@@ -1004,6 +1142,171 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     }, 600);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
   }, [shop, hydrated, userId]);
+
+  useEffect(() => {
+    setProfileNameInput(shop.profileName || nickname || "Player");
+  }, [shop.profileName, nickname]);
+
+  const uniqueByNameAndRarity = <T extends { name: string; rarity?: string }>(items: T[]) => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = `${item.rarity ?? "none"}:${item.name.trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const allSkins = uniqueByNameAndRarity([...SKINS, ...shop.customSkins]);
+  const allAccessories = uniqueByNameAndRarity([...ACCESSORIES, ...shop.customAccessories]);
+  const allProfileIcons = uniqueByNameAndRarity([...PROFILE_ICONS, ...shop.customProfileIcons]);
+  const activeProfileIcon = allProfileIcons.find((icon) => icon.id === shop.profileIcon) ?? allProfileIcons[0];
+  const displayProfileName = shop.profileName || nickname || "Player";
+
+  const changeProfileName = useCallback(() => {
+    const clean = profileNameInput.trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(clean)) {
+      toast.error("Name must be 3-20 letters, numbers, or underscores.");
+      return;
+    }
+    if (clean === (shopRef.current.profileName || nickname)) {
+      toast.message("That name is already active.");
+      return;
+    }
+    const cur = shopRef.current;
+    if (cur.shadowCoins < PROFILE_NAME_COST) {
+      toast.error(`Need ${PROFILE_NAME_COST.toLocaleString()} Shadow Coins.`);
+      return;
+    }
+    const next = { ...cur, shadowCoins: cur.shadowCoins - PROFILE_NAME_COST, profileName: clean };
+    shopRef.current = next;
+    setShop(next);
+    toast.success(`Profile name changed to ${clean}.`);
+  }, [profileNameInput, nickname]);
+
+  const addAdminCoins = useCallback(() => {
+    const amount = Math.max(0, Math.floor(Number(adminCoinsInput) || 0));
+    if (amount <= 0) return;
+    setShop((v) => ({ ...v, shadowCoins: v.shadowCoins + amount }));
+    toast.success(`Added ${amount.toLocaleString()} Shadow Coins.`);
+  }, [adminCoinsInput]);
+
+  const addAdminSpins = useCallback((kind: "shady" | "fortune" | "divine") => {
+    const amount = Math.max(0, Math.floor(Number(adminSpinInput) || 0));
+    if (amount <= 0) return;
+    if (kind === "shady") {
+      const next = shadySpins + amount;
+      saveShadySpins(next);
+      setShadySpins(next);
+    } else {
+      const key = kind === "fortune" ? FREE_WHEEL_SPINS_KEY : FREE_DIVINE_SPINS_KEY;
+      const current = loadFreeSpins(key);
+      saveFreeSpins(key, current + amount);
+      if (kind === "fortune") setFreeWheelSpins(current + amount);
+      else setFreeDivineSpins(current + amount);
+    }
+    toast.success(`Added ${amount.toLocaleString()} ${kind} spins.`);
+  }, [adminSpinInput, shadySpins]);
+
+  const slugAdminItem = (prefix: string) => {
+    const base = adminItemName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "admin_item";
+    return `${prefix}_${base}_${Date.now().toString(36)}`;
+  };
+  const hasItemNamed = (items: { name: string }[], name: string) => (
+    items.some(item => item.name.trim().toLowerCase() === name.trim().toLowerCase())
+  );
+
+  const grantSkinByRarity = useCallback(() => {
+    const cur = shopRef.current;
+    const skins = uniqueByNameAndRarity([...SKINS, ...cur.customSkins]);
+    const ownedNames = new Set(skins.filter(sk => cur.owned.includes(sk.id)).map(sk => sk.name.trim().toLowerCase()));
+    const pool = skins.filter(sk => sk.rarity === adminSkinRarity && !cur.owned.includes(sk.id) && !ownedNames.has(sk.name.trim().toLowerCase()));
+    if (pool.length === 0) {
+      toast.error(`You already have every ${RARITY_META[adminSkinRarity].label} skin.`);
+      return;
+    }
+    const item = pickRandom(pool);
+    const next = { ...cur, owned: [...cur.owned, item.id], selected: item.id };
+    shopRef.current = next;
+    setShop(next);
+    toast.success(`Added ${RARITY_META[adminSkinRarity].label} skin: ${item.name}`);
+  }, [adminSkinRarity]);
+
+  const grantAccessoryByRarity = useCallback(() => {
+    const cur = shopRef.current;
+    const accessories = uniqueByNameAndRarity([...ACCESSORIES, ...cur.customAccessories]);
+    const ownedNames = new Set(accessories.filter(a => cur.accessories.includes(a.id)).map(a => a.name.trim().toLowerCase()));
+    const pool = accessories.filter(a => a.rarity === adminAccessoryRarity && !cur.accessories.includes(a.id) && !ownedNames.has(a.name.trim().toLowerCase()));
+    if (pool.length === 0) {
+      toast.error(`You already have every ${ACC_RARITY_META[adminAccessoryRarity].label} accessory.`);
+      return;
+    }
+    const item = pickRandom(pool);
+    const next = { ...cur, accessories: [...cur.accessories, item.id], equippedAccessory: item.id };
+    shopRef.current = next;
+    setShop(next);
+    toast.success(`Added ${ACC_RARITY_META[adminAccessoryRarity].label} accessory: ${item.name}`);
+  }, [adminAccessoryRarity]);
+
+  const grantProfileIconByRarity = useCallback(() => {
+    const cur = shopRef.current;
+    const icons = uniqueByNameAndRarity([...PROFILE_ICONS, ...cur.customProfileIcons]);
+    const ownedNames = new Set(icons.filter(icon => cur.profileIcons.includes(icon.id)).map(icon => icon.name.trim().toLowerCase()));
+    const pool = icons.filter(icon => icon.rarity === adminIconRarity && !cur.profileIcons.includes(icon.id) && !ownedNames.has(icon.name.trim().toLowerCase()));
+    if (pool.length === 0) {
+      toast.error(`You already have every ${RARITY_META[adminIconRarity].label} profile icon.`);
+      return;
+    }
+    const item = pickRandom(pool);
+    const next = { ...cur, profileIcons: [...cur.profileIcons, item.id], profileIcon: item.id };
+    shopRef.current = next;
+    setShop(next);
+    toast.success(`Added ${RARITY_META[adminIconRarity].label} profile icon: ${item.name}`);
+  }, [adminIconRarity]);
+
+  const createAdminSkin = useCallback(() => {
+    const name = adminItemName.trim();
+    if (!name) {
+      toast.error("Type a new skin name first.");
+      return;
+    }
+    if (hasItemNamed([...SKINS, ...shopRef.current.customSkins], name)) {
+      toast.error("You already have this skin.");
+      return;
+    }
+    const item: Skin = { id: slugAdminItem("skin"), name, rarity: adminSkinRarity, price: 0, color: adminItemColor, glow: adminItemColor };
+    setShop((v) => ({ ...v, customSkins: [...v.customSkins, item], owned: [...v.owned, item.id], selected: item.id }));
+    toast.success(`New ${RARITY_META[adminSkinRarity].label} skin added: ${name}`);
+  }, [adminItemName, adminItemColor, adminSkinRarity]);
+
+  const createAdminAccessory = useCallback(() => {
+    const name = adminItemName.trim();
+    if (!name) {
+      toast.error("Type a new accessory name first.");
+      return;
+    }
+    if (hasItemNamed([...ACCESSORIES, ...shopRef.current.customAccessories], name)) {
+      toast.error("You already have this accessory.");
+      return;
+    }
+    const item: Accessory = { id: slugAdminItem("acc"), name, rarity: adminAccessoryRarity, price: 0, color: adminItemColor, glow: adminItemColor };
+    setShop((v) => ({ ...v, customAccessories: [...v.customAccessories, item], accessories: [...v.accessories, item.id], equippedAccessory: item.id }));
+    toast.success(`New ${ACC_RARITY_META[adminAccessoryRarity].label} accessory added: ${name}`);
+  }, [adminItemName, adminItemColor, adminAccessoryRarity]);
+
+  const createAdminProfileIcon = useCallback(() => {
+    const name = adminItemName.trim();
+    if (!name) {
+      toast.error("Type a new profile icon name first.");
+      return;
+    }
+    if (hasItemNamed([...PROFILE_ICONS, ...shopRef.current.customProfileIcons], name)) {
+      toast.error("You already have this profile icon.");
+      return;
+    }
+    const item: ProfileIcon = { id: slugAdminItem("icon"), name, rarity: adminIconRarity, price: 0, symbol: name[0]?.toUpperCase() || "A", color: "#ffffff", bg: adminItemColor };
+    setShop((v) => ({ ...v, customProfileIcons: [...v.customProfileIcons, item], profileIcons: [...v.profileIcons, item.id], profileIcon: item.id }));
+    toast.success(`New ${RARITY_META[adminIconRarity].label} profile icon added: ${name}`);
+  }, [adminItemName, adminItemColor, adminIconRarity]);
 
 
 
@@ -2450,7 +2753,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
     const step = (dt: number) => {
       const s = stateRef.current;
-      if (s.over || s.won || s.betweenWaves) return;
+      if (s.over || s.won || s.betweenWaves || !s.waveActive) return;
 
       s.time += dt;
 
@@ -3053,7 +3356,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         }
       }
 
-      const skin = SKINS.find(sk => sk.id === shopRef.current.selected) ?? SKINS[0];
+      const currentShop = shopRef.current;
+      const availableSkins = [...SKINS, ...currentShop.customSkins];
+      const availableAccessories = [...ACCESSORIES, ...currentShop.customAccessories];
+      const skin = availableSkins.find(sk => sk.id === currentShop.selected) ?? SKINS[0];
       let skinColor = skin.color;
       let skinGlow = skin.glow ?? "rgba(179,136,255,0.55)";
       if (skin.rainbow) {
@@ -3061,8 +3367,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         skinColor = `hsl(${hue},90%,65%)`;
         skinGlow = `hsla(${hue},90%,65%,0.55)`;
       }
-      const equippedAcc = shopRef.current.equippedAccessory
-        ? ACCESSORIES.find(a => a.id === shopRef.current.equippedAccessory) ?? null
+      const equippedAcc = currentShop.equippedAccessory
+        ? availableAccessories.find(a => a.id === currentShop.equippedAccessory) ?? null
         : null;
       const isHat = equippedAcc && /hat/.test(equippedAcc.id);
       const isJacket = equippedAcc && /jacket/.test(equippedAcc.id);
@@ -5076,8 +5382,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     };
   }, [rollUpgrades]);
 
+  const leftStats = [
+    { label: t("wave"), value: `${uiState.wave}/${uiState.totalWaves}` },
+    { label: t("score"), value: uiState.score.toString() },
+    { label: t("coins"), value: uiState.coins.toString() },
+    { label: t("shadowSym"), value: uiState.shadowCoins.toString() },
+    { label: t("lvl"), value: uiState.level.toString() },
+  ];
+  const rightStats = [
+    { label: t("clones"), value: uiState.clones.toString() },
+    { label: t("nextClone"), value: `${uiState.cloneTimer.toFixed(1)}s` },
+    { label: t("time"), value: `${uiState.time.toFixed(1)}s` },
+    { label: t("enemies"), value: uiState.enemiesLeft.toString() },
+    ...(uiState.stolen ? [{ label: t("stolen"), value: `${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)` }] : []),
+  ];
+
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070815] text-white p-4 gap-4">
+    <div data-game-root className="min-h-screen w-full flex flex-col items-center justify-start bg-[#070815] text-white px-4 py-4 md:py-5 gap-3">
       {/* Touch joystick overlay (fixed; positioned via JS) */}
       <div
         ref={joyBaseRef}
@@ -5090,32 +5411,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           style={{ width: 46, height: 46, boxShadow: "0 0 16px rgba(255,255,255,0.5)" }}
         />
       </div>
-      <div className="w-full max-w-[960px] flex flex-wrap items-start justify-between gap-3 text-xs">
-        {shareUrl && (
-          <div className="w-[172px] rounded-xl bg-[#5bb8a4] p-2 shadow-[0_0_24px_rgba(91,184,164,0.25)]">
-            <div className="rounded-md bg-[#ded0d0] p-3">
-              <div className="bg-white p-2">
-                <QRCodeSVG
-                  value={shareUrl}
-                  size={112}
-                  marginSize={1}
-                  bgColor="#ffffff"
-                  fgColor="#000000"
-                  level="M"
-                />
-              </div>
-            </div>
-            <div className="mt-2 flex items-center justify-center gap-3 rounded-lg bg-[#5bb8a4] px-3 py-2">
-              <div className="flex h-8 w-11 items-center justify-center rounded-md bg-[#ead8d8] text-[#5bb8a4]">
-                <Play className="h-5 w-5 fill-current" />
-              </div>
-              <div className="text-lg font-black text-[#3a0909]">Scan me!</div>
-            </div>
-          </div>
-        )}
+      <div className="w-full max-w-[1360px] flex items-center justify-end gap-3 text-xs">
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition"
+        >
+          <ProfileIconBadge icon={activeProfileIcon} size="sm" />
+          <span className="text-white/70">
+            {t("player")}: <span className="font-bold text-white">{displayProfileName}</span>
+          </span>
+        </button>
         <div className="flex items-center justify-end gap-3">
           <span className="text-white/70">
-            {t("player")}: <span className="font-bold text-white">{nickname || "..."}</span>
+            ◆ <span className="font-bold text-white">{shop.shadowCoins.toLocaleString()}</span>
           </span>
           <button
             type="button"
@@ -5138,30 +5447,22 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         <p className="text-sm text-white/60">{t("controls")}</p>
       </header>
 
-      <div className="relative" style={{ width: "min(96vw, 960px)" }}>
-        <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm font-mono">
-          <Stat label={t("wave")} value={`${uiState.wave}/${uiState.totalWaves}`} />
-          <Stat label={t("score")} value={uiState.score.toString()} />
-          <Stat label={t("coins")} value={uiState.coins.toString()} />
-          <Stat label={t("shadowSym")} value={uiState.shadowCoins.toString()} />
-          <Stat label={t("lvl")} value={uiState.level.toString()} />
-          <Stat label={t("clones")} value={uiState.clones.toString()} />
-          <Stat label={t("nextClone")} value={`${uiState.cloneTimer.toFixed(1)}s`} />
-          <Stat label={t("time")} value={`${uiState.time.toFixed(1)}s`} />
-          <Stat label={t("enemies")} value={uiState.enemiesLeft.toString()} />
-          {uiState.stolen && <Stat label={t("stolen")} value={`${uiState.stolen.name} (${uiState.stolen.time.toFixed(0)}s)`} />}
-        </div>
+      <div className="w-full max-w-[1360px]">
+        <div className="grid items-start gap-3 lg:grid-cols-[170px_minmax(0,960px)_170px]">
+          <div className="hidden lg:flex flex-col gap-2 pt-8 font-mono text-xs">
+            {leftStats.map((stat) => <Stat key={stat.label} label={stat.label} value={stat.value} />)}
+          </div>
 
+          <div className="relative min-w-0">
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-1">
+              <div className="h-full bg-gradient-to-r from-[#ff5d5d] to-[#ffe066] transition-[width] duration-150"
+                style={{ width: `${(uiState.hp / uiState.maxHp) * 100}%` }} />
+            </div>
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+              <div className="h-full bg-[#7cf24a]" style={{ width: `${(uiState.xp / uiState.xpNext) * 100}%` }} />
+            </div>
 
-        <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-1">
-          <div className="h-full bg-gradient-to-r from-[#ff5d5d] to-[#ffe066] transition-[width] duration-150"
-            style={{ width: `${(uiState.hp / uiState.maxHp) * 100}%` }} />
-        </div>
-        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
-          <div className="h-full bg-[#7cf24a]" style={{ width: `${(uiState.xp / uiState.xpNext) * 100}%` }} />
-        </div>
-
-        <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
+            <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
           <canvas
             ref={canvasRef} width={W} height={H}
             className="block w-full h-auto cursor-crosshair bg-[#0b0d1a]"
@@ -5704,6 +6005,211 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
 
 
+          {profileOpen && (
+            <Overlay>
+              <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <ProfileIconBadge icon={activeProfileIcon} size="lg" />
+                    <div>
+                      <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ffe066] bg-clip-text text-transparent">My Account</h2>
+                      <div className="text-sm text-white/60">{displayProfileName} · ◆ {shop.shadowCoins.toLocaleString()}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => setProfileOpen(false)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-bold">{t("close")}</button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="text-xs font-black uppercase tracking-widest text-[#7dd3fc] mb-2">Profile Name</div>
+                    <input
+                      value={profileNameInput}
+                      onChange={(e) => setProfileNameInput(e.target.value)}
+                      maxLength={20}
+                      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 outline-none focus:border-[#7dd3fc]"
+                    />
+                    <button
+                      onClick={changeProfileName}
+                      disabled={shop.shadowCoins < PROFILE_NAME_COST}
+                      className="mt-3 w-full px-4 py-2 rounded-lg bg-[#ffe066] text-black font-black disabled:bg-white/10 disabled:text-white/40"
+                    >
+                      Change Name · ◆ {PROFILE_NAME_COST.toLocaleString()}
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="text-xs font-black uppercase tracking-widest text-[#ffe066] mb-2">Profile Icons</div>
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      {allProfileIcons.filter(icon => shop.profileIcons.includes(icon.id)).map(icon => (
+                        <button
+                          key={icon.id}
+                          title={icon.name}
+                          onClick={() => setShop(v => ({ ...v, profileIcon: icon.id }))}
+                          className={`p-2 rounded-lg ring-1 ${shop.profileIcon === icon.id ? "ring-[#ffe066] bg-white/15" : "ring-white/10 bg-white/5 hover:bg-white/10"}`}
+                        >
+                          <ProfileIconBadge icon={icon} size="md" />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => { setProfileOpen(false); setProfileIconShopOpen(true); }}
+                      className="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] text-black font-black"
+                    >
+                      Profile Icon Shop
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 rounded-lg bg-[#ff0033]/10 ring-1 ring-[#ff0033]/40">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="font-black text-[#ff5577]">Admin</div>
+                      <div className="text-xs text-white/60">Add coins, items, profile icons, and spins.</div>
+                    </div>
+                    <button
+                      onClick={() => { setProfileOpen(false); setAdminOpen(true); }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#ff0033] text-white font-black hover:scale-105 transition"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Admin Panel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+          {profileIconShopOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">Profile Icon Shop</h2>
+                  <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins.toLocaleString()}</span></div>
+                </div>
+                {RARITY_ORDER.map((rar) => {
+                  const items = allProfileIcons.filter(icon => icon.rarity === rar);
+                  if (items.length === 0) return null;
+                  const meta = RARITY_META[rar];
+                  return (
+                    <div key={rar} className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                        <div className="text-xs font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label}</div>
+                        <div className="text-[10px] text-white/40">{items.length}</div>
+                        <div className="h-1 flex-1 rounded" style={{ background: `linear-gradient(270deg, ${meta.color}, transparent)` }} />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {items.map(icon => {
+                          const owned = shop.profileIcons.includes(icon.id);
+                          const selected = shop.profileIcon === icon.id;
+                          const canBuy = !owned && shop.shadowCoins >= icon.price;
+                          return (
+                            <div key={icon.id} className={`p-3 rounded-lg ring-1 ${selected ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`} style={{ boxShadow: `inset 0 0 0 1px ${meta.color}22` }}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <ProfileIconBadge icon={icon} size="md" />
+                                <div className="font-bold text-sm leading-tight">{icon.name}</div>
+                              </div>
+                              <div className="text-xs text-white/60 mb-2">{icon.price === 0 ? t("starter") : `◆ ${icon.price.toLocaleString()}`}</div>
+                              {owned ? (
+                                <button
+                                  disabled={selected}
+                                  onClick={() => setShop(v => ({ ...v, profileIcon: icon.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black disabled:bg-white/20 disabled:text-white/60"
+                                >
+                                  {selected ? t("equipped") : t("equip")}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={!canBuy}
+                                  onClick={() => setShop(v => ({ ...v, shadowCoins: v.shadowCoins - icon.price, profileIcons: [...v.profileIcons, icon.id], profileIcon: icon.id }))}
+                                  className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
+                                >
+                                  {canBuy ? t("buyEquip") : `${t("need")} ◆${(icon.price - shop.shadowCoins).toLocaleString()}`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between items-center mt-4 gap-2">
+                  <button onClick={() => { setProfileIconShopOpen(false); setProfileOpen(true); }} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("back")}</button>
+                  <button onClick={() => setProfileIconShopOpen(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-bold text-sm">{t("close")}</button>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
+          {adminOpen && (
+            <Overlay>
+              <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-black text-[#ff5577]">Admin Panel</h2>
+                  <button onClick={() => setAdminOpen(false)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-bold">{t("close")}</button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="font-black mb-2">Shadow Coins</div>
+                    <div className="flex gap-2">
+                      <input value={adminCoinsInput} onChange={(e) => setAdminCoinsInput(e.target.value)} type="number" min="1" className="min-w-0 flex-1 px-3 py-2 rounded-lg bg-black/30 border border-white/10 outline-none" />
+                      <button onClick={addAdminCoins} className="px-4 py-2 rounded-lg bg-[#ffe066] text-black font-black">Add</button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white/5 ring-1 ring-white/10">
+                    <div className="font-black mb-2">Wheel Spins</div>
+                    <input value={adminSpinInput} onChange={(e) => setAdminSpinInput(e.target.value)} type="number" min="1" className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 outline-none mb-2" />
+                    <div className="grid grid-cols-3 gap-2">
+                      <button onClick={() => addAdminSpins("shady")} className="px-3 py-2 rounded-lg bg-[#b388ff] text-black font-black text-xs">Shady</button>
+                      <button onClick={() => addAdminSpins("fortune")} className="px-3 py-2 rounded-lg bg-[#ffe066] text-black font-black text-xs">Fortune</button>
+                      <button onClick={() => addAdminSpins("divine")} className="px-3 py-2 rounded-lg bg-[#fb7185] text-black font-black text-xs">Divine</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 rounded-lg bg-white/5 ring-1 ring-white/10">
+                  <div className="font-black mb-3">Create New Item</div>
+                  <div className="grid md:grid-cols-[1fr_120px] gap-2 mb-3">
+                    <input value={adminItemName} onChange={(e) => setAdminItemName(e.target.value)} placeholder="Item name" className="px-3 py-2 rounded-lg bg-black/30 border border-white/10 outline-none" />
+                    <input value={adminItemColor} onChange={(e) => setAdminItemColor(e.target.value)} type="color" className="w-full h-10 rounded-lg bg-black/30 border border-white/10" />
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-black/20 ring-1 ring-white/10 p-2">
+                      <select value={adminSkinRarity} onChange={(e) => setAdminSkinRarity(e.target.value as Rarity)} className="w-full mb-2 px-3 py-2 rounded-lg bg-black/80 border border-white/10 outline-none text-sm">
+                        {RARITY_ORDER.map(rar => <option key={rar} value={rar}>{RARITY_META[rar].label}</option>)}
+                      </select>
+                      <button onClick={grantSkinByRarity} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#7dd3fc] text-black font-black">
+                        Give Skin
+                      </button>
+                      <button onClick={createAdminSkin} className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white font-bold text-xs hover:bg-white/20"><BadgePlus className="w-4 h-4" /> Create Custom</button>
+                    </div>
+                    <div className="rounded-lg bg-black/20 ring-1 ring-white/10 p-2">
+                      <select value={adminAccessoryRarity} onChange={(e) => setAdminAccessoryRarity(e.target.value as AccessoryRarity)} className="w-full mb-2 px-3 py-2 rounded-lg bg-black/80 border border-white/10 outline-none text-sm">
+                        {ACC_RARITY_ORDER.map(rar => <option key={rar} value={rar}>{ACC_RARITY_META[rar].label}</option>)}
+                      </select>
+                      <button onClick={grantAccessoryByRarity} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#f472b6] text-black font-black">
+                        Give Accessory
+                      </button>
+                      <button onClick={createAdminAccessory} className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white font-bold text-xs hover:bg-white/20"><BadgePlus className="w-4 h-4" /> Create Custom</button>
+                    </div>
+                    <div className="rounded-lg bg-black/20 ring-1 ring-white/10 p-2">
+                      <select value={adminIconRarity} onChange={(e) => setAdminIconRarity(e.target.value as Rarity)} className="w-full mb-2 px-3 py-2 rounded-lg bg-black/80 border border-white/10 outline-none text-sm">
+                        {RARITY_ORDER.map(rar => <option key={rar} value={rar}>{RARITY_META[rar].label}</option>)}
+                      </select>
+                      <button onClick={grantProfileIconByRarity} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#34d399] text-black font-black">
+                        Give Icon
+                      </button>
+                      <button onClick={createAdminProfileIcon} className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white font-bold text-xs hover:bg-white/20"><BadgePlus className="w-4 h-4" /> Create Custom</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Overlay>
+          )}
+
           {tasksOpen && (
             <Overlay>
               <div className="w-full max-w-2xl px-4 max-h-full overflow-y-auto">
@@ -5816,7 +6322,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <div className="text-white/50 text-sm">{t("noAccessoriesHint")}</div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {ACCESSORIES.filter(a => shop.accessories.includes(a.id)).map(a => {
+                      {allAccessories.filter(a => shop.accessories.includes(a.id)).map(a => {
                         const eq = shop.equippedAccessory === a.id;
                         return (
                           <div key={a.id} className={`p-3 rounded-lg ring-1 ${eq ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
@@ -5836,7 +6342,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
 
                 {RARITY_ORDER.map((rar) => {
-                  const items = SKINS.filter(s => s.rarity === rar && shop.owned.includes(s.id));
+                  const items = allSkins.filter(s => s.rarity === rar && shop.owned.includes(s.id));
                   if (items.length === 0) return null;
                   const meta = RARITY_META[rar];
                   return (
@@ -5882,7 +6388,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
                 <p className="text-white/60 text-xs mb-3">{t("shopDesc")}</p>
                 {RARITY_ORDER.map((rar) => {
-                  const items = SKINS.filter(s => s.rarity === rar);
+                  const items = allSkins.filter(s => s.rarity === rar);
                   if (items.length === 0) return null;
                   const meta = RARITY_META[rar];
                   return (
@@ -6074,7 +6580,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
 
 
-                <div className="flex justify-between items-center mt-4 gap-2">
+                <div className="flex flex-wrap justify-between items-center mt-4 gap-2">
+                  <button
+                    onClick={() => { setShopOpen(false); setProfileIconShopOpen(true); }}
+                    className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#34d399] to-[#7dd3fc] text-black font-black text-sm hover:scale-105 transition"
+                  >
+                    Profile Icons
+                  </button>
                   <button
                     onClick={() => { setShopOpen(false); setAccShopOpen(true); }}
                     className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] text-black font-black text-sm hover:scale-105 transition"
@@ -6096,7 +6608,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 </div>
                 <p className="text-white/60 text-xs mb-3">{t("accShopDesc")}</p>
                 {ACC_RARITY_ORDER.map((rar) => {
-                  const items = ACCESSORIES.filter(a => a.rarity === rar);
+                  const items = allAccessories.filter(a => a.rarity === rar);
                   if (items.length === 0) return null;
                   const meta = ACC_RARITY_META[rar];
                   return (
@@ -6371,6 +6883,15 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </div>
           )}
         </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-3 md:grid-cols-5 lg:hidden">
+              {[...leftStats, ...rightStats].map((stat) => <Stat key={stat.label} label={stat.label} value={stat.value} />)}
+            </div>
+          </div>
+
+          <div className="hidden lg:flex flex-col gap-2 pt-8 font-mono text-xs">
+            {rightStats.map((stat) => <Stat key={stat.label} label={stat.label} value={stat.value} />)}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -6378,10 +6899,30 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-2.5 py-1 rounded-md bg-white/5 ring-1 ring-white/10">
-      <span className="text-white/50">{label}: </span>
-      <span className="text-white font-semibold">{value}</span>
+    <div className="min-w-0 rounded-md bg-white/5 px-2.5 py-1 ring-1 ring-white/10">
+      <div className="flex min-w-0 items-baseline justify-between gap-2">
+        <span className="shrink-0 text-white/50">{label}: </span>
+        <span className="truncate text-right font-semibold text-white">{value}</span>
+      </div>
     </div>
+  );
+}
+
+function ProfileIconBadge({ icon, size }: { icon: ProfileIcon; size: "sm" | "md" | "lg" }) {
+  const cls = size === "lg" ? "w-16 h-16 text-2xl" : size === "md" ? "w-10 h-10 text-lg" : "w-8 h-8 text-sm";
+  return (
+    <span
+      className={`${cls} shrink-0 rounded-full flex items-center justify-center font-black ring-2 ring-white/20 shadow-lg`}
+      style={{
+        color: icon.color,
+        background: icon.rarity === "rainbow"
+          ? "conic-gradient(#ff5dff,#ffe066,#7dd3fc,#34d399,#ff5dff)"
+          : icon.bg,
+        boxShadow: `0 0 18px ${icon.bg}66`,
+      }}
+    >
+      {icon.symbol}
+    </span>
   );
 }
 

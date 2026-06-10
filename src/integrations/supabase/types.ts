@@ -18,10 +18,16 @@ export type Database = {
         Row: {
           accessories: Json
           created_at: string
+          custom_accessories: Json
+          custom_profile_icons: Json
+          custom_skins: Json
           equipped_accessory: string | null
           id: string
           nickname: string
           owned: Json
+          profile_icon: string | null
+          profile_icons: Json
+          profile_name: string | null
           selected: string
           shadow_coins: number
           updated_at: string
@@ -30,10 +36,16 @@ export type Database = {
         Insert: {
           accessories?: Json
           created_at?: string
+          custom_accessories?: Json
+          custom_profile_icons?: Json
+          custom_skins?: Json
           equipped_accessory?: string | null
           id?: string
           nickname: string
           owned?: Json
+          profile_icon?: string | null
+          profile_icons?: Json
+          profile_name?: string | null
           selected?: string
           shadow_coins?: number
           updated_at?: string
@@ -42,10 +54,16 @@ export type Database = {
         Update: {
           accessories?: Json
           created_at?: string
+          custom_accessories?: Json
+          custom_profile_icons?: Json
+          custom_skins?: Json
           equipped_accessory?: string | null
           id?: string
           nickname?: string
           owned?: Json
+          profile_icon?: string | null
+          profile_icons?: Json
+          profile_name?: string | null
           selected?: string
           shadow_coins?: number
           updated_at?: string

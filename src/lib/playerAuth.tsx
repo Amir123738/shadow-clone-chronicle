@@ -6,6 +6,12 @@ import { toast } from "sonner";
 export type PlayerProfile = {
   user_id: string;
   nickname: string;
+  profile_name: string | null;
+  profile_icon: string | null;
+  profile_icons: string[];
+  custom_skins: unknown[];
+  custom_accessories: unknown[];
+  custom_profile_icons: unknown[];
   shadow_coins: number;
   owned: string[];
   selected: string;
@@ -174,7 +180,7 @@ export function useAuth() {
 export async function loadProfile(userId: string): Promise<PlayerProfile | null> {
   const { data, error } = await supabase
     .from("player_profiles")
-    .select("user_id,nickname,shadow_coins,owned,selected,accessories,equipped_accessory")
+    .select("user_id,nickname,profile_name,profile_icon,profile_icons,custom_skins,custom_accessories,custom_profile_icons,shadow_coins,owned,selected,accessories,equipped_accessory")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) {
@@ -185,6 +191,12 @@ export async function loadProfile(userId: string): Promise<PlayerProfile | null>
   return {
     user_id: data.user_id,
     nickname: data.nickname,
+    profile_name: data.profile_name ?? null,
+    profile_icon: data.profile_icon ?? null,
+    profile_icons: Array.isArray(data.profile_icons) ? (data.profile_icons as string[]) : ["shadow_rookie"],
+    custom_skins: Array.isArray(data.custom_skins) ? (data.custom_skins as unknown[]) : [],
+    custom_accessories: Array.isArray(data.custom_accessories) ? (data.custom_accessories as unknown[]) : [],
+    custom_profile_icons: Array.isArray(data.custom_profile_icons) ? (data.custom_profile_icons as unknown[]) : [],
     shadow_coins: data.shadow_coins ?? 0,
     owned: Array.isArray(data.owned) ? (data.owned as string[]) : ["violet"],
     selected: data.selected ?? "violet",
@@ -197,6 +209,12 @@ export async function saveProfile(
   userId: string,
   data: {
     shadow_coins: number;
+    profile_name: string | null;
+    profile_icon: string | null;
+    profile_icons: string[];
+    custom_skins: unknown[];
+    custom_accessories: unknown[];
+    custom_profile_icons: unknown[];
     owned: string[];
     selected: string;
     accessories: string[];
@@ -205,7 +223,7 @@ export async function saveProfile(
 ) {
   const { error } = await supabase
     .from("player_profiles")
-    .update(data)
+    .update(data as never)
     .eq("user_id", userId);
   if (error) console.error("Save failed:", error);
 }
