@@ -5398,7 +5398,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   ];
 
   return (
-    <div data-game-root className="min-h-screen w-full flex flex-col items-center justify-start bg-[#070815] text-white px-4 py-4 md:py-5 gap-3">
+    <div data-game-root className="min-h-screen w-full flex flex-col items-center justify-start bg-[#070815] text-white px-1 py-1 gap-2 sm:px-3 sm:py-3 md:px-4 md:py-5 md:gap-3">
       {/* Touch joystick overlay (fixed; positioned via JS) */}
       <div
         ref={joyBaseRef}
@@ -5411,11 +5411,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           style={{ width: 46, height: 46, boxShadow: "0 0 16px rgba(255,255,255,0.5)" }}
         />
       </div>
-      <div className="w-full max-w-[1360px] flex items-center justify-end gap-3 text-xs">
+      <div className="w-full max-w-[1360px] flex flex-wrap items-center justify-end gap-2 text-[11px] sm:gap-3 sm:text-xs">
         <button
           type="button"
           onClick={() => setProfileOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition"
+          className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 transition hover:bg-white/10 sm:px-3 sm:py-2"
         >
           <ProfileIconBadge icon={activeProfileIcon} size="sm" />
           <span className="text-white/70">
@@ -5433,36 +5433,36 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 signOut();
               }
             }}
-            className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 transition hover:bg-white/10 sm:px-3"
           >
             {t("logout")}
           </button>
         </div>
       </div>
-      <header className="text-center">
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-[#ffe066] via-[#ff2e88] to-[#b388ff] bg-clip-text text-transparent">
+      <header className="text-center leading-none">
+        <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-[#ffe066] via-[#ff2e88] to-[#b388ff] bg-clip-text text-transparent sm:text-3xl md:text-4xl">
           Shadow Clone Survivor
         </h1>
 
-        <p className="text-sm text-white/60">{t("controls")}</p>
+        <p className="text-[11px] text-white/60 sm:text-sm">{t("controls")}</p>
       </header>
 
-      <div className="w-full max-w-[1360px]">
-        <div className="grid items-start gap-3 lg:grid-cols-[170px_minmax(0,960px)_170px]">
+      <div className="w-[calc(100vw-8px)] max-w-[1360px] sm:w-full">
+        <div className="grid items-start gap-2 sm:gap-3 lg:grid-cols-[170px_minmax(0,960px)_170px]">
           <div className="hidden lg:flex flex-col gap-2 pt-8 font-mono text-xs">
             {leftStats.map((stat) => <Stat key={stat.label} label={stat.label} value={stat.value} />)}
           </div>
 
           <div className="relative min-w-0">
-            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-1">
+            <div className="mb-1 h-2.5 w-full overflow-hidden rounded-full bg-white/10 sm:h-3">
               <div className="h-full bg-gradient-to-r from-[#ff5d5d] to-[#ffe066] transition-[width] duration-150"
                 style={{ width: `${(uiState.hp / uiState.maxHp) * 100}%` }} />
             </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+            <div className="mb-1.5 h-1 w-full overflow-hidden rounded-full bg-white/10 sm:mb-2 sm:h-1.5">
               <div className="h-full bg-[#7cf24a]" style={{ width: `${(uiState.xp / uiState.xpNext) * 100}%` }} />
             </div>
 
-            <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
+            <div className="relative overflow-hidden rounded-lg ring-1 ring-white/10 shadow-2xl sm:rounded-xl">
           <canvas
             ref={canvasRef} width={W} height={H}
             className="block w-full h-auto cursor-crosshair bg-[#0b0d1a]"
@@ -6883,7 +6883,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </div>
           )}
         </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-3 md:grid-cols-5 lg:hidden">
+            <div className="mt-2 grid grid-cols-3 gap-1.5 font-mono text-[10px] sm:mt-3 sm:grid-cols-3 sm:gap-2 sm:text-xs md:grid-cols-5 lg:hidden">
               {[...leftStats, ...rightStats].map((stat) => <Stat key={stat.label} label={stat.label} value={stat.value} />)}
             </div>
           </div>
@@ -6899,7 +6899,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-md bg-white/5 px-2.5 py-1 ring-1 ring-white/10">
+    <div className="min-w-0 rounded-md bg-white/5 px-2 py-0.5 ring-1 ring-white/10 sm:px-2.5 sm:py-1">
       <div className="flex min-w-0 items-baseline justify-between gap-2">
         <span className="shrink-0 text-white/50">{label}: </span>
         <span className="truncate text-right font-semibold text-white">{value}</span>
