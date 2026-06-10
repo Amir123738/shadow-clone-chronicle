@@ -740,6 +740,7 @@ const H = 600;
 const CLONE_INTERVAL = 15;
 const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
+const PLAYER_NAME_RE = /^[\p{L}\p{N}_]{3,20}$/u;
 const ADMIN_ACCOUNT_NICKNAMES = new Set(
   (import.meta.env.VITE_ADMIN_NICKNAMES || "zwssws")
     .split(",")
@@ -1242,8 +1243,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   }, [isAdminAccount]);
 
   const changeProfileName = useCallback(() => {
-    const clean = profileNameInput.trim();
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(clean)) {
+    const clean = profileNameInput.trim().normalize("NFC");
+    if (!PLAYER_NAME_RE.test(clean)) {
       toast.error("Name must be 3-20 letters, numbers, or underscores.");
       return;
     }

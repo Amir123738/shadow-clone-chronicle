@@ -20,18 +20,33 @@ export type PlayerProfile = {
 };
 
 const EMAIL_DOMAIN = "shadowclone.local";
-const NICK_RE = /^[A-Za-z0-9_]{3,20}$/;
+const NICK_RE = /^[\p{L}\p{N}_]{3,20}$/u;
+const ASCII_NICK_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 function getAuthRedirectUrl() {
   return `${window.location.origin}/`;
 }
 
 function normalizeNickname(nickname: string) {
-  return nickname.trim();
+  return nickname.trim().normalize("NFC");
+}
+
+function hashNickname(nickname: string) {
+  let hash = 0x811c9dc5;
+  for (const char of nickname.toLowerCase()) {
+    const code = char.codePointAt(0) ?? 0;
+    hash ^= code;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
 }
 
 function nicknameToAuthEmail(nickname: string) {
-  return `${normalizeNickname(nickname).toLowerCase()}@${EMAIL_DOMAIN}`;
+  const cleanNickname = normalizeNickname(nickname);
+  const localPart = ASCII_NICK_RE.test(cleanNickname)
+    ? cleanNickname.toLowerCase()
+    : `u_${hashNickname(cleanNickname)}`;
+  return `${localPart}@${EMAIL_DOMAIN}`;
 }
 
 function clearAuthUrlFragment() {
@@ -148,8 +163,12 @@ export function useAuth() {
   }, []);
 
   const signIn = useCallback(async (nickname: string, password: string) => {
+    const cleanNickname = normalizeNickname(nickname);
+    if (!NICK_RE.test(cleanNickname)) {
+      throw new Error("Nickname must be 3-20 letters, numbers, or underscores.");
+    }
     const { error } = await supabase.auth.signInWithPassword({
-      email: nicknameToAuthEmail(nickname),
+      email: nicknameToAuthEmail(cleanNickname),
       password,
     });
     if (error) {
