@@ -2,8 +2,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+const AUTH_STORAGE_KEY = 'shadow-clone-survivor-auth';
+
 function cleanEnvValue(value: string | undefined) {
   return value?.trim().replace(/^["']|["']$/g, '');
+}
+
+function migrateAuthStorage(supabaseUrl: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
+    const defaultStorageKey = `sb-${projectRef}-auth-token`;
+    if (!localStorage.getItem(AUTH_STORAGE_KEY)) {
+      const existingSession = localStorage.getItem(defaultStorageKey);
+      if (existingSession) localStorage.setItem(AUTH_STORAGE_KEY, existingSession);
+    }
+  } catch {
+    // Best effort only; Supabase can still create a fresh persisted session.
+  }
 }
 
 function createSupabaseClient() {
@@ -27,11 +43,15 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
+  migrateAuthStorage(SUPABASE_URL);
+
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storageKey: AUTH_STORAGE_KEY,
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
     }
   });
 }

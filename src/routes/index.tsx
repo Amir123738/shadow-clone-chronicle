@@ -740,6 +740,74 @@ const H = 600;
 const CLONE_INTERVAL = 15;
 const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
+const ADMIN_ACCOUNT_NICKNAMES = new Set(
+  (import.meta.env.VITE_ADMIN_NICKNAMES || "zwssws")
+    .split(",")
+    .map((name: string) => name.trim().toLowerCase())
+    .filter(Boolean)
+);
+const ADMIN_ACCOUNT_IDS = new Set(
+  (import.meta.env.VITE_ADMIN_USER_IDS || "")
+    .split(",")
+    .map((id: string) => id.trim())
+    .filter(Boolean)
+);
+const LANDSCAPE_PROMPT: Record<Lang, { title: string; body: string; ready: string; anyway: string }> = {
+  en: {
+    title: "Turn your device horizontal",
+    body: "The game is much easier to play in landscape mode. Rotate your phone before starting.",
+    ready: "I turned it",
+    anyway: "Play anyway",
+  },
+  ru: {
+    title: "Поверните устройство горизонтально",
+    body: "В альбомном режиме играть намного удобнее. Поверните телефон перед стартом.",
+    ready: "Я повернул",
+    anyway: "Играть так",
+  },
+  kk: {
+    title: "Құрылғыны көлденең бұрыңыз",
+    body: "Ойынды көлденең режимде ойнау ыңғайлырақ. Бастамас бұрын телефонды бұрыңыз.",
+    ready: "Бұрдым",
+    anyway: "Бәрібір ойнау",
+  },
+  uk: {
+    title: "Поверніть пристрій горизонтально",
+    body: "У ландшафтному режимі грати набагато зручніше. Поверніть телефон перед стартом.",
+    ready: "Я повернув",
+    anyway: "Грати так",
+  },
+  tr: {
+    title: "Cihazını yatay çevir",
+    body: "Oyunu yatay modda oynamak çok daha kolay. Başlamadan önce telefonunu çevir.",
+    ready: "Çevirdim",
+    anyway: "Yine de oyna",
+  },
+  de: {
+    title: "Drehe dein Gerät horizontal",
+    body: "Das Spiel ist im Querformat viel einfacher. Drehe dein Handy vor dem Start.",
+    ready: "Gedreht",
+    anyway: "Trotzdem spielen",
+  },
+  ko: {
+    title: "기기를 가로로 돌리세요",
+    body: "가로 모드에서 게임을 훨씬 쉽게 플레이할 수 있습니다. 시작하기 전에 휴대폰을 돌려 주세요.",
+    ready: "돌렸어요",
+    anyway: "그냥 플레이",
+  },
+  zh: {
+    title: "请将设备横过来",
+    body: "横屏模式更容易游玩。开始前请先旋转手机。",
+    ready: "已横屏",
+    anyway: "仍然开始",
+  },
+  mn: {
+    title: "Төхөөрөмжөө хэвтээ болго",
+    body: "Хэвтээ горимд тоглоход илүү амар. Эхлэхээсээ өмнө утсаа эргүүлээрэй.",
+    ready: "Эргүүлсэн",
+    anyway: "Тэгсэн ч тоглох",
+  },
+};
 const BOSS_WAVES: Record<number, BossId> = { 15: "super", 30: "mega", 50: "hyper", 75: "plantium", 100: "plusplantium" };
 const BOSS_NAMES: Record<string, string> = {
   super: "SHADOW TYRANT", mega: "VOID REAPER", hyper: "CHRONO LICH",
@@ -866,6 +934,9 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const [difficultyOpen, setDifficultyOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
   const [aiCoachOpen, setAiCoachOpen] = useState(false);
+  const [landscapePromptOpen, setLandscapePromptOpen] = useState(false);
+  const skipLandscapePromptRef = useRef(false);
+  const landscapeContinueRef = useRef<(() => void) | null>(null);
   const [aiCoachMessages, setAiCoachMessages] = useState<AiCoachMessage[]>([]);
   const [aiCoachInput, setAiCoachInput] = useState("");
   const [aiCoachError, setAiCoachError] = useState<string | null>(null);
@@ -1161,6 +1232,14 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const allProfileIcons = uniqueByNameAndRarity([...PROFILE_ICONS, ...shop.customProfileIcons]);
   const activeProfileIcon = allProfileIcons.find((icon) => icon.id === shop.profileIcon) ?? allProfileIcons[0];
   const displayProfileName = shop.profileName || nickname || "Player";
+  const authNickname = nickname.split("@")[0]?.trim().toLowerCase() || "";
+  const isAdminAccount = ADMIN_ACCOUNT_IDS.has(userId) || ADMIN_ACCOUNT_NICKNAMES.has(authNickname);
+  const visibleRarityOrder = isAdminAccount ? RARITY_ORDER : RARITY_ORDER.filter((rar) => rar !== "admin");
+  const visibleAccessoryRarityOrder = isAdminAccount ? ACC_RARITY_ORDER : ACC_RARITY_ORDER.filter((rar) => rar !== "admin");
+
+  useEffect(() => {
+    if (!isAdminAccount) setAdminOpen(false);
+  }, [isAdminAccount]);
 
   const changeProfileName = useCallback(() => {
     const clean = profileNameInput.trim();
@@ -1994,7 +2073,40 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     });
   };
 
+  const shouldPromptForLandscape = () => (
+    typeof window !== "undefined" &&
+    isTouchDevice &&
+    window.innerHeight > window.innerWidth &&
+    !langPickerOpen &&
+    !skipLandscapePromptRef.current
+  );
+
+  const promptForLandscape = (next: () => void) => {
+    landscapeContinueRef.current = next;
+    setLandscapePromptOpen(true);
+  };
+
+  const openModePicker = () => {
+    if (shouldPromptForLandscape()) {
+      promptForLandscape(() => setModeOpen(true));
+      return;
+    }
+    setModeOpen(true);
+  };
+
+  const continuePastLandscapePrompt = () => {
+    skipLandscapePromptRef.current = true;
+    setLandscapePromptOpen(false);
+    const next = landscapeContinueRef.current;
+    landscapeContinueRef.current = null;
+    if (next) next();
+  };
+
   const startGame = (difficulty: "easy" | "medium" | "hard" = "medium", mode: PlayMode = "classic") => {
+    if (shouldPromptForLandscape()) {
+      promptForLandscape(() => startGame(difficulty, mode));
+      return;
+    }
     resetGame();
     stateRef.current.difficulty = difficulty;
     stateRef.current.playMode = mode;
@@ -2162,6 +2274,10 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const startLevel = (levelId: number) => {
     const level = LEVELS.find(l => l.id === levelId);
     if (!level) return;
+    if (shouldPromptForLandscape()) {
+      promptForLandscape(() => startLevel(levelId));
+      return;
+    }
     setPendingSuperLevelId(levelId);
     setSuperPickOpen(true);
     setLevelsOpen(false);
@@ -5525,7 +5641,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
               </p>
               <div className="flex flex-col items-center gap-5">
                 <button
-                  onClick={() => setModeOpen(true)}
+                  onClick={openModePicker}
                   className="flex items-center gap-3 px-10 py-5 rounded-xl bg-[#ffe066] text-black font-black text-xl shadow-[0_0_40px_rgba(255,224,102,0.35)] hover:scale-105 transition"
                 >
                   <Play className="w-6 h-6" />
@@ -6060,21 +6176,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   </div>
                 </div>
 
-                <div className="mt-4 p-4 rounded-lg bg-[#ff0033]/10 ring-1 ring-[#ff0033]/40">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="font-black text-[#ff5577]">Admin</div>
-                      <div className="text-xs text-white/60">Add coins, items, profile icons, and spins.</div>
+                {isAdminAccount && (
+                  <div className="mt-4 p-4 rounded-lg bg-[#ff0033]/10 ring-1 ring-[#ff0033]/40">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="font-black text-[#ff5577]">Admin</div>
+                        <div className="text-xs text-white/60">Add coins, items, profile icons, and spins.</div>
+                      </div>
+                      <button
+                        onClick={() => { setProfileOpen(false); setAdminOpen(true); }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#ff0033] text-white font-black hover:scale-105 transition"
+                      >
+                        <Shield className="w-4 h-4" />
+                        Admin Panel
+                      </button>
                     </div>
-                    <button
-                      onClick={() => { setProfileOpen(false); setAdminOpen(true); }}
-                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#ff0033] text-white font-black hover:scale-105 transition"
-                    >
-                      <Shield className="w-4 h-4" />
-                      Admin Panel
-                    </button>
                   </div>
-                </div>
+                )}
               </div>
             </Overlay>
           )}
@@ -6086,7 +6204,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <h2 className="text-2xl font-black bg-gradient-to-r from-[#7dd3fc] to-[#ff5dff] bg-clip-text text-transparent">Profile Icon Shop</h2>
                   <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins.toLocaleString()}</span></div>
                 </div>
-                {RARITY_ORDER.map((rar) => {
+                {visibleRarityOrder.map((rar) => {
                   const items = allProfileIcons.filter(icon => icon.rarity === rar);
                   if (items.length === 0) return null;
                   const meta = RARITY_META[rar];
@@ -6142,7 +6260,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
             </Overlay>
           )}
 
-          {adminOpen && (
+          {adminOpen && isAdminAccount && (
             <Overlay>
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
@@ -6341,7 +6459,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   )}
                 </div>
 
-                {RARITY_ORDER.map((rar) => {
+                {visibleRarityOrder.map((rar) => {
                   const items = allSkins.filter(s => s.rarity === rar && shop.owned.includes(s.id));
                   if (items.length === 0) return null;
                   const meta = RARITY_META[rar];
@@ -6387,7 +6505,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
                 <p className="text-white/60 text-xs mb-3">{t("shopDesc")}</p>
-                {RARITY_ORDER.map((rar) => {
+                {visibleRarityOrder.map((rar) => {
                   const items = allSkins.filter(s => s.rarity === rar);
                   if (items.length === 0) return null;
                   const meta = RARITY_META[rar];
@@ -6607,7 +6725,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   <div className="text-sm font-mono">{t("shadowCoinsLabel")}: <span className="text-[#b388ff] font-bold">◆ {shop.shadowCoins}</span></div>
                 </div>
                 <p className="text-white/60 text-xs mb-3">{t("accShopDesc")}</p>
-                {ACC_RARITY_ORDER.map((rar) => {
+                {visibleAccessoryRarityOrder.map((rar) => {
                   const items = allAccessories.filter(a => a.rarity === rar);
                   if (items.length === 0) return null;
                   const meta = ACC_RARITY_META[rar];
@@ -6751,7 +6869,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">+500 {t("shadowCoinsLabel")}</div>
                 <div className="text-lg font-bold text-[#cd7f32] drop-shadow-[0_0_12px_rgba(205,127,50,0.6)]">{t("bronzeHatUnlocked")}</div>
               </div>
-              <button onClick={() => setModeOpen(true)} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
+              <button onClick={openModePicker} className="px-6 py-3 rounded-lg bg-[#ffe066] text-black font-bold hover:scale-105 transition">
                 {t("playAgain")}
               </button>
             </Overlay>
@@ -6879,6 +6997,38 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                 >
                   {t("continueBtn")}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {landscapePromptOpen && !langPickerOpen && (
+            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+              <div className="w-full max-w-sm rounded-2xl bg-gradient-to-br from-[#151827] to-[#070815] p-6 text-center shadow-2xl ring-1 ring-white/15">
+                <div className="mx-auto mb-4 flex h-16 w-24 items-center justify-center rounded-2xl border-4 border-[#ffe066] bg-white/5">
+                  <div className="h-8 w-14 rounded-md border-2 border-white/80" />
+                </div>
+                <h2 className="mb-2 text-2xl font-black text-[#ffe066]">
+                  {LANDSCAPE_PROMPT[settings.lang].title}
+                </h2>
+                <p className="mb-5 text-sm leading-relaxed text-white/70">
+                  {LANDSCAPE_PROMPT[settings.lang].body}
+                </p>
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={continuePastLandscapePrompt}
+                    className="w-full rounded-lg bg-[#ffe066] px-4 py-3 font-black text-black transition hover:scale-[1.02]"
+                  >
+                    {LANDSCAPE_PROMPT[settings.lang].ready}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={continuePastLandscapePrompt}
+                    className="w-full rounded-lg bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                  >
+                    {LANDSCAPE_PROMPT[settings.lang].anyway}
+                  </button>
+                </div>
               </div>
             </div>
           )}
