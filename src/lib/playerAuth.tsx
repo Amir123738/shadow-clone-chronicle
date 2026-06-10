@@ -13,8 +13,19 @@ export type PlayerProfile = {
   equipped_accessory: string | null;
 };
 
+const EMAIL_DOMAIN = "shadowclone.local";
+const NICK_RE = /^[A-Za-z0-9_]{3,20}$/;
+
 function getAuthRedirectUrl() {
   return `${window.location.origin}/`;
+}
+
+function normalizeNickname(nickname: string) {
+  return nickname.trim();
+}
+
+function nicknameToAuthEmail(nickname: string) {
+  return `${normalizeNickname(nickname).toLowerCase()}@${EMAIL_DOMAIN}`;
 }
 
 function clearAuthUrlFragment() {
@@ -106,33 +117,38 @@ export function useAuth() {
     };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (nickname: string, password: string) => {
+    const cleanNickname = normalizeNickname(nickname);
+    if (!NICK_RE.test(cleanNickname)) {
+      throw new Error("Nickname must be 3-20 letters, numbers, or underscores.");
+    }
     if (password.length < 6) {
       throw new Error("Password must be at least 6 characters.");
     }
     const { error } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: nicknameToAuthEmail(cleanNickname),
       password,
       options: {
+        data: { nickname: cleanNickname },
         emailRedirectTo: getAuthRedirectUrl(),
       },
     });
     if (error) {
       if (/registered|exists/i.test(error.message)) {
-        throw new Error("That email is already registered.");
+        throw new Error("That nickname is already taken.");
       }
       throw error;
     }
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (nickname: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: nicknameToAuthEmail(nickname),
       password,
     });
     if (error) {
       if (/invalid/i.test(error.message)) {
-        throw new Error("Wrong email or password.");
+        throw new Error("Wrong nickname or password.");
       }
       throw error;
     }
@@ -197,14 +213,42 @@ export async function saveProfile(
 export function AuthGate({
   children,
 }: {
-  children: (ctx: { user: User; signOut: () => Promise<void>; email: string }) => React.ReactNode;
+  children: (ctx: { user: User; signOut: () => Promise<void>; nickname: string }) => React.ReactNode;
 }) {
   const { user, loading, signIn, signUp, signInWithGoogle, signOut } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [displayNickname, setDisplayNickname] = useState("");
+
+  useEffect(() => {
+    if (!user) {
+      setDisplayNickname("");
+      return;
+    }
+
+    const metadataNickname = (user.user_metadata as { nickname?: string } | null)?.nickname;
+    if (metadataNickname) {
+      setDisplayNickname(metadataNickname);
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from("player_profiles")
+      .select("nickname")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setDisplayNickname(data?.nickname ?? user.email ?? "Player");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   if (loading) {
     return (
@@ -215,7 +259,7 @@ export function AuthGate({
   }
 
   if (user) {
-    return <>{children({ user, signOut, email: user.email ?? "Signed in" })}</>;
+    return <>{children({ user, signOut, nickname: displayNickname || user.email || "Player" })}</>;
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -223,8 +267,8 @@ export function AuthGate({
     setErr(null);
     setBusy(true);
     try {
-      if (mode === "signup") await signUp(email, password);
-      else await signIn(email, password);
+      if (mode === "signup") await signUp(nickname, password);
+      else await signIn(nickname, password);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -245,15 +289,17 @@ export function AuthGate({
           {mode === "signup" ? "Create your player account" : "Welcome back"}
         </p>
 
-        <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Email</label>
+        <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Nickname</label>
         <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
+          type="text"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          autoComplete="username"
+          minLength={3}
+          maxLength={20}
           required
           className="w-full mb-4 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 outline-none"
-          placeholder="player@example.com"
+          placeholder="ShadowHero"
         />
 
         <label className="block text-xs uppercase tracking-wider text-white/60 mb-1">Password</label>

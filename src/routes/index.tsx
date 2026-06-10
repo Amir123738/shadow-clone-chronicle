@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Store, Backpack, ScrollText, Map as MapIcon, Settings as SettingsIcon, Play, Bot } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { startMusic, stopMusic, playWave50Alarm, playWave75Alarm, setMusicTrack, getTrackCount, BOSS_TRACK_INDEX } from "@/lib/gameMusic";
 import { AuthGate, loadProfile, saveProfile } from "@/lib/playerAuth";
 import { getAiCoachTip } from "@/lib/api/aiCoach.functions";
@@ -42,6 +43,9 @@ const UPGRADE_ICONS: Record<string, string> = {
   radiation: upgRadiation, blackhole: upgBlackhole, slowtime: upgSlowtime,
   bouncing: upgBouncing, aquaman: upgAquaman, shadowflash: upgShadowflash, healghost: upgHealghost,
   firewater: upgFirewater,
+  firewater_emperor: upgFirewater, radiation_burst: upgRadiation, steel_hulk: upgBronze, dark_space_energy: upgBlackhole,
+  shadowchaos: upgKingshadows, altoultrazero: upgSlowtime, hpwave: upgHealghost, firegod: upgDragonbreath,
+  ultrafast: upgHypersonic, quadshooter: upgDouble, lordseas: upgAquaman, ultimateclone: upgClone,
 };
 
 const UPGRADE_COLORS: Record<string, string> = {
@@ -53,6 +57,9 @@ const UPGRADE_COLORS: Record<string, string> = {
   blackhole: "#7c3aed", slowtime: "#60a5fa", bouncing: "#fbbf24",
   aquaman: "#0ea5e9", shadowflash: "#c084fc", healghost: "#a7f3d0",
   firewater: "#ff7a18",
+  firewater_emperor: "#ff7a18", radiation_burst: "#84cc16", steel_hulk: "#cbd5e1", dark_space_energy: "#7c3aed",
+  shadowchaos: "#ff5d3a", altoultrazero: "#7cdcff", hpwave: "#7cffb2", firegod: "#ff7a18",
+  ultrafast: "#ffe066", quadshooter: "#b388ff", lordseas: "#3da9fc", ultimateclone: "#b388ff",
 };
 
 export const Route = createFileRoute("/")({
@@ -70,8 +77,8 @@ export const Route = createFileRoute("/")({
 function GameRoute() {
   return (
     <AuthGate>
-      {({ user, signOut, email }) => (
-        <Game userId={user.id} email={email} signOut={signOut} />
+      {({ user, signOut, nickname }) => (
+        <Game userId={user.id} nickname={nickname} signOut={signOut} />
       )}
     </AuthGate>
   );
@@ -93,10 +100,51 @@ type Enemy = {
   customBossName?: string;
 };
 type Pickup = { pos: Vec; kind: "xp" | "coin" | "shadow"; value: number };
-type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number };
+type Clone = { frames: Frame[]; idx: number; trail: Vec[]; healer?: boolean; life?: number; frameCarry?: number };
 type SpecialClone = { kind: "electric" | "big"; angle: number; radius: number; orbitSpeed: number; life?: number; fireCd: number; flag?: "water" | "fireboy" | "watergirl" };
 type Rarity = "common"|"rare"|"superrare"|"epic"|"mythical"|"legendary"|"secret"|"ultra"|"diamond"|"rainbow"|"prismatic"|"vip"|"nebula"|"plantiumplus"|"cosmetic"|"ultranova"|"galactic"|"quantum"|"quasaric"|"admin";
 type Skin = { id: string; name: string; price: number; color: string; glow?: string; rainbow?: boolean; rarity: Rarity };
+type AiCoachMessage = { role: "user" | "coach"; text: string };
+
+const AI_COACH_HISTORY_LIMIT = 6;
+const AI_COACH_MESSAGE_LIMIT = 700;
+
+function trimAiCoachHistory(messages: AiCoachMessage[]) {
+  return messages.slice(-AI_COACH_HISTORY_LIMIT).map((message) => {
+    const text = message.text.trim();
+    return {
+      ...message,
+      text: text.length > AI_COACH_MESSAGE_LIMIT ? `${text.slice(0, AI_COACH_MESSAGE_LIMIT)}...` : text,
+    };
+  });
+}
+
+function formatAiCoachText(text: string): ReactNode {
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line
+      .replace(/^\s*[-*•]\s+/, "")
+      .replace(/^\s*\d+[.)]\s+/, "")
+      .replace(/\*\*/g, "")
+      .trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    const match = line.match(/^([^:：]{2,36}):\s*(.+)$/);
+    return (
+      <p key={`${line}-${index}`} className={index > 0 ? "mt-2" : undefined}>
+        {match ? (
+          <>
+            <strong className="font-black text-white">{match[1]}:</strong>{" "}
+            <span>{match[2]}</span>
+          </>
+        ) : (
+          line
+        )}
+      </p>
+    );
+  });
+}
 
 const RARITY_ORDER: Rarity[] = ["common","rare","superrare","epic","mythical","legendary","secret","ultra","diamond","rainbow","prismatic","vip","nebula","plantiumplus","cosmetic","ultranova","galactic","quantum","quasaric","admin"];
 const RARITY_META: Record<Rarity, { label: string; color: string }> = {
@@ -513,6 +561,7 @@ function loadLevelsCleared(): number[] {
 function saveLevelsCleared(v: number[]) { try { localStorage.setItem(LEVELS_CLEARED_KEY, JSON.stringify(v)); } catch {} }
 type AppliedUpgrade = { id: string; name: string; undo: () => void; redo: () => void };
 type Upgrade = { id: string; name: string; desc: string; apply: () => AppliedUpgrade };
+type SuperUpgrade = { id: string; name: string; color: string; desc: string; apply: () => void };
 
 // ---------- Tasks ----------
 type TaskMetric = "kills" | "wavesCleared" | "shadowEarned";
@@ -633,7 +682,7 @@ const PLAY_MODES: { id: PlayMode; name: string; emoji: string; desc: string; col
   { id: "events",     name: "Random Events",    emoji: "🎲", desc: "Meteor Shower, Eclipse, Time Freeze, Treasure Goblin & more.",   color: "#7cffb2" },
 ];
 
-function Game({ userId, email, signOut }: { userId: string; email: string; signOut: () => Promise<void> }) {
+function Game({ userId, nickname, signOut }: { userId: string; nickname: string; signOut: () => Promise<void> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const joyBaseRef = useRef<HTMLDivElement>(null);
   const joyKnobRef = useRef<HTMLDivElement>(null);
@@ -654,6 +703,8 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     playMode: PlayMode;
     corruption: number;
     eventName: string | null;
+    waterButton: boolean;
+    blackholeCharges: number;
   }>({
     started: false, over: false, won: false,
     wave: 0, score: 0, hp: 100, maxHp: 100,
@@ -668,6 +719,8 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     playMode: "classic",
     corruption: 0,
     eventName: null,
+    waterButton: false,
+    blackholeCharges: 0,
   });
 
   const [shop, setShop] = useState<ShopSave>({ ...DEFAULT_SHOP });
@@ -684,9 +737,11 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
   const [difficultyOpen, setDifficultyOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
   const [aiCoachOpen, setAiCoachOpen] = useState(false);
-  const [aiCoachTip, setAiCoachTip] = useState<string | null>(null);
+  const [aiCoachMessages, setAiCoachMessages] = useState<AiCoachMessage[]>([]);
+  const [aiCoachInput, setAiCoachInput] = useState("");
   const [aiCoachError, setAiCoachError] = useState<string | null>(null);
   const [aiCoachBusy, setAiCoachBusy] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const [pendingMode, setPendingMode] = useState<PlayMode>("classic");
   const [levelsCleared, setLevelsCleared] = useState<number[]>(() => loadLevelsCleared());
   const [shadyMsg, setShadyMsg] = useState<string | null>(null);
@@ -704,6 +759,10 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
   });
   useEffect(() => { lifetimeRef.current = lifetime; saveLifetime(lifetime); }, [lifetime]);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
+  useEffect(() => {
+    setShareUrl(window.location.origin);
+  }, []);
+
   const bumpLifetime = useCallback((patch: Partial<LifetimeStats>) => {
     setLifetime((lt) => {
       const next = { ...lt };
@@ -761,37 +820,6 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     shopRef.current = next; setShop(next);
     toast.success("THE Elite Shadow Gamer! Admin skin, Admin Hat & Admin Jacket unlocked!", { duration: 8000 });
   }, []);
-
-  const askAiCoach = useCallback(async () => {
-    setAiCoachOpen(true);
-    setAiCoachTip(null);
-    setAiCoachError(null);
-    setAiCoachBusy(true);
-    try {
-      const result = await getAiCoachTip({
-        data: {
-          wave: uiState.wave,
-          totalWaves: uiState.totalWaves,
-          hp: uiState.hp,
-          maxHp: uiState.maxHp,
-          level: uiState.level,
-          clones: uiState.clones,
-          enemiesLeft: uiState.enemiesLeft,
-          coins: uiState.coins,
-          shadowCoins: uiState.shadowCoins,
-          gameMode: uiState.gameMode,
-          playMode: uiState.playMode,
-          bossName: uiState.bossName,
-          eventName: uiState.eventName,
-        },
-      });
-      setAiCoachTip(result.tip);
-    } catch (error) {
-      setAiCoachError(error instanceof Error ? error.message : "AI Coach is unavailable.");
-    } finally {
-      setAiCoachBusy(false);
-    }
-  }, [uiState]);
 
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelSpinning, setWheelSpinning] = useState(false);
@@ -1042,6 +1070,9 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     radiationWaves: [] as { r: number; maxR: number; hit: WeakSet<Enemy> }[],
     blackholeTime: 0,
     blackholePos: { x: W / 2, y: H / 2 } as Vec,
+    blackholeCharges: 0,
+    waterButton: false,
+    steelArmorTime: 0,
     slowTime: 0,
     explosionFx: [] as { x: number; y: number; r: number; maxR: number; life: number }[],
     // wave history for revive
@@ -1082,7 +1113,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     s.kingShadowTime = 0; s.hyperTime = 0; s.tornadoTime = 0; s.darknessTime = 0;
     s.shadowAttackCd = 0; s.specialClones = [];
     s.dragonBreathTime = 0; s.dragonBreathCd = 0; s.radiationWaves = [];
-    s.blackholeTime = 0; s.blackholePos = { x: W / 2, y: H / 2 }; s.slowTime = 0;
+    s.blackholeTime = 0; s.blackholePos = { x: W / 2, y: H / 2 }; s.blackholeCharges = 0; s.waterButton = false; s.steelArmorTime = 0; s.slowTime = 0;
     s.explosionFx = [];
     s.lastWaveEnemyCount = 0;
     s.bgColor = "#0b0d1a";
@@ -1514,6 +1545,10 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
       if (u.id === "double" && stateRef.current.stats.doubleBullets) continue;
       out.push(u);
     }
+    if (s.gameMode === "level" && s.levelId >= 10 && Math.random() < 0.4) {
+      const su = SUPER_UPGRADES[Math.floor(Math.random() * SUPER_UPGRADES.length)];
+      if (su) out.push(superUpgradeToWaveUpgrade(su));
+    }
     return out;
   }, []);
 
@@ -1574,6 +1609,56 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
 
   const t = makeT(settings.lang);
 
+  const askAiCoach = useCallback(async (question?: string) => {
+    const cleanQuestion = question?.trim();
+    const nextMessages: AiCoachMessage[] = cleanQuestion
+      ? [...aiCoachMessages, { role: "user", text: cleanQuestion }]
+      : aiCoachMessages;
+
+    setAiCoachOpen(true);
+    setAiCoachError(null);
+    setAiCoachBusy(true);
+    if (cleanQuestion) {
+      setAiCoachMessages(nextMessages);
+      setAiCoachInput("");
+    }
+
+    try {
+      const result = await getAiCoachTip({
+        data: {
+          language: settings.lang,
+          question: cleanQuestion,
+          messages: trimAiCoachHistory(nextMessages),
+          wave: uiState.wave,
+          totalWaves: uiState.totalWaves,
+          hp: uiState.hp,
+          maxHp: uiState.maxHp,
+          level: uiState.level,
+          clones: uiState.clones,
+          enemiesLeft: uiState.enemiesLeft,
+          coins: uiState.coins,
+          shadowCoins: uiState.shadowCoins,
+          gameMode: uiState.gameMode,
+          playMode: uiState.playMode,
+          bossName: uiState.bossName,
+          eventName: uiState.eventName,
+        },
+      });
+      setAiCoachMessages([...nextMessages, { role: "coach", text: result.tip }]);
+    } catch (error) {
+      setAiCoachError(error instanceof Error ? error.message : "AI Coach is unavailable.");
+    } finally {
+      setAiCoachBusy(false);
+    }
+  }, [aiCoachMessages, settings.lang, uiState]);
+
+  const openAiCoach = useCallback(() => {
+    setAiCoachOpen(true);
+    if (aiCoachMessages.length === 0 && !aiCoachBusy) {
+      void askAiCoach();
+    }
+  }, [aiCoachBusy, aiCoachMessages.length, askAiCoach]);
+
 
   
   const musicOnRef = useRef(settings.music);
@@ -1619,7 +1704,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     startWave();
   };
 
-  const SUPER_UPGRADES: { id: string; name: string; color: string; desc: string; apply: () => void }[] = [
+  const SUPER_UPGRADES: SuperUpgrade[] = [
     {
       id: "shadowchaos", name: "Shadow Chaos", color: "#ff5d3a",
       desc: "3 fire clones shooting fire arrows + 45% move speed",
@@ -1710,20 +1795,81 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     },
   ];
 
+  const ULTRA_UPGRADES: SuperUpgrade[] = [
+    {
+      id: "firewater_emperor", name: "Ultra Upgrade: Fire and Water Emperor", color: "#ff7a18",
+      desc: "Fire Boy & Water Girl for 35s, permanent fire breath, +50% damage, faster shots, and a water-shot button",
+      apply: () => {
+        const s = stateRef.current;
+        s.dragonBreathTime = Math.max(s.dragonBreathTime, 9999);
+        s.dragonBreathCd = 0;
+        s.waterButton = true;
+        s.stats.bulletDmg *= 1.5;
+        s.stats.fireRate *= 1.25;
+        s.specialClones.push({ kind: "big", flag: "fireboy", angle: 0, radius: 60, orbitSpeed: 1.8, fireCd: 0.2, life: 35 });
+        s.specialClones.push({ kind: "big", flag: "watergirl", angle: Math.PI, radius: 60, orbitSpeed: 1.8, fireCd: 0.2, life: 35 });
+      },
+    },
+    {
+      id: "radiation_burst", name: "Ultra Upgrade: Radiation Burst", color: "#84cc16",
+      desc: "14 stronger radiation waves, clones deal +125% damage, you move 45% faster, and bullets hit 40% harder",
+      apply: () => {
+        const s = stateRef.current;
+        s.stats.cloneDmgMult *= 2.25;
+        s.stats.moveSpeed *= 1.45;
+        s.stats.bulletDmg *= 1.4;
+        for (let k = 0; k < 14; k++) {
+          s.radiationWaves.push({ r: -k * 38, maxR: 560, hit: new WeakSet<Enemy>() });
+        }
+      },
+    },
+    {
+      id: "steel_hulk", name: "Ultra Upgrade: The Steel Hulk", color: "#cbd5e1",
+      desc: "Steel armor blocks enemy damage for 30s and your damage is increased by 100%",
+      apply: () => {
+        const s = stateRef.current;
+        s.steelArmorTime = Math.max(s.steelArmorTime, 30);
+        s.stats.bulletDmg *= 2;
+      },
+    },
+    {
+      id: "dark_space_energy", name: "Ultra Upgrade: The Dark Space Energy", color: "#7c3aed",
+      desc: "5 stronger black-hole charges, clones move 125% faster, clones deal +75% damage, and bullets hit 35% harder",
+      apply: () => {
+        const s = stateRef.current;
+        s.blackholeCharges = Math.max(s.blackholeCharges, 5);
+        s.stats.cloneSpeedMult *= 2.25;
+        s.stats.cloneDmgMult *= 1.75;
+        s.stats.bulletDmg *= 1.35;
+        for (const sc of s.specialClones) sc.orbitSpeed *= 2.25;
+      },
+    },
+  ];
+
+  const superUpgradeToWaveUpgrade = (su: SuperUpgrade): Upgrade => ({
+    id: su.id,
+    name: `Super Upgrade: ${su.name}`,
+    desc: su.desc,
+    apply: () => {
+      su.apply();
+      return { id: su.id, name: su.name, undo: () => {}, redo: () => {} };
+    },
+  });
+
   const startLevel = (levelId: number) => {
     const level = LEVELS.find(l => l.id === levelId);
     if (!level) return;
     setPendingSuperLevelId(levelId);
     setSuperPickOpen(true);
     setLevelsOpen(false);
-    toast(`${level.name} — Pick your Super Upgrade!`, { duration: 2500 });
   };
 
   const pickSuperUpgrade = (superId: string) => {
     const levelId = pendingSuperLevelId;
     if (levelId == null) return;
     const level = LEVELS.find(l => l.id === levelId);
-    const su = SUPER_UPGRADES.find(s => s.id === superId);
+    const pickPool = levelId >= 10 ? ULTRA_UPGRADES : SUPER_UPGRADES;
+    const su = pickPool.find(s => s.id === superId);
     if (!level || !su) return;
     resetGame();
     const s = stateRef.current;
@@ -1739,7 +1885,30 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
     setMusicTrack(((levelId - 1) % getTrackCount()));
     if (musicOnRef.current) startMusic();
     startWave();
-    toast(`${su.name} activated! Defeat ${level.bossName}!`, { duration: 4000 });
+  };
+
+  const useWaterButton = () => {
+    const s = stateRef.current;
+    if (!s.waterButton || !s.waveActive || s.over || s.betweenWaves) return;
+    const dir = norm({ x: s.input.aim.x - s.player.pos.x, y: s.input.aim.y - s.player.pos.y });
+    if (dir.x === 0 && dir.y === 0) return;
+    s.bullets.push({
+      pos: { x: s.player.pos.x, y: s.player.pos.y },
+      vel: { x: dir.x * 760, y: dir.y * 760 },
+      life: 1.4,
+      dmg: s.stats.bulletDmg * 3.5,
+      from: "player",
+      color: "#3da9fc",
+      r: 11,
+    });
+  };
+
+  const useBlackholeButton = () => {
+    const s = stateRef.current;
+    if (s.blackholeCharges <= 0 || !s.waveActive || s.over || s.betweenWaves) return;
+    s.blackholeCharges -= 1;
+    s.blackholePos = { x: W / 2, y: H / 2 };
+    s.blackholeTime = Math.max(s.blackholeTime, 14);
   };
 
 
@@ -1775,7 +1944,15 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
 
 
   useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
+    };
+
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+
       const i = stateRef.current.input;
       const code = e.code;
       const k = e.key.toLowerCase();
@@ -2034,7 +2211,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
       })();
       const has = (a: AbilityName) => set.includes(a);
       const isPP = boss.bossId === "plusplantium";
-      const shielded = s.shieldTime > 0 ? 0.55 : 1;
+      const shielded = s.steelArmorTime > 0 ? 0 : (s.shieldTime > 0 ? 0.55 : 1);
 
       // ---------- BARRAGE: ring of homing-ish projectiles ----------
       if (has("barrage")) {
@@ -2320,7 +2497,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
           for (const e of s.enemies) {
             if (Math.hypot(e.pos.x - mx, e.pos.y - my) < 70) e.hp -= 40;
           }
-          if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= 6;
+          if (Math.hypot(s.player.pos.x - mx, s.player.pos.y - my) < 50) s.player.hp -= s.steelArmorTime > 0 ? 0 : 6;
         }
         if (s.eventTimer <= 0) {
           s.eventTimer = 40;
@@ -2369,6 +2546,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
       if (s.dragonBreathTime > 0) s.dragonBreathTime = Math.max(0, s.dragonBreathTime - dt);
       if (s.waveWarningTimer > 0) s.waveWarningTimer = Math.max(0, s.waveWarningTimer - dt);
       if (s.blackholeTime > 0) s.blackholeTime = Math.max(0, s.blackholeTime - dt);
+      if (s.steelArmorTime > 0) s.steelArmorTime = Math.max(0, s.steelArmorTime - dt);
       if (s.slowTime > 0) s.slowTime = Math.max(0, s.slowTime - dt);
       if (s.bounceShotsTime > 0) s.bounceShotsTime = Math.max(0, s.bounceShotsTime - dt);
       if (s.healGhostTime > 0) s.healGhostTime = Math.max(0, s.healGhostTime - dt);
@@ -2448,7 +2626,9 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
               fireBullet(f.pos, f.aim, "clone");
               s.cloneFireCd[c] = 1 / (s.stats.fireRate * 0.4);
             }
-            const step = Math.max(1, Math.round(s.stats.cloneSpeedMult));
+            cl.frameCarry = (cl.frameCarry ?? 0) + s.stats.cloneSpeedMult;
+            const step = Math.max(1, Math.floor(cl.frameCarry));
+            cl.frameCarry -= step;
             cl.idx += step;
             if (cl.idx >= cl.frames.length) cl.idx = cl.idx % cl.frames.length;
           }
@@ -2562,7 +2742,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
             if (e.hp <= 0 || w.hit.has(e)) continue;
             const d = dist(e.pos, s.player.pos);
             if (d <= w.r && d >= w.r - 40) {
-              e.hp -= e.kind === "boss" ? 60 : 120;
+              e.hp -= e.kind === "boss" ? 130 : 260;
               w.hit.add(e);
             }
           }
@@ -2577,11 +2757,11 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
           const d = dist(e.pos, bp);
           if (d > 4) {
             const dir = norm({ x: bp.x - e.pos.x, y: bp.y - e.pos.y });
-            const pull = e.kind === "boss" ? 80 : 260;
+            const pull = e.kind === "boss" ? 140 : 420;
             e.pos.x += dir.x * pull * dt;
             e.pos.y += dir.y * pull * dt;
           }
-          if (d < 30) e.hp -= (e.kind === "boss" ? 30 : 80) * dt;
+          if (d < 42) e.hp -= (e.kind === "boss" ? 90 : 190) * dt;
         }
       }
 
@@ -2630,7 +2810,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
         }
         if (e.kind === "boss" && e.abilityCds) runBossAbilities(e, dt);
         if (dist(e.pos, s.player.pos) < e.r + s.player.r) {
-          s.player.hp -= e.dmg * dt * (s.shieldTime > 0 ? 0.55 : 1);
+          s.player.hp -= e.dmg * dt * (s.steelArmorTime > 0 ? 0 : (s.shieldTime > 0 ? 0.55 : 1));
         }
       }
 
@@ -2650,7 +2830,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
         }
         if (b.from === "boss") {
           if (dist(b.pos, s.player.pos) < s.player.r + (b.r ?? 5)) {
-            s.player.hp -= b.dmg * (s.shieldTime > 0 ? 0.55 : 1);
+            s.player.hp -= b.dmg * (s.steelArmorTime > 0 ? 0 : (s.shieldTime > 0 ? 0.55 : 1));
             b.life = 0;
           }
         } else {
@@ -4645,6 +4825,17 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
       // torso (shirt) — replaced by jacket color if equipped
       ctx.fillStyle = isJacket && equippedAcc ? equippedAcc.color : "#2e7dd9";
       ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.fill();
+      if (s.steelArmorTime > 0) {
+        const armor = ctx.createLinearGradient(p.pos.x - p.r, p.pos.y - p.r, p.pos.x + p.r, p.pos.y + p.r);
+        armor.addColorStop(0, "rgba(248,250,252,0.85)");
+        armor.addColorStop(0.45, "rgba(100,116,139,0.9)");
+        armor.addColorStop(1, "rgba(226,232,240,0.85)");
+        ctx.fillStyle = armor;
+        ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.95, p.r * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(p.pos.x - p.r * 0.55, p.pos.y - p.r * 0.25); ctx.lineTo(p.pos.x + p.r * 0.55, p.pos.y - p.r * 0.25); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p.pos.x - p.r * 0.45, p.pos.y + p.r * 0.25); ctx.lineTo(p.pos.x + p.r * 0.45, p.pos.y + p.r * 0.25); ctx.stroke();
+      }
       if (isJacket && equippedAcc) {
         // collar / lapel highlights
         ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1.5;
@@ -4704,6 +4895,12 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 6 + Math.sin(s.time * 6) * 1.5, 0, Math.PI * 2); ctx.stroke();
         ctx.strokeStyle = "rgba(255,200,120,0.4)"; ctx.lineWidth = 6;
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 9, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (s.steelArmorTime > 0) {
+        ctx.strokeStyle = "rgba(226,232,240,0.9)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 8 + Math.sin(s.time * 5) * 1.2, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(148,163,184,0.45)"; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y, p.r + 12, 0, Math.PI * 2); ctx.stroke();
       }
 
       const boss = s.enemies.find(e => e.kind === "boss");
@@ -4832,6 +5029,8 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
             waveWarning: 0,
             corruption: 0,
             eventName: null,
+            waterButton: false,
+            blackholeCharges: 0,
           };
         }
         const upg = s.pendingUpgrades ?? u.upgrades;
@@ -4857,6 +5056,8 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
           playMode: s.playMode,
           corruption: s.corruption,
           eventName: s.currentEvent,
+          waterButton: s.waterButton,
+          blackholeCharges: s.blackholeCharges,
         };
       });
       raf = requestAnimationFrame(loop);
@@ -4889,23 +5090,45 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
           style={{ width: 46, height: 46, boxShadow: "0 0 16px rgba(255,255,255,0.5)" }}
         />
       </div>
-      <div className="w-full max-w-[960px] flex items-center justify-end gap-3 text-xs">
-
-        <span className="text-white/70">
-          {t("player")}: <span className="font-bold text-white">{email || "..."}</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm(t("logoutConfirm"))) {
-              signOut();
-            }
-          }}
-          className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
-        >
-          {t("logout")}
-        </button>
-
+      <div className="w-full max-w-[960px] flex flex-wrap items-start justify-between gap-3 text-xs">
+        {shareUrl && (
+          <div className="w-[172px] rounded-xl bg-[#5bb8a4] p-2 shadow-[0_0_24px_rgba(91,184,164,0.25)]">
+            <div className="rounded-md bg-[#ded0d0] p-3">
+              <div className="bg-white p-2">
+                <QRCodeSVG
+                  value={shareUrl}
+                  size={112}
+                  marginSize={1}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  level="M"
+                />
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-center gap-3 rounded-lg bg-[#5bb8a4] px-3 py-2">
+              <div className="flex h-8 w-11 items-center justify-center rounded-md bg-[#ead8d8] text-[#5bb8a4]">
+                <Play className="h-5 w-5 fill-current" />
+              </div>
+              <div className="text-lg font-black text-[#3a0909]">Scan me!</div>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          <span className="text-white/70">
+            {t("player")}: <span className="font-bold text-white">{nickname || "..."}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(t("logoutConfirm"))) {
+                signOut();
+              }
+            }}
+            className="px-3 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition"
+          >
+            {t("logout")}
+          </button>
+        </div>
       </div>
       <header className="text-center">
         <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-[#ffe066] via-[#ff2e88] to-[#b388ff] bg-clip-text text-transparent">
@@ -4953,8 +5176,35 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
               transition: "filter 0.2s",
             }}
           />
+          {uiState.started && !uiState.betweenWaves && (uiState.waterButton || uiState.blackholeCharges > 0) && (
+            <div className="absolute right-3 bottom-3 flex flex-col gap-2">
+              {uiState.waterButton && (
+                <button
+                  type="button"
+                  title="Shoot water"
+                  onClick={useWaterButton}
+                  className="w-14 h-14 rounded-lg bg-[#3da9fc] ring-2 ring-white/30 shadow-[0_0_22px_rgba(61,169,252,0.45)] hover:scale-105 active:scale-95 transition flex items-center justify-center"
+                >
+                  <img src={upgAquaman} alt="" className="w-10 h-10 object-contain pointer-events-none" />
+                </button>
+              )}
+              {uiState.blackholeCharges > 0 && (
+                <button
+                  type="button"
+                  title={`Spawn black hole (${uiState.blackholeCharges} left)`}
+                  onClick={useBlackholeButton}
+                  className="relative w-14 h-14 rounded-lg bg-[#0b0614] ring-2 ring-[#a855f7]/70 shadow-[0_0_24px_rgba(124,58,237,0.6)] hover:scale-105 active:scale-95 transition flex items-center justify-center"
+                >
+                  <img src={upgBlackhole} alt="" className="w-10 h-10 object-contain pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#ffe066] text-black text-[11px] font-black flex items-center justify-center">
+                    {uiState.blackholeCharges}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
           {isTouchDevice && uiState.started && (
-            <div className="absolute bottom-2 right-2 text-[10px] text-white/50 pointer-events-none select-none">
+            <div className={`absolute bottom-2 text-[10px] text-white/50 pointer-events-none select-none ${(uiState.waterButton || uiState.blackholeCharges > 0) ? "left-2" : "right-2"}`}>
               Left: move · Right: aim & shoot
             </div>
           )}
@@ -5004,7 +5254,7 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
                     {t("tasks")}
                   </button>
                   <button
-                    onClick={askAiCoach}
+                    onClick={openAiCoach}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#fef08a] text-black font-bold hover:scale-105 transition"
                   >
                     <Bot className="w-4 h-4" />
@@ -5033,37 +5283,97 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
 
           {aiCoachOpen && (
             <Overlay>
-              <div className="w-full max-w-md px-4">
+              <div className="w-full max-w-xl px-4 max-h-[calc(100vh-20px)] overflow-y-auto">
                 <div className="rounded-xl border border-[#fef08a]/40 bg-black/50 p-5 shadow-[0_0_35px_rgba(254,240,138,0.18)]">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#fef08a] text-black flex items-center justify-center">
-                      <Bot className="w-5 h-5" />
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#fef08a] text-black flex items-center justify-center">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black text-[#fef08a]">AI Coach</h2>
+                        <p className="text-xs text-white/50">
+                          {settings.lang === "ru" ? "Чат-помощник по игре" : "Game chat coach"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-black text-[#fef08a]">AI Coach</h2>
-                      <p className="text-xs text-white/50">Tactical shadow advice</p>
-                    </div>
-                  </div>
-                  <div className="min-h-20 rounded-lg bg-white/5 border border-white/10 p-4 text-sm text-white/80 leading-relaxed">
-                    {aiCoachBusy && "Thinking..."}
-                    {!aiCoachBusy && aiCoachError && <span className="text-red-300">{aiCoachError}</span>}
-                    {!aiCoachBusy && !aiCoachError && (aiCoachTip ?? "No tip yet.")}
-                  </div>
-                  <div className="flex gap-3 mt-4">
                     <button
                       type="button"
-                      onClick={askAiCoach}
-                      disabled={aiCoachBusy}
-                      className="flex-1 py-2 rounded-lg bg-[#fef08a] text-black font-black disabled:opacity-50"
+                      onClick={() => setAiCoachOpen(false)}
+                      className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20"
                     >
-                      Ask Again
+                      {settings.lang === "ru" ? "Выйти" : "Exit"}
+                    </button>
+                  </div>
+                  <div className="h-64 overflow-y-auto rounded-lg bg-white/5 border border-white/10 p-3 text-sm text-white/80 leading-relaxed space-y-3">
+                    {aiCoachMessages.length === 0 && !aiCoachBusy && !aiCoachError && (
+                      <div className="text-white/45">
+                        {settings.lang === "ru"
+                          ? "Спроси про волны, клонов, боссов, магазин или что делать дальше."
+                          : "Ask about waves, clones, bosses, shop choices, or what to do next."}
+                      </div>
+                    )}
+                    {aiCoachMessages.map((message, idx) => (
+                      <div
+                        key={`${message.role}-${idx}`}
+                        className={`rounded-lg px-3 py-2 ${
+                          message.role === "user"
+                            ? "bg-[#fef08a] text-black ml-10"
+                            : "bg-black/35 border border-white/10 text-white/85 mr-10"
+                        }`}
+                      >
+                        <div className="text-[10px] uppercase font-black opacity-60 mb-1">
+                          {message.role === "user" ? (settings.lang === "ru" ? "Ты" : "You") : "AI Coach"}
+                        </div>
+                        <div>{formatAiCoachText(message.text)}</div>
+                      </div>
+                    ))}
+                    {aiCoachBusy && (
+                      <div className="rounded-lg px-3 py-2 bg-black/35 border border-white/10 text-white/60 mr-10">
+                        {settings.lang === "ru" ? "Думаю..." : "Thinking..."}
+                      </div>
+                    )}
+                    {aiCoachError && <div className="text-red-300">{aiCoachError}</div>}
+                  </div>
+                  <form
+                    className="flex gap-2 mt-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!aiCoachInput.trim() || aiCoachBusy) return;
+                      void askAiCoach(aiCoachInput);
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={aiCoachInput}
+                      onChange={(e) => setAiCoachInput(e.target.value)}
+                      maxLength={500}
+                      className="min-w-0 flex-1 px-3 py-2 rounded-lg bg-[#0b0d1a] text-white border border-white/20 focus:border-[#fef08a] outline-none text-sm"
+                      placeholder={settings.lang === "ru" ? "Спроси совет по игре..." : "Ask the coach..."}
+                    />
+                    <button
+                      type="submit"
+                      disabled={aiCoachBusy || !aiCoachInput.trim()}
+                      className="px-4 py-2 rounded-lg bg-[#fef08a] text-black font-black disabled:opacity-50"
+                    >
+                      {settings.lang === "ru" ? "Отправить" : "Send"}
+                    </button>
+                  </form>
+                  <div className="flex gap-3 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => void askAiCoach(settings.lang === "ru" ? "Проанализируй мою игру и дай несколько советов." : "Analyze my run and give me several tips.")}
+                      disabled={aiCoachBusy}
+                      className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20 disabled:opacity-50"
+                    >
+                      {settings.lang === "ru" ? "Анализ игры" : "Analyze Run"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setAiCoachOpen(false)}
                       className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20"
                     >
-                      {t("close")}
+                      {settings.lang === "ru" ? "Выйти" : "Exit"}
                     </button>
                   </div>
                 </div>
@@ -5359,14 +5669,14 @@ function Game({ userId, email, signOut }: { userId: string; email: string; signO
               <div className="w-full max-w-3xl px-4 max-h-full overflow-y-auto">
                 <div className="text-center mb-4">
                   <h2 className="text-3xl font-black bg-gradient-to-r from-[#ff2e88] via-[#ffe066] to-[#7cdcff] bg-clip-text text-transparent">
-                    {t("chooseSuper")}
+                    {pendingSuperLevelId >= 10 ? (settings.lang === "ru" ? "Выбери ультра-улучшение" : "Choose Your Ultra Upgrade") : t("chooseSuper")}
                   </h2>
                   <p className="text-xs text-white/60 mt-1">
                     {t("lvl")} {pendingSuperLevelId}: {LEVELS.find(l => l.id === pendingSuperLevelId)?.name} — {t("onePickOnly")}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {SUPER_UPGRADES.map(su => {
+                  {(pendingSuperLevelId >= 10 ? ULTRA_UPGRADES : SUPER_UPGRADES).map(su => {
                     return (
                       <button
                         key={su.id}
