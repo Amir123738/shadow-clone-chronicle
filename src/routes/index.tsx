@@ -740,7 +740,8 @@ const H = 600;
 const CLONE_INTERVAL = 15;
 const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
-const PLAYER_NAME_RE = /^[\p{L}\p{N}_]{3,20}$/u;
+const PLAYER_NAME_MIN_LENGTH = 2;
+const PLAYER_NAME_MAX_LENGTH = 32;
 const ADMIN_ACCOUNT_NICKNAMES = new Set(
   (import.meta.env.VITE_ADMIN_NICKNAMES || "zwssws")
     .split(",")
@@ -815,6 +816,15 @@ const BOSS_NAMES: Record<string, string> = {
   plantium: "MEGAPLANTIUM OVERLORD", final: "OMEGA ANNIHILATOR",
   plusplantium: "PLUSPLANTIUM — THE ABSOLUTE",
 };
+
+function isValidPlayerName(name: string) {
+  const chars = Array.from(name);
+  return (
+    chars.length >= PLAYER_NAME_MIN_LENGTH &&
+    chars.length <= PLAYER_NAME_MAX_LENGTH &&
+    chars.every((char) => !/[\p{C}]/u.test(char))
+  );
+}
 
 function rand(a: number, b: number) { return a + Math.random() * (b - a); }
 function dist(a: Vec, b: Vec) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -1244,8 +1254,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
 
   const changeProfileName = useCallback(() => {
     const clean = profileNameInput.trim().normalize("NFC");
-    if (!PLAYER_NAME_RE.test(clean)) {
-      toast.error("Name must be 3-20 letters, numbers, or underscores.");
+    if (!isValidPlayerName(clean)) {
+      toast.error("Name can use any language. Use 2-32 visible characters.");
       return;
     }
     if (clean === (shopRef.current.profileName || nickname)) {
@@ -6142,7 +6152,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                     <input
                       value={profileNameInput}
                       onChange={(e) => setProfileNameInput(e.target.value)}
-                      maxLength={20}
+                      maxLength={32}
                       className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 outline-none focus:border-[#7dd3fc]"
                     />
                     <button

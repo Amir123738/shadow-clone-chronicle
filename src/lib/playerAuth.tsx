@@ -20,7 +20,8 @@ export type PlayerProfile = {
 };
 
 const EMAIL_DOMAIN = "shadowclone.local";
-const NICK_RE = /^[\p{L}\p{N}_]{3,20}$/u;
+const MIN_NICK_LENGTH = 2;
+const MAX_NICK_LENGTH = 32;
 const ASCII_NICK_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 function getAuthRedirectUrl() {
@@ -29,6 +30,15 @@ function getAuthRedirectUrl() {
 
 function normalizeNickname(nickname: string) {
   return nickname.trim().normalize("NFC");
+}
+
+function isValidNickname(nickname: string) {
+  const chars = Array.from(nickname);
+  return (
+    chars.length >= MIN_NICK_LENGTH &&
+    chars.length <= MAX_NICK_LENGTH &&
+    chars.every((char) => !/[\p{C}]/u.test(char))
+  );
 }
 
 function hashNickname(nickname: string) {
@@ -47,6 +57,13 @@ function nicknameToAuthEmail(nickname: string) {
     ? cleanNickname.toLowerCase()
     : `u_${hashNickname(cleanNickname)}`;
   return `${localPart}@${EMAIL_DOMAIN}`;
+}
+
+function nicknameToProfileKey(nickname: string) {
+  const cleanNickname = normalizeNickname(nickname);
+  return ASCII_NICK_RE.test(cleanNickname)
+    ? cleanNickname
+    : `u_${hashNickname(cleanNickname)}`;
 }
 
 function clearAuthUrlFragment() {
@@ -140,8 +157,8 @@ export function useAuth() {
 
   const signUp = useCallback(async (nickname: string, password: string) => {
     const cleanNickname = normalizeNickname(nickname);
-    if (!NICK_RE.test(cleanNickname)) {
-      throw new Error("Nickname must be 3-20 letters, numbers, or underscores.");
+    if (!isValidNickname(cleanNickname)) {
+      throw new Error("Nickname can use any language. Use 2-32 visible characters.");
     }
     if (password.length < 6) {
       throw new Error("Password must be at least 6 characters.");
@@ -150,7 +167,10 @@ export function useAuth() {
       email: nicknameToAuthEmail(cleanNickname),
       password,
       options: {
-        data: { nickname: cleanNickname },
+        data: {
+          nickname: nicknameToProfileKey(cleanNickname),
+          display_name: cleanNickname,
+        },
         emailRedirectTo: getAuthRedirectUrl(),
       },
     });
@@ -164,8 +184,8 @@ export function useAuth() {
 
   const signIn = useCallback(async (nickname: string, password: string) => {
     const cleanNickname = normalizeNickname(nickname);
-    if (!NICK_RE.test(cleanNickname)) {
-      throw new Error("Nickname must be 3-20 letters, numbers, or underscores.");
+    if (!isValidNickname(cleanNickname)) {
+      throw new Error("Nickname can use any language. Use 2-32 visible characters.");
     }
     const { error } = await supabase.auth.signInWithPassword({
       email: nicknameToAuthEmail(cleanNickname),
@@ -266,7 +286,14 @@ export function AuthGate({
       return;
     }
 
-    const metadataNickname = (user.user_metadata as { nickname?: string } | null)?.nickname;
+    const metadata = user.user_metadata as { display_name?: string; nickname?: string } | null;
+    const metadataDisplayName = metadata?.display_name;
+    if (metadataDisplayName) {
+      setDisplayNickname(metadataDisplayName);
+      return;
+    }
+
+    const metadataNickname = metadata?.nickname;
     if (metadataNickname) {
       setDisplayNickname(metadataNickname);
       return;
@@ -332,8 +359,8 @@ export function AuthGate({
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           autoComplete="username"
-          minLength={3}
-          maxLength={20}
+          minLength={2}
+          maxLength={32}
           required
           className="w-full mb-4 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 outline-none"
           placeholder="ShadowHero"
