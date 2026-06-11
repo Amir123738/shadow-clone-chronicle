@@ -795,7 +795,7 @@ const TOTAL_WAVES = 100;
 const PLAYER_NAME_MIN_LENGTH = 2;
 const PLAYER_NAME_MAX_LENGTH = 32;
 const ADMIN_ACCOUNT_NICKNAMES = new Set(
-  (import.meta.env.VITE_ADMIN_NICKNAMES || "zwssws")
+  (import.meta.env.VITE_ADMIN_NICKNAMES || "shadowgamer")
     .split(",")
     .map((name: string) => name.trim().toLowerCase())
     .filter(Boolean)
