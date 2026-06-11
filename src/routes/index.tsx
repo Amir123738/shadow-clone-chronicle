@@ -794,12 +794,7 @@ const TICK = 1 / 60;
 const TOTAL_WAVES = 100;
 const PLAYER_NAME_MIN_LENGTH = 2;
 const PLAYER_NAME_MAX_LENGTH = 32;
-const ADMIN_ACCOUNT_NICKNAMES = new Set(
-  (import.meta.env.VITE_ADMIN_NICKNAMES || "shadowgamer")
-    .split(",")
-    .map((name: string) => name.trim().toLowerCase())
-    .filter(Boolean)
-);
+const ADMIN_ACCOUNT_NICKNAMES = new Set(["shadowgamer"]);
 const ADMIN_ACCOUNT_IDS = new Set(
   (import.meta.env.VITE_ADMIN_USER_IDS || "")
     .split(",")
@@ -1302,7 +1297,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const activeProfileIcon = allProfileIcons.find((icon) => icon.id === shop.profileIcon) ?? allProfileIcons[0];
   const displayProfileName = shop.profileName || nickname || "Player";
   const authNickname = nickname.split("@")[0]?.trim().toLowerCase() || "";
-  const isAdminAccount = ADMIN_ACCOUNT_IDS.has(userId) || ADMIN_ACCOUNT_NICKNAMES.has(authNickname);
+  const isAdminAccount = ADMIN_ACCOUNT_NICKNAMES.has(authNickname);
   const visibleRarityOrder = isAdminAccount ? RARITY_ORDER : RARITY_ORDER.filter((rar) => rar !== "admin");
   const visibleAccessoryRarityOrder = isAdminAccount ? ACC_RARITY_ORDER : ACC_RARITY_ORDER.filter((rar) => rar !== "admin");
 
