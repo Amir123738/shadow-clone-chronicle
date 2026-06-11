@@ -312,6 +312,8 @@ const SKINS: Skin[] = [
 
 type AccessoryRarity = "super_rare" | "epic" | "mythical" | "legendary" | "secret" | "ultra" | "diamond" | "cosmic" | "galactic" | "quasaric" | "admin";
 type Accessory = { id: string; name: string; color: string; glow: string; rarity?: AccessoryRarity; price?: number };
+type AccessorySlot = "hat" | "torso" | "neck" | "feet";
+type EquippedAccessories = Partial<Record<AccessorySlot, string>>;
 const ACCESSORIES: Accessory[] = [
   { id: "white_hat",      name: "White Hat",      color: "#ffffff", glow: "rgba(255,255,255,0.85)" },
   { id: "admin_hat",      name: "Admin Hat",      color: "#ff0033", glow: "rgba(255,0,51,1)" },
@@ -370,6 +372,53 @@ const ACC_RARITY_META: Record<AccessoryRarity, { label: string; color: string }>
   quasaric:   { label: "Quasaric",   color: "#fb7185" },
   admin:      { label: "Admin",      color: "#ff0033" },
 };
+const MAX_EQUIPPED_ACCESSORIES = 3;
+
+function getAccessorySlot(accessory: Accessory): AccessorySlot {
+  const text = `${accessory.id} ${accessory.name}`.toLowerCase();
+  if (text.includes("sneaker") || text.includes("shoe") || text.includes("boot")) return "feet";
+  if (text.includes("scarf") || text.includes("neck")) return "neck";
+  if (text.includes("jacket") || text.includes("coat") || text.includes("shirt")) return "torso";
+  return "hat";
+}
+
+function sanitizeEquippedAccessories(value: unknown, legacyAccessory?: string | null): EquippedAccessories {
+  const equipped: EquippedAccessories = {};
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  for (const slot of ["hat", "torso", "neck", "feet"] as AccessorySlot[]) {
+    const itemId = source[slot];
+    if (typeof itemId === "string" && itemId) equipped[slot] = itemId;
+  }
+  if (Object.keys(equipped).length === 0 && legacyAccessory) {
+    const legacyItem = ACCESSORIES.find((item) => item.id === legacyAccessory);
+    equipped[legacyItem ? getAccessorySlot(legacyItem) : "hat"] = legacyAccessory;
+  }
+  return Object.fromEntries(Object.entries(equipped).slice(0, MAX_EQUIPPED_ACCESSORIES)) as EquippedAccessories;
+}
+
+function getEquippedAccessoryIds(equipped: EquippedAccessories) {
+  return Object.values(equipped).filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
+function getPrimaryEquippedAccessory(equipped: EquippedAccessories) {
+  return getEquippedAccessoryIds(equipped)[0] ?? null;
+}
+
+function getEquippedAccessoryForSlot(equipped: EquippedAccessories, slot: AccessorySlot, accessories: Accessory[]) {
+  const id = equipped[slot];
+  return id ? accessories.find((item) => item.id === id) ?? null : null;
+}
+
+function equipAccessoryIfRoom(equipped: EquippedAccessories, accessory: Accessory) {
+  const slot = getAccessorySlot(accessory);
+  const next = { ...equipped };
+  if (next[slot] || getEquippedAccessoryIds(next).length < MAX_EQUIPPED_ACCESSORIES) {
+    next[slot] = accessory.id;
+  }
+  return next;
+}
 
 type ProfileIcon = { id: string; name: string; symbol: string; color: string; bg: string; rarity: Rarity; price: number };
 const PROFILE_ICONS: ProfileIcon[] = [
@@ -403,6 +452,7 @@ type ShopSave = {
   selected: string;
   accessories: string[];
   equippedAccessory: string | null;
+  equippedAccessories: EquippedAccessories;
   profileName: string | null;
   profileIcon: string | null;
   profileIcons: string[];
@@ -416,6 +466,7 @@ const DEFAULT_SHOP: ShopSave = {
   selected: "violet",
   accessories: [],
   equippedAccessory: null,
+  equippedAccessories: {},
   profileName: null,
   profileIcon: "shadow_rookie",
   profileIcons: ["shadow_rookie"],
@@ -465,6 +516,7 @@ function loadShop(): ShopSave {
         selected: v.selected || "violet",
         accessories: Array.isArray(v.accessories) ? v.accessories : [],
         equippedAccessory: v.equippedAccessory ?? null,
+        equippedAccessories: sanitizeEquippedAccessories(v.equippedAccessories, v.equippedAccessory ?? null),
         profileName: typeof v.profileName === "string" ? v.profileName : null,
         profileIcon: typeof v.profileIcon === "string" ? v.profileIcon : "shadow_rookie",
         profileIcons: Array.isArray(v.profileIcons) ? v.profileIcons : ["shadow_rookie"],
@@ -477,7 +529,7 @@ function loadShop(): ShopSave {
     const legacy = localStorage.getItem("scs_shop_v1");
     if (legacy) {
       const v = JSON.parse(legacy);
-      if (v && Array.isArray(v.owned)) return { ...DEFAULT_SHOP, shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null };
+      if (v && Array.isArray(v.owned)) return { ...DEFAULT_SHOP, shadowCoins: v.shadowCoins||0, owned: v.owned, selected: v.selected||"violet", accessories: [], equippedAccessory: null, equippedAccessories: {} };
     }
   } catch {}
   return { ...DEFAULT_SHOP };
@@ -1017,12 +1069,16 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     const accessories = [...cur.accessories];
     if (!hasHat) accessories.push("admin_hat");
     if (!hasJacket) accessories.push("admin_jacket");
+    const equippedAccessories = [ACCESSORIES.find((item) => item.id === "admin_hat"), ACCESSORIES.find((item) => item.id === "admin_jacket")]
+      .filter((item): item is Accessory => !!item)
+      .reduce((equipped, item) => equipAccessoryIfRoom(equipped, item), cur.equippedAccessories);
     const next: ShopSave = {
       ...cur,
       owned: ownsSkin ? cur.owned : [...cur.owned, "admin"],
       accessories,
       selected: "admin",
-      equippedAccessory: "admin_hat",
+      equippedAccessories,
+      equippedAccessory: getPrimaryEquippedAccessory(equippedAccessories),
     };
     shopRef.current = next; setShop(next);
     toast.success("THE Elite Shadow Gamer! Admin skin, Admin Hat & Admin Jacket unlocked!", { duration: 8000 });
@@ -1184,6 +1240,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           selected: p.selected || "violet",
           accessories: p.accessories,
           equippedAccessory: p.equipped_accessory,
+          equippedAccessories: sanitizeEquippedAccessories(p.equipped_accessories, p.equipped_accessory),
           profileName: p.profile_name,
           profileIcon: p.profile_icon || "shadow_rookie",
           profileIcons: p.profile_icons.length ? p.profile_icons : ["shadow_rookie"],
@@ -1219,7 +1276,8 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         owned: shop.owned,
         selected: shop.selected,
         accessories: shop.accessories,
-        equipped_accessory: shop.equippedAccessory,
+        equipped_accessory: getPrimaryEquippedAccessory(shop.equippedAccessories),
+        equipped_accessories: shop.equippedAccessories,
       });
     }, 600);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
@@ -1247,6 +1305,48 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
   const isAdminAccount = ADMIN_ACCOUNT_IDS.has(userId) || ADMIN_ACCOUNT_NICKNAMES.has(authNickname);
   const visibleRarityOrder = isAdminAccount ? RARITY_ORDER : RARITY_ORDER.filter((rar) => rar !== "admin");
   const visibleAccessoryRarityOrder = isAdminAccount ? ACC_RARITY_ORDER : ACC_RARITY_ORDER.filter((rar) => rar !== "admin");
+
+  const toggleAccessory = useCallback((accessory: Accessory) => {
+    setShop((current) => {
+      const slot = getAccessorySlot(accessory);
+      const equipped = { ...current.equippedAccessories };
+      if (equipped[slot] === accessory.id) {
+        delete equipped[slot];
+      } else {
+        const count = getEquippedAccessoryIds(equipped).length;
+        if (!equipped[slot] && count >= MAX_EQUIPPED_ACCESSORIES) {
+          toast.error(`You can wear ${MAX_EQUIPPED_ACCESSORIES} accessories at once. Unequip one first.`);
+          return current;
+        }
+        equipped[slot] = accessory.id;
+      }
+      return {
+        ...current,
+        equippedAccessories: equipped,
+        equippedAccessory: getPrimaryEquippedAccessory(equipped),
+      };
+    });
+  }, []);
+
+  const addAndEquipAccessory = useCallback((accessory: Accessory, spend = 0) => {
+    setShop((current) => {
+      const slot = getAccessorySlot(accessory);
+      if (!current.equippedAccessories[slot] && getEquippedAccessoryIds(current.equippedAccessories).length >= MAX_EQUIPPED_ACCESSORIES) {
+        toast.error(`You can wear ${MAX_EQUIPPED_ACCESSORIES} accessories at once. Unequip one first.`);
+        return current;
+      }
+      const equipped = equipAccessoryIfRoom(current.equippedAccessories, accessory);
+      return {
+        ...current,
+        shadowCoins: current.shadowCoins - spend,
+        accessories: current.accessories.includes(accessory.id)
+          ? current.accessories
+          : [...current.accessories, accessory.id],
+        equippedAccessories: equipped,
+        equippedAccessory: getPrimaryEquippedAccessory(equipped),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (!isAdminAccount) setAdminOpen(false);
@@ -1331,7 +1431,13 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       return;
     }
     const item = pickRandom(pool);
-    const next = { ...cur, accessories: [...cur.accessories, item.id], equippedAccessory: item.id };
+    const equippedAccessories = equipAccessoryIfRoom(cur.equippedAccessories, item);
+    const next = {
+      ...cur,
+      accessories: [...cur.accessories, item.id],
+      equippedAccessories,
+      equippedAccessory: getPrimaryEquippedAccessory(equippedAccessories),
+    };
     shopRef.current = next;
     setShop(next);
     toast.success(`Added ${ACC_RARITY_META[adminAccessoryRarity].label} accessory: ${item.name}`);
@@ -1379,7 +1485,16 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       return;
     }
     const item: Accessory = { id: slugAdminItem("acc"), name, rarity: adminAccessoryRarity, price: 0, color: adminItemColor, glow: adminItemColor };
-    setShop((v) => ({ ...v, customAccessories: [...v.customAccessories, item], accessories: [...v.accessories, item.id], equippedAccessory: item.id }));
+    setShop((v) => {
+      const equippedAccessories = equipAccessoryIfRoom(v.equippedAccessories, item);
+      return {
+        ...v,
+        customAccessories: [...v.customAccessories, item],
+        accessories: [...v.accessories, item.id],
+        equippedAccessories,
+        equippedAccessory: getPrimaryEquippedAccessory(equippedAccessories),
+      };
+    });
     toast.success(`New ${ACC_RARITY_META[adminAccessoryRarity].label} accessory added: ${name}`);
   }, [adminItemName, adminItemColor, adminAccessoryRarity]);
 
@@ -2096,6 +2211,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
     landscapeContinueRef.current = next;
     setLandscapePromptOpen(true);
   };
+
+  useEffect(() => {
+    if (landscapePromptOpen || !shouldPromptForLandscape()) return;
+    promptForLandscape(() => {});
+  }, [landscapePromptOpen, langPickerOpen]);
 
   const openModePicker = () => {
     if (shouldPromptForLandscape()) {
@@ -3494,11 +3614,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         skinColor = `hsl(${hue},90%,65%)`;
         skinGlow = `hsla(${hue},90%,65%,0.55)`;
       }
-      const equippedAcc = currentShop.equippedAccessory
-        ? availableAccessories.find(a => a.id === currentShop.equippedAccessory) ?? null
-        : null;
-      const isHat = equippedAcc && /hat/.test(equippedAcc.id);
-      const isJacket = equippedAcc && /jacket/.test(equippedAcc.id);
+      const equippedAccessories = currentShop.equippedAccessories || {};
+      const hatAcc = getEquippedAccessoryForSlot(equippedAccessories, "hat", availableAccessories);
+      const jacketAcc = getEquippedAccessoryForSlot(equippedAccessories, "torso", availableAccessories);
+      const scarfAcc = getEquippedAccessoryForSlot(equippedAccessories, "neck", availableAccessories);
+      const sneakersAcc = getEquippedAccessoryForSlot(equippedAccessories, "feet", availableAccessories);
 
       // mix skin color into a darker silhouette body tone
       const hexToRgb = (h: string) => {
@@ -3532,16 +3652,26 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
           ctx.beginPath(); ctx.arc(f.pos.x - 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(f.pos.x + 2.2, f.pos.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
           // accessory mini-render
-          if (isHat && equippedAcc) {
-            ctx.fillStyle = equippedAcc.color;
-            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y - 13.5, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(f.pos.x - 4, f.pos.y - 17, 8, 4);
-          }
-          if (isJacket && equippedAcc) {
-            ctx.fillStyle = equippedAcc.color;
+          if (jacketAcc) {
+            ctx.fillStyle = jacketAcc.color;
             ctx.globalAlpha = 0.85;
             ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y + 2, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
             ctx.globalAlpha = 1;
+          }
+          if (scarfAcc) {
+            ctx.fillStyle = scarfAcc.color;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y - 3, 8, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(f.pos.x + 4, f.pos.y - 2, 3, 8);
+          }
+          if (sneakersAcc) {
+            ctx.fillStyle = sneakersAcc.color;
+            ctx.beginPath(); ctx.ellipse(f.pos.x - 4, f.pos.y + 16, 4.5, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(f.pos.x + 4, f.pos.y + 16, 4.5, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+          }
+          if (hatAcc) {
+            ctx.fillStyle = hatAcc.color;
+            ctx.beginPath(); ctx.ellipse(f.pos.x, f.pos.y - 13.5, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(f.pos.x - 4, f.pos.y - 17, 8, 4);
           }
           ctx.strokeStyle = skinColor; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(f.pos.x, f.pos.y);
@@ -5255,8 +5385,20 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       ctx.moveTo(p.pos.x - 3, p.pos.y + 2); ctx.lineTo(p.pos.x - 3, p.pos.y + p.r + 2);
       ctx.moveTo(p.pos.x + 3, p.pos.y + 2); ctx.lineTo(p.pos.x + 3, p.pos.y + p.r + 2);
       ctx.stroke();
-      // torso (shirt) — replaced by jacket color if equipped
-      ctx.fillStyle = isJacket && equippedAcc ? equippedAcc.color : "#2e7dd9";
+      if (sneakersAcc) {
+        ctx.save();
+        ctx.shadowColor = sneakersAcc.glow; ctx.shadowBlur = 10;
+        ctx.fillStyle = sneakersAcc.color;
+        ctx.beginPath(); ctx.ellipse(p.pos.x - 5, p.pos.y + p.r + 3, 7, 3, -0.12, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(p.pos.x + 5, p.pos.y + p.r + 3, 7, 3, 0.12, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.fillRect(p.pos.x - 8, p.pos.y + p.r + 1.5, 4, 1);
+        ctx.fillRect(p.pos.x + 4, p.pos.y + p.r + 1.5, 4, 1);
+        ctx.restore();
+      }
+      // torso (shirt) - replaced by jacket color if equipped
+      ctx.fillStyle = jacketAcc ? jacketAcc.color : "#2e7dd9";
       ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.fill();
       if (s.steelArmorTime > 0) {
         const armor = ctx.createLinearGradient(p.pos.x - p.r, p.pos.y - p.r, p.pos.x + p.r, p.pos.y + p.r);
@@ -5269,7 +5411,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         ctx.beginPath(); ctx.moveTo(p.pos.x - p.r * 0.55, p.pos.y - p.r * 0.25); ctx.lineTo(p.pos.x + p.r * 0.55, p.pos.y - p.r * 0.25); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(p.pos.x - p.r * 0.45, p.pos.y + p.r * 0.25); ctx.lineTo(p.pos.x + p.r * 0.45, p.pos.y + p.r * 0.25); ctx.stroke();
       }
-      if (isJacket && equippedAcc) {
+      if (jacketAcc) {
         // collar / lapel highlights
         ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -5278,9 +5420,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
         ctx.lineTo(p.pos.x + p.r * 0.55, p.pos.y - p.r * 0.5);
         ctx.stroke();
         // soft glow
-        ctx.shadowColor = equippedAcc.glow; ctx.shadowBlur = 14;
+        ctx.shadowColor = jacketAcc.glow; ctx.shadowBlur = 14;
         ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y, p.r * 0.85, p.r * 0.95, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.shadowBlur = 0;
+      }
+      if (scarfAcc) {
+        ctx.save();
+        ctx.shadowColor = scarfAcc.glow; ctx.shadowBlur = 10;
+        ctx.fillStyle = scarfAcc.color;
+        ctx.beginPath(); ctx.ellipse(p.pos.x, p.pos.y - p.r * 0.45, p.r * 0.62, p.r * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(p.pos.x + p.r * 0.35, p.pos.y - p.r * 0.35);
+        ctx.lineTo(p.pos.x + p.r * 0.82, p.pos.y + p.r * 0.3);
+        ctx.lineTo(p.pos.x + p.r * 0.48, p.pos.y + p.r * 0.34);
+        ctx.lineTo(p.pos.x + p.r * 0.18, p.pos.y - p.r * 0.25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       }
       // arms toward aim
       ctx.strokeStyle = "#f1c27d"; ctx.lineWidth = 3.5;
@@ -5293,7 +5449,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       ctx.fillStyle = "#f1c27d";
       ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.75, p.r * 0.55, 0, Math.PI * 2); ctx.fill();
       // hair (hidden under hat)
-      if (!isHat) {
+      if (!hatAcc) {
         ctx.fillStyle = "#2a1d10";
         ctx.beginPath(); ctx.arc(p.pos.x, p.pos.y - p.r * 0.95, p.r * 0.55, Math.PI, 0); ctx.fill();
       }
@@ -5302,11 +5458,11 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
       ctx.beginPath(); ctx.arc(p.pos.x - 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(p.pos.x + 2.2, p.pos.y - p.r * 0.75, 1.2, 0, Math.PI * 2); ctx.fill();
       // hat on top of head
-      if (isHat && equippedAcc) {
+      if (hatAcc) {
         const hx = p.pos.x, hy = p.pos.y - p.r * 0.95;
-        ctx.shadowColor = equippedAcc.glow; ctx.shadowBlur = 12;
+        ctx.shadowColor = hatAcc.glow; ctx.shadowBlur = 12;
         // brim
-        ctx.fillStyle = equippedAcc.color;
+        ctx.fillStyle = hatAcc.color;
         ctx.beginPath(); ctx.ellipse(hx, hy + 1, p.r * 0.85, p.r * 0.22, 0, 0, Math.PI * 2); ctx.fill();
         // crown
         ctx.fillRect(hx - p.r * 0.45, hy - p.r * 0.55, p.r * 0.9, p.r * 0.55);
@@ -6452,15 +6608,19 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {allAccessories.filter(a => shop.accessories.includes(a.id)).map(a => {
-                        const eq = shop.equippedAccessory === a.id;
+                        const eq = getEquippedAccessoryIds(shop.equippedAccessories).includes(a.id);
+                        const slot = getAccessorySlot(a);
                         return (
                           <div key={a.id} className={`p-3 rounded-lg ring-1 ${eq ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`}>
                             <div className="flex items-center gap-2 mb-2">
                               <div className="w-8 h-8 rounded" style={{ background: a.color, boxShadow: `0 0 14px ${a.glow}` }} />
-                              <div className="font-bold text-sm">{a.name}</div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm leading-tight">{a.name}</div>
+                                <div className="text-[10px] uppercase tracking-wider text-white/45">{slot}</div>
+                              </div>
                             </div>
                             <button
-                              onClick={() => setShop(v => ({ ...v, equippedAccessory: eq ? null : a.id }))}
+                              onClick={() => toggleAccessory(a)}
                               className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
                             >{eq ? t("unequip") : t("equip")}</button>
                           </div>
@@ -6751,19 +6911,23 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {items.map((a) => {
                           const owned = shop.accessories.includes(a.id);
-                          const equipped = shop.equippedAccessory === a.id;
+                          const equipped = getEquippedAccessoryIds(shop.equippedAccessories).includes(a.id);
+                          const slot = getAccessorySlot(a);
                           const price = a.price ?? 0;
                           const canBuy = !owned && shop.shadowCoins >= price;
                           return (
                             <div key={a.id} className={`p-3 rounded-lg ring-1 ${equipped ? "ring-[#ffe066] bg-white/10" : "ring-white/10 bg-white/5"}`} style={{ boxShadow: `inset 0 0 0 1px ${meta.color}22` }}>
                               <div className="flex items-center gap-2 mb-2">
                                 <div className="w-8 h-8 rounded-full" style={{ background: a.color, boxShadow: `0 0 14px ${a.glow}` }} />
-                                <div className="font-bold text-sm leading-tight">{a.name}</div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-sm leading-tight">{a.name}</div>
+                                  <div className="text-[10px] uppercase tracking-wider text-white/45">{slot}</div>
+                                </div>
                               </div>
                               <div className="text-xs text-white/60 mb-2">◆ {price.toLocaleString()}</div>
                               {owned ? (
                                 <button
-                                  onClick={() => setShop((v) => ({ ...v, equippedAccessory: equipped ? null : a.id }))}
+                                  onClick={() => toggleAccessory(a)}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#ffe066] text-black"
                                 >
                                   {equipped ? t("unequip") : t("equip")}
@@ -6771,7 +6935,7 @@ function Game({ userId, nickname, signOut }: { userId: string; nickname: string;
                               ) : (
                                 <button
                                   disabled={!canBuy}
-                                  onClick={() => setShop((v) => ({ ...v, shadowCoins: v.shadowCoins - price, accessories: [...v.accessories, a.id], equippedAccessory: a.id }))}
+                                  onClick={() => addAndEquipAccessory(a, price)}
                                   className="w-full px-2 py-1.5 rounded text-xs font-bold bg-[#b388ff] text-black disabled:bg-white/10 disabled:text-white/40"
                                 >
                                   {canBuy ? t("buyEquip") : `${t("need")} ◆${(price - shop.shadowCoins).toLocaleString()}`}

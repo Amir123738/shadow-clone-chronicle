@@ -22,6 +22,7 @@ export type Database = {
           custom_profile_icons: Json
           custom_skins: Json
           equipped_accessory: string | null
+          equipped_accessories: Json
           id: string
           nickname: string
           owned: Json
@@ -40,6 +41,7 @@ export type Database = {
           custom_profile_icons?: Json
           custom_skins?: Json
           equipped_accessory?: string | null
+          equipped_accessories?: Json
           id?: string
           nickname: string
           owned?: Json
@@ -58,6 +60,7 @@ export type Database = {
           custom_profile_icons?: Json
           custom_skins?: Json
           equipped_accessory?: string | null
+          equipped_accessories?: Json
           id?: string
           nickname?: string
           owned?: Json

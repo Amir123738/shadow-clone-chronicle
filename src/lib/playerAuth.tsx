@@ -17,6 +17,7 @@ export type PlayerProfile = {
   selected: string;
   accessories: string[];
   equipped_accessory: string | null;
+  equipped_accessories: unknown;
 };
 
 const EMAIL_DOMAIN = "shadowclone.local";
@@ -217,11 +218,23 @@ export function useAuth() {
 }
 
 export async function loadProfile(userId: string): Promise<PlayerProfile | null> {
-  const { data, error } = await supabase
+  const baseSelect = "user_id,nickname,profile_name,profile_icon,profile_icons,custom_skins,custom_accessories,custom_profile_icons,shadow_coins,owned,selected,accessories,equipped_accessory";
+  const extendedSelect = `${baseSelect},equipped_accessories`;
+  let result = await supabase
     .from("player_profiles")
-    .select("user_id,nickname,profile_name,profile_icon,profile_icons,custom_skins,custom_accessories,custom_profile_icons,shadow_coins,owned,selected,accessories,equipped_accessory")
+    .select(extendedSelect)
     .eq("user_id", userId)
     .maybeSingle();
+
+  if (result.error && /equipped_accessories|schema cache|column/i.test(result.error.message)) {
+    result = await supabase
+      .from("player_profiles")
+      .select(baseSelect)
+      .eq("user_id", userId)
+      .maybeSingle();
+  }
+
+  const { data, error } = result;
   if (error) {
     toast.error("Couldn't load your save: " + error.message);
     return null;
@@ -241,6 +254,7 @@ export async function loadProfile(userId: string): Promise<PlayerProfile | null>
     selected: data.selected ?? "violet",
     accessories: Array.isArray(data.accessories) ? (data.accessories as string[]) : [],
     equipped_accessory: data.equipped_accessory ?? null,
+    equipped_accessories: "equipped_accessories" in data ? data.equipped_accessories ?? {} : {},
   };
 }
 
@@ -258,12 +272,22 @@ export async function saveProfile(
     selected: string;
     accessories: string[];
     equipped_accessory: string | null;
+    equipped_accessories: unknown;
   },
 ) {
   const { error } = await supabase
     .from("player_profiles")
     .update(data as never)
     .eq("user_id", userId);
+  if (error && /equipped_accessories|schema cache|column/i.test(error.message)) {
+    const { equipped_accessories: _equippedAccessories, ...fallbackData } = data;
+    const fallback = await supabase
+      .from("player_profiles")
+      .update(fallbackData as never)
+      .eq("user_id", userId);
+    if (fallback.error) console.error("Save failed:", fallback.error);
+    return;
+  }
   if (error) console.error("Save failed:", error);
 }
 
